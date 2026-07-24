@@ -235,7 +235,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="card table-card">
           <div class="table-head">
             <div><h3 id="sectionTitle" style="margin:0">Almacén general cocina</h3><small id="sectionHelp" style="color:var(--muted)">Captura de inventario</small></div>
-            <div class="actions"><button class="btn" onclick="addProduct()">+ Agregar producto</button><input type="file" id="pdfInvFile" accept=".pdf" style="display:none" onchange="importInventoryPdf()"><button class="btn" onclick="document.getElementById('pdfInvFile').click()">Importar PDF</button><button class="btn" onclick="exportCurrentBusinessCatalog()">Exportar catálogo</button></div>
+            <div class="actions"><button class="btn" onclick="addProduct()">+ Agregar producto</button><input type="file" id="pdfInvFile" accept=".pdf,.xls,.xlsx,.csv" style="display:none" onchange="importInventoryPdf()"><button class="btn" onclick="document.getElementById('pdfInvFile').click()">Importar reporte</button><button class="btn" onclick="exportCurrentBusinessCatalog()">Exportar catálogo</button></div>
           </div>
           <div class="table-wrap">
             <table class="inventory-table">
@@ -666,22 +666,55 @@ function parseInventoryPdfText(text){
     const line=raw.trim();const m=line.match(re);
     if(!m)return;
     const[,code,product,unit,costStr,teoricaStr,fisicaStr]=m;
-    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,teorica:parseFloat(teoricaStr.replace(/,/g,""))||0,fisica:parseFloat(fisicaStr.replace(/,/g,""))||0})
+    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,theo:parseFloat(teoricaStr.replace(/,/g,""))||0,phys:parseFloat(fisicaStr.replace(/,/g,""))||0})
   });
   return items
+}
+function parseMermaPdfText(text){
+  const re=/^([^\s-]+)-(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const items=[];
+  text.split("\n").forEach(raw=>{
+    const line=raw.trim();const m=line.match(re);
+    if(!m)return;
+    const[,code,product,unit,,salidaUStr,costStr]=m;
+    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,theo:parseFloat(salidaUStr.replace(/,/g,""))||0,phys:0})
+  });
+  return items
+}
+function parseStaffConsumptionRows(rowsRaw){
+  return rowsRaw.map(raw=>{
+    const out={};Object.keys(raw).forEach(k=>out[normalizeKey(k)]=raw[k]);
+    const code=out["idinsumo"]??out["codigo"]??out["clave"]??"";
+    const product=out["descripcion"]??out["producto"]??"";
+    const unit=out["unidad"]??"";
+    const cost=Number(out["costo"])||0;
+    const qty=Number(out["existenciaalmacen1"]??out["existencia"]??out["cantidad"])||0;
+    return { code:String(code).trim(), product:String(product).trim(), unit:String(unit).trim().toUpperCase(), cost, theo:Math.abs(qty), phys:0 }
+  }).filter(it=>it.product)
 }
 async function importInventoryPdf(){
   const input=document.getElementById("pdfInvFile");
   if(!input.files.length)return;
   const b=fBusiness.value;
   if(!b){alert("Selecciona primero un negocio en 'Datos generales'.");input.value="";return}
+  const file=input.files[0],name=file.name.toLowerCase();
   try{
-    const text=await extractPdfText(input.files[0]);
-    const items=parseInventoryPdfText(text);
-    if(!items.length){alert("No se reconoció ningún producto en este PDF. Puede que el formato sea distinto al esperado (reporte de inventario físico con columnas Clave, Descripción, Unidad, Costo, Diferencia, Existencia teórica y física).");input.value="";return}
+    let items=[],kind="";
+    if(name.endsWith(".pdf")){
+      const text=await extractPdfText(file);
+      if(/salida por merma|movimientos de inventario/i.test(text)){items=parseMermaPdfText(text);kind="mermas"}
+      else{items=parseInventoryPdfText(text);kind="inventario"}
+    } else {
+      const rowsRaw=await parseCatalogFile(file);
+      const hasStaffCols=rowsRaw.length&&Object.keys(rowsRaw[0]).some(k=>normalizeKey(k)==="existenciaalmacen1"||normalizeKey(k)==="idinsumo");
+      if(hasStaffCols){items=parseStaffConsumptionRows(rowsRaw);kind="consumo"}
+      else{items=rowsRaw.filter(r=>r.product).map(r=>({code:r.code,product:r.product,unit:r.unit,cost:Number(r.cost)||0,theo:0,phys:0}));kind="catalogo"}
+    }
+    if(!items.length){alert("No se reconoció ningún producto en este archivo. Verifica que sea un reporte de inventario físico, de mermas (SPM), o el formato de consumo de personal esperado.");input.value="";return}
     const meta=sectionMeta(activeSection);
-    if(!confirm(`Se detectaron ${items.length} productos en el PDF. ¿Deseas importarlos a "${meta.name}" de "${b}"? Esto reemplaza los productos que tengas ahorita en esta sección (no afecta inventarios ya guardados) y también actualiza el catálogo de este negocio para la próxima vez.`))return;
-    rows[activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,theo:it.teorica,phys:it.fisica,cost:it.cost,reason:"",comment:"",cxc:"",justification:"",responsible:""}));
+    const nota=kind==="mermas"?" (se tomó la columna de salida/merma como cantidad)":kind==="consumo"?" (se tomó la existencia consumida como cantidad)":"";
+    if(!confirm(`Se detectaron ${items.length} productos en el archivo${nota}. ¿Deseas importarlos a "${meta.name}" de "${b}"? Esto reemplaza los productos que tengas ahorita en esta sección (no afecta inventarios ya guardados) y también actualiza el catálogo de este negocio para la próxima vez.`))return;
+    rows[activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,theo:it.theo,phys:it.phys,cost:it.cost,reason:"",comment:"",cxc:"",justification:"",responsible:""}));
     if(!catalogs[b])catalogs[b]={};
     catalogs[b][activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,cost:it.cost}));
     await pushCatalogsToCloud();
@@ -689,7 +722,7 @@ async function importInventoryPdf(){
     alert(`Listo, se importaron ${items.length} productos a "${meta.name}".`);
   }catch(e){
     console.error(e);
-    alert("No se pudo leer este PDF. Verifica que sea un PDF de texto (no una foto escaneada) y con el formato de reporte de inventario físico.");
+    alert("No se pudo leer este archivo. Verifica que sea un PDF de texto (no una foto escaneada) o un Excel/CSV con el formato esperado.");
   }
   input.value=""
 }
