@@ -611,25 +611,26 @@ async function extractPdfText(file){
   for(let p=1;p<=pdf.numPages;p++){
     const page=await pdf.getPage(p);
     const content=await page.getTextContent();
-    let lastY=null,line="";
+    let lastY=null,lineItems=[];
+    const flush=()=>{lineItems.sort((a,b)=>a.x-b.x);fullText+=lineItems.map(i=>i.str).join(" ")+"\n";lineItems=[]};
     content.items.forEach(item=>{
-      const y=item.transform[5];
-      if(lastY!==null&&Math.abs(y-lastY)>2){fullText+=line+"\n";line=""}
-      line+=(line?" ":"")+item.str;
+      const y=item.transform[5],x=item.transform[4];
+      if(lastY!==null&&Math.abs(y-lastY)>2)flush();
+      lineItems.push({str:item.str,x});
       lastY=y
     });
-    fullText+=line+"\n"
+    flush()
   }
   return fullText
 }
 function parseInventoryPdfText(text){
-  const re=/^(\S+)\s+(.*?)\s+(-?[\d,]+\.\d{2})\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const re=/^(\S+)\s+(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
   const items=[];
   text.split("\n").forEach(raw=>{
     const line=raw.trim();const m=line.match(re);
     if(!m)return;
-    const[,code,product,fisicaStr,unit,costStr,teoricaStr]=m;
-    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,fisica:parseFloat(fisicaStr.replace(/,/g,""))||0,teorica:parseFloat(teoricaStr.replace(/,/g,""))||0})
+    const[,code,product,unit,costStr,teoricaStr,fisicaStr]=m;
+    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,teorica:parseFloat(teoricaStr.replace(/,/g,""))||0,fisica:parseFloat(fisicaStr.replace(/,/g,""))||0})
   });
   return items
 }
