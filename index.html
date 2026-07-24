@@ -254,23 +254,26 @@ textarea{min-height:76px;resize:vertical}
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Periodo</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
-      <section id="businesses" class="view"><div class="page-title"><div><h2>Negocios</h2><p>Catálogo de sucursales y unidades operativas</p></div></div><div id="businessCatalog" class="business-grid"></div></section>
+      <section id="businesses" class="view"><div class="page-title"><div><h2>Negocios</h2><p>Catálogo de sucursales y unidades operativas</p></div></div><div class="card form-card"><div class="flex"><input id="newBusinessName" placeholder="Nombre del nuevo negocio" style="max-width:320px"><button class="btn primary" onclick="addBusiness()">+ Agregar negocio</button></div></div><div id="businessCatalog" class="business-grid"></div></section>
       <section id="products" class="view"><div class="page-title"><div><h2>Productos</h2><p>Catálogo editable de productos por área</p></div></div><div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo actual</h3><button class="btn" onclick="exportCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div></section>
       <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div id="wasteCards" class="business-grid"></div></section>
       <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
-      <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div><button class="btn primary">+ Agregar usuario</button></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). Ahí se crea el correo y la contraseña de cada persona autorizada para entrar a esta app.</div></div></section>
+      <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
     </div>
   </main>
 </div>
 
 <script>
-const businesses=["Mestixa Tulum","Arca Tulum","Taquería Tulum","Sipalitos Tulum","Nah Alux"];
+let businesses=["Mestixa Tulum","Arca Tulum","Taquería Tulum","Sipalitos Tulum","Nah Alux"].map(name=>({name,active:true}));
+const businessNames=(activeOnly=false)=>businesses.filter(b=>!activeOnly||b.active).map(b=>b.name);
+const visibleBusinessNames=(activeOnly=false)=>businessNames(activeOnly).filter(userCanSee);
 const sections={
   "Cocina":[
     {id:"kg",name:"Almacén general cocina",waste:false},
     {id:"kp",name:"Producción cocina",waste:false},
+    {id:"kf",name:"Almacén alimento de personal",waste:true},
     {id:"kw",name:"Mermas cocina",waste:true}
   ],
   "Barra":[
@@ -314,7 +317,27 @@ async function pushRecordsToCloud(){
   const { error } = await sb.from("inventarios_data").upsert({ id: 1, data: recordsCache, updated_at: new Date().toISOString() });
   if (error) console.error("Error al guardar en la nube:", error);
 }
-async function refreshFromCloud(){ await loadRecordsFromCloud(); }
+async function refreshFromCloud(){ await loadRecordsFromCloud(); await loadBusinessesFromCloud(); }
+
+/* ==================== ACCESO POR USUARIO ==================== */
+let currentUser = { id:null, email:null, isAdmin:false, businesses:[] };
+async function ensureUserProfile(user){
+  const { data, error } = await sb.from("user_access").select("*").eq("id", user.id).maybeSingle();
+  if (error){ console.error("Error al leer perfil de acceso:", error); return; }
+  if (!data){
+    const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[] });
+    if (insErr) console.error("Error al crear perfil de acceso:", insErr);
+    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[] };
+  } else {
+    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[] };
+  }
+}
+function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.includes(name); }
+async function loadAllUserAccess(){
+  const { data, error } = await sb.from("user_access").select("*").order("email");
+  if (error){ console.error("Error al leer usuarios:", error); return []; }
+  return data || [];
+}
 
 /* ==================== LOGIN / SESIÓN ==================== */
 async function doLogin(){
@@ -338,8 +361,12 @@ async function onLoginSuccess(user){
   const name = (user.email||"Usuario").split("@")[0];
   label.innerHTML = `${name}<small>${user.email}</small>`;
   avatar.textContent = name.slice(0,2).toUpperCase();
+  await ensureUserProfile(user);
   await loadRecordsFromCloud();
+  await loadBusinessesFromCloud();
   init();
+  document.querySelector('[data-view="users"]').style.display = currentUser.isAdmin ? "" : "none";
+  renderUsersPanel();
 }
 async function checkSession(){
   const { data } = await sb.auth.getSession();
@@ -352,8 +379,8 @@ async function checkSession(){
 checkSession();
 
 function seedRows(){
-  Object.keys(demo).forEach(id=>{
-    rows[id]=demo[id].map(x=>({code:x[0],product:x[1],unit:x[2],theo:x[3],phys:x[4],cost:x[5],reason:"",comment:"",cxc:"",justification:"",responsible:""}))
+  Object.keys(sections).forEach(group=>{
+    sections[group].forEach(s=>{ rows[s.id]=[] })
   })
 }
 function sectionMeta(id){return Object.values(sections).flat().find(s=>s.id===id)}
@@ -380,7 +407,7 @@ function init(){
   seedRows();
   ["fBusiness","hBusiness"].forEach((id,i)=>{
     const el=document.getElementById(id);if(i===1)el.innerHTML='<option value="">Todos los negocios</option>';
-    businesses.forEach(b=>el.innerHTML+=`<option>${b}</option>`)
+    visibleBusinessNames(i===0).forEach(b=>el.innerHTML+=`<option>${b}</option>`)
   });
   document.getElementById("fCount").value="2026-07-23";document.getElementById("fStart").value="2026-07-20";document.getElementById("fEnd").value="2026-07-26";
   document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>openView(b.dataset.view));
@@ -444,7 +471,7 @@ function demoMetrics(i){
 function latestFor(b){return [...getRecords()].reverse().find(r=>r.business===b)}
 function renderDashboard(){
   const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,loss:0};const recent=[];
-  businesses.forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
+  visibleBusinessNames(true).forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
     const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
     grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
   });
@@ -456,14 +483,84 @@ function renderDashboard(){
 function openBusiness(b){fBusiness.value=b;openView("capture")}
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
-  getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td><td><button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button></td></tr>`})
+  getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&userCanSee(r.business)).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td><td><button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button></td></tr>`})
 }
 function deleteRecord(id){if(confirm("¿Eliminar este inventario?")){setRecords(getRecords().filter(r=>r.id!==id));renderHistory();renderDashboard()}}
 function clearHistory(){if(confirm("¿Eliminar todo el historial local?")){setRecords([]);renderHistory();renderDashboard()}}
-function renderBusinessCatalog(){businessCatalog.innerHTML=businesses.map(b=>`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot green"></span></div><div class="line"><span>Áreas</span><strong>Cocina y Barra</strong></div><div class="line"><span>Estado</span><strong>Activo</strong></div><button class="btn" onclick="openBusiness('${b}')">Capturar inventario</button></div>`).join("")}
+function renderBusinessCatalog(){
+  const list = currentUser.isAdmin ? businesses : businesses.filter(b=>currentUser.businesses.includes(b.name));
+  businessCatalog.innerHTML=list.map(b=>`<div class="card business"><div class="business-head"><h4>${b.name}</h4><span class="dot ${b.active?"green":"red"}"></span></div><div class="line"><span>Áreas</span><strong>Cocina y Barra</strong></div><div class="line"><span>Estado</span><strong>${b.active?"Activo":"Inactivo"}</strong></div>${b.active?`<button class="btn" onclick="openBusiness('${b.name}')">Capturar inventario</button>`:""}${currentUser.isAdmin?`<button class="btn ${b.active?"":"green"}" onclick="toggleBusiness('${b.name}')">${b.active?"Desactivar":"Activar"}</button>`:""}</div>`).join("");
+  const addForm = document.getElementById("newBusinessName");
+  if (addForm) addForm.closest(".form-card").style.display = currentUser.isAdmin ? "" : "none";
+}
+async function loadBusinessesFromCloud(){
+  const { data, error } = await sb.from("inventarios_data").select("data").eq("id", 2).maybeSingle();
+  if (error) { console.error("Error al cargar negocios:", error); return; }
+  if (data && Array.isArray(data.data) && data.data.length){
+    businesses = data.data.map(b => typeof b === "string" ? {name:b, active:true} : b);
+  }
+}
+async function pushBusinessesToCloud(){
+  const { error } = await sb.from("inventarios_data").upsert({ id: 2, data: businesses, updated_at: new Date().toISOString() });
+  if (error) console.error("Error al guardar negocios:", error);
+}
+async function renderUsersPanel(){
+  const panel = document.getElementById("usersPanel");
+  if (!currentUser.isAdmin){ panel.innerHTML = ""; return; }
+  const users = await loadAllUserAccess();
+  if (!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Todavía no hay usuarios registrados. En cuanto alguien más entre por primera vez, aparecerá aquí.</div></div>`; return; }
+  panel.innerHTML = users.map(u=>`
+    <div class="card form-card" style="margin-bottom:14px">
+      <div class="flex" style="justify-content:space-between;align-items:center">
+        <div><strong>${u.email}</strong>${u.id===currentUser.id?' <small>(tú)</small>':''}</div>
+        <label style="font-weight:600;font-size:13px"><input type="checkbox" id="admin-${u.id}" ${u.is_admin?"checked":""} style="width:auto;margin-right:6px">Administrador</label>
+      </div>
+      <div class="flex" style="flex-wrap:wrap;gap:10px;margin:12px 0">
+        ${businesses.map(b=>`<label style="font-size:13px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px"><input type="checkbox" class="biz-${u.id}" value="${b.name}" ${u.businesses&&u.businesses.includes(b.name)?"checked":""} style="width:auto;margin-right:6px">${b.name}</label>`).join("")}
+      </div>
+      <button class="btn primary" onclick="saveUserAccess('${u.id}')">Guardar acceso</button>
+    </div>`).join("");
+}
+async function saveUserAccess(userId){
+  const isAdmin = document.getElementById(`admin-${userId}`).checked;
+  const checked = Array.from(document.querySelectorAll(`.biz-${userId}:checked`)).map(el=>el.value);
+  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
+  if (error){ alert("No se pudo guardar el acceso."); console.error(error); return; }
+  if (userId === currentUser.id){ currentUser.isAdmin = isAdmin; currentUser.businesses = checked; }
+  alert("Acceso actualizado.");
+  renderUsersPanel();
+}
+function refreshBusinessSelects(){
+  ["fBusiness","hBusiness"].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.innerHTML = i===1 ? '<option value="">Todos los negocios</option>' : "";
+    visibleBusinessNames(i===0).forEach(b=>el.innerHTML+=`<option>${b}</option>`)
+  });
+}
+async function addBusiness(){
+  const input = document.getElementById("newBusinessName");
+  const name = input.value.trim();
+  if (!name) return;
+  if (businessNames().includes(name)) { alert("Ese negocio ya existe."); return; }
+  businesses.push({name, active:true});
+  input.value = "";
+  await pushBusinessesToCloud();
+  refreshBusinessSelects();
+  renderBusinessCatalog();renderDashboard();renderWaste();
+}
+async function toggleBusiness(name){
+  const b = businesses.find(x=>x.name===name);
+  if(!b) return;
+  const action = b.active ? "desactivar" : "activar";
+  if(!confirm(`¿Deseas ${action} "${name}"? ${b.active?"No podrás capturar nuevos inventarios para este negocio mientras esté inactivo, pero su historial se conserva.":""}`)) return;
+  b.active = !b.active;
+  await pushBusinessesToCloud();
+  refreshBusinessSelects();
+  renderBusinessCatalog();renderDashboard();renderWaste();
+}
 function renderProducts(){productBody.innerHTML="";Object.entries(rows).forEach(([id,list])=>list.forEach(r=>productBody.innerHTML+=`<tr><td>${sectionMeta(id).name}</td><td>${r.code}</td><td>${r.product}</td><td>${r.unit}</td><td>${money(r.cost)}</td></tr>`))}
 function allCxcRows(){
-  const out=[];getRecords().forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
+  const out=[];getRecords().filter(rec=>userCanSee(rec.business)).forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
 }
 function renderCxc(){
   const list=allCxcRows();let p=0,a=0,n=0;cxcBody.innerHTML="";
@@ -471,10 +568,10 @@ function renderCxc(){
   cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados.</td></tr>'
 }
 function renderWaste(){
-  wasteCards.innerHTML=businesses.map((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.waste>5000?"red":"yellow"}"></span></div><div class="line"><span>Merma del periodo</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
+  wasteCards.innerHTML=visibleBusinessNames(true).map((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.waste>5000?"red":"yellow"}"></span></div><div class="line"><span>Merma del periodo</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
-  let total={phys:0,short:0,over:0,waste:0,loss:0};businesses.forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
+  let total={phys:0,short:0,over:0,waste:0,loss:0};visibleBusinessNames(true).forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
   reportText.innerHTML=`Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.waste)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`
 }
 function exportCatalog(){
@@ -485,4 +582,3 @@ function exportCatalog(){
 </script>
 </body>
 </html>
-  
