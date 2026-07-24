@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
 /* ---- Login overlay ---- */
 .login-bg{position:fixed;inset:0;background:linear-gradient(160deg,#0f172a,#0b1427);display:flex;align-items:center;justify-content:center;z-index:200}
@@ -233,7 +234,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="card table-card">
           <div class="table-head">
             <div><h3 id="sectionTitle" style="margin:0">Almacén general cocina</h3><small id="sectionHelp" style="color:var(--muted)">Captura de inventario</small></div>
-            <div class="actions"><button class="btn" onclick="addProduct()">+ Agregar producto</button><button class="btn" onclick="exportCatalog()">Exportar catálogo</button></div>
+            <div class="actions"><button class="btn" onclick="addProduct()">+ Agregar producto</button><input type="file" id="pdfInvFile" accept=".pdf" style="display:none" onchange="importInventoryPdf()"><button class="btn" onclick="document.getElementById('pdfInvFile').click()">Importar PDF</button><button class="btn" onclick="exportCurrentBusinessCatalog()">Exportar catálogo</button></div>
           </div>
           <div class="table-wrap">
             <table class="inventory-table">
@@ -451,8 +452,8 @@ function renderInventory(){
   rows[activeSection].forEach((r,i)=>{
     const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost);
     const tr=document.createElement("tr");
-    if(meta.waste)tr.innerHTML=`<td><input value="${esc(r.code)}" oninput="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" oninput="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" oninput="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" oninput="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.cost}" oninput="edit('${activeSection}',${i},'cost',this.value)"></td><td class="orangetxt"><b>${money(num(r.theo)*num(r.cost))}</b></td><td><input value="${esc(r.reason)}" oninput="edit('${activeSection}',${i},'reason',this.value)" placeholder="Caducidad, daño..."></td><td><input class="wide" value="${esc(r.comment)}" oninput="edit('${activeSection}',${i},'comment',this.value)"></td><td><button class="btn red" onclick="delRow(${i})">×</button></td>`;
-    else tr.innerHTML=`<td><input value="${esc(r.code)}" oninput="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" oninput="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" oninput="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" oninput="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.phys}" oninput="edit('${activeSection}',${i},'phys',this.value)"></td><td class="${diff<0?'redtxt':diff>0?'greentxt':''}"><b>${diff.toFixed(2)}</b></td><td><input type="number" step=".01" value="${r.cost}" oninput="edit('${activeSection}',${i},'cost',this.value)"></td><td class="${amount<0?'redtxt':amount>0?'greentxt':''}"><b>${money(amount)}</b></td><td><input value="${esc(r.reason)}" oninput="edit('${activeSection}',${i},'reason',this.value)" placeholder="Motivo"></td><td><input class="wide" value="${esc(r.comment)}" oninput="edit('${activeSection}',${i},'comment',this.value)"></td><td><select ${diff>=0?'disabled':''} onchange="edit('${activeSection}',${i},'cxc',this.value)"><option value="">Pendiente</option><option ${r.cxc==="Sí"?"selected":""}>Sí</option><option ${r.cxc==="No"?"selected":""}>No</option></select></td><td><input class="wide" ${diff>=0?'disabled':''} value="${esc(r.justification)}" oninput="edit('${activeSection}',${i},'justification',this.value)" placeholder="${diff<0?'Obligatoria':'No aplica'}"></td><td><input ${diff>=0?'disabled':''} value="${esc(r.responsible)}" oninput="edit('${activeSection}',${i},'responsible',this.value)" placeholder="Responsable"></td><td><button class="btn red" onclick="delRow(${i})">×</button></td>`;
+    if(meta.waste)tr.innerHTML=`<td><input value="${esc(r.code)}" onchange="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" onchange="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" onchange="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" onchange="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.cost}" onchange="edit('${activeSection}',${i},'cost',this.value)"></td><td class="orangetxt"><b>${money(num(r.theo)*num(r.cost))}</b></td><td><input value="${esc(r.reason)}" onchange="edit('${activeSection}',${i},'reason',this.value)" placeholder="Caducidad, daño..."></td><td><input class="wide" value="${esc(r.comment)}" onchange="edit('${activeSection}',${i},'comment',this.value)"></td><td><button class="btn red" onclick="delRow(${i})">×</button></td>`;
+    else tr.innerHTML=`<td><input value="${esc(r.code)}" onchange="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" onchange="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" onchange="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" onchange="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.phys}" onchange="edit('${activeSection}',${i},'phys',this.value)"></td><td class="${diff<0?'redtxt':diff>0?'greentxt':''}"><b>${diff.toFixed(2)}</b></td><td><input type="number" step=".01" value="${r.cost}" onchange="edit('${activeSection}',${i},'cost',this.value)"></td><td class="${amount<0?'redtxt':amount>0?'greentxt':''}"><b>${money(amount)}</b></td><td><input value="${esc(r.reason)}" onchange="edit('${activeSection}',${i},'reason',this.value)" placeholder="Motivo"></td><td><input class="wide" value="${esc(r.comment)}" onchange="edit('${activeSection}',${i},'comment',this.value)"></td><td><select ${diff>=0?'disabled':''} onchange="edit('${activeSection}',${i},'cxc',this.value)"><option value="">Pendiente</option><option ${r.cxc==="Sí"?"selected":""}>Sí</option><option ${r.cxc==="No"?"selected":""}>No</option></select></td><td><input class="wide" ${diff>=0?'disabled':''} value="${esc(r.justification)}" onchange="edit('${activeSection}',${i},'justification',this.value)" placeholder="${diff<0?'Obligatoria':'No aplica'}"></td><td><input ${diff>=0?'disabled':''} value="${esc(r.responsible)}" onchange="edit('${activeSection}',${i},'responsible',this.value)" placeholder="Responsable"></td><td><button class="btn red" onclick="delRow(${i})">×</button></td>`;
     body.appendChild(tr)
   });
   updateCaptureSummary()
@@ -593,7 +594,67 @@ async function toggleBusiness(name){
   refreshBusinessSelects();
   renderBusinessCatalog();renderDashboard();renderWaste();
 }
-function allSectionMetas(){ return Object.values(sections).flat() }
+function exportCurrentBusinessCatalog(){
+  const b=fBusiness.value,cat=catalogs[b]||{};
+  const data=[["Área","Código","Producto","Unidad","Costo"]];
+  Object.entries(cat).forEach(([id,list])=>list.forEach(r=>data.push([sectionMeta(id).name,r.code,r.product,r.unit,r.cost])));
+  const csv=data.map(x=>x.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"),blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=`catalogo_${b||"negocio"}.csv`;a.click()
+}
+async function extractPdfText(file){
+  if(!window.pdfjsLib){throw new Error("pdf.js no cargó")}
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let fullText="";
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const content=await page.getTextContent();
+    let lastY=null,line="";
+    content.items.forEach(item=>{
+      const y=item.transform[5];
+      if(lastY!==null&&Math.abs(y-lastY)>2){fullText+=line+"\n";line=""}
+      line+=(line?" ":"")+item.str;
+      lastY=y
+    });
+    fullText+=line+"\n"
+  }
+  return fullText
+}
+function parseInventoryPdfText(text){
+  const re=/^(\S+)\s+(.*?)\s+(-?[\d,]+\.\d{2})\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const items=[];
+  text.split("\n").forEach(raw=>{
+    const line=raw.trim();const m=line.match(re);
+    if(!m)return;
+    const[,code,product,fisicaStr,unit,costStr,teoricaStr]=m;
+    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,fisica:parseFloat(fisicaStr.replace(/,/g,""))||0,teorica:parseFloat(teoricaStr.replace(/,/g,""))||0})
+  });
+  return items
+}
+async function importInventoryPdf(){
+  const input=document.getElementById("pdfInvFile");
+  if(!input.files.length)return;
+  const b=fBusiness.value;
+  if(!b){alert("Selecciona primero un negocio en 'Datos generales'.");input.value="";return}
+  try{
+    const text=await extractPdfText(input.files[0]);
+    const items=parseInventoryPdfText(text);
+    if(!items.length){alert("No se reconoció ningún producto en este PDF. Puede que el formato sea distinto al esperado (reporte de inventario físico con columnas Clave, Descripción, Unidad, Costo, Diferencia, Existencia teórica y física).");input.value="";return}
+    const meta=sectionMeta(activeSection);
+    if(!confirm(`Se detectaron ${items.length} productos en el PDF. ¿Deseas importarlos a "${meta.name}" de "${b}"? Esto reemplaza los productos que tengas ahorita en esta sección (no afecta inventarios ya guardados) y también actualiza el catálogo de este negocio para la próxima vez.`))return;
+    rows[activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,theo:it.teorica,phys:it.fisica,cost:it.cost,reason:"",comment:"",cxc:"",justification:"",responsible:""}));
+    if(!catalogs[b])catalogs[b]={};
+    catalogs[b][activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,cost:it.cost}));
+    await pushCatalogsToCloud();
+    renderInventory();
+    alert(`Listo, se importaron ${items.length} productos a "${meta.name}".`);
+  }catch(e){
+    console.error(e);
+    alert("No se pudo leer este PDF. Verifica que sea un PDF de texto (no una foto escaneada) y con el formato de reporte de inventario físico.");
+  }
+  input.value=""
+}
 function findSectionByName(name){
   const n=(name||"").toString().trim().toLowerCase();
   return allSectionMetas().find(s=>s.name.trim().toLowerCase()===n)
