@@ -676,7 +676,7 @@ function parseInventoryPdfText(text){
   text.split("\n").forEach(raw=>{
     const line=raw.trim();const m=line.match(re);
     if(!m)return;
-    const[,code,product,unit,costStr,fisicaStr,teoricaStr]=m;
+    const[,code,product,unit,costStr,teoricaStr,fisicaStr]=m;
     items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,theo:parseFloat(teoricaStr.replace(/,/g,""))||0,phys:parseFloat(fisicaStr.replace(/,/g,""))||0})
   });
   return items
