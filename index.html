@@ -656,6 +656,7 @@ async function importInventoryPdf(){
   }
   input.value=""
 }
+function allSectionMetas(){ return Object.values(sections).flat() }
 function findSectionByName(name){
   const n=(name||"").toString().trim().toLowerCase();
   return allSectionMetas().find(s=>s.name.trim().toLowerCase()===n)
