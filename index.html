@@ -167,7 +167,7 @@ textarea{min-height:76px;resize:vertical}
 
   <main class="main">
     <div class="topbar">
-      <div class="period-control">▣ <select id="globalPeriod" style="border:0;padding:0"><option>Julio 2026</option><option>Junio 2026</option></select></div>
+      <div class="period-control">▣ <select id="globalPeriod" onchange="onGlobalPeriodChange()" style="border:0;padding:0"></select></div>
       <div class="top-actions">♧ ⇥</div>
     </div>
 
@@ -403,11 +403,11 @@ function seedRows(){
 }
 function sectionMeta(id){return Object.values(sections).flat().find(s=>s.id===id)}
 function totalsFor(data=rows){
-  let t={theo:0,phys:0,short:0,over:0,waste:0,cxc:0,noCxc:0,pending:0};
+  let t={theo:0,phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,cxc:0,noCxc:0,pending:0};
   Object.entries(data).forEach(([id,list])=>{
     const meta=sectionMeta(id); if(!meta||!Array.isArray(list))return;
     list.forEach(r=>{
-      if(meta.waste){t.waste+=num(r.theo)*num(r.cost);return}
+      if(meta.waste){const a=num(r.theo)*num(r.cost);t.waste+=a;if(id==="kf")t.staffFood+=a;else t.mermas+=a;return}
       t.theo+=num(r.theo)*num(r.cost);t.phys+=num(r.phys)*num(r.cost);
       const d=(num(r.phys)-num(r.theo))*num(r.cost);
       if(d<0){const a=Math.abs(d);t.short+=a;if(r.cxc==="Sí")t.cxc+=a;else if(r.cxc==="No")t.noCxc+=a;else t.pending+=a}
@@ -520,19 +520,30 @@ function resetCapture(){
 }
 function calcRecord(r){return totalsFor(r.data)}
 function demoMetrics(i){
-  return{theo:0,phys:0,short:0,over:0,waste:0,loss:0,cxc:0,noCxc:0,pending:0}
+  return{theo:0,phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0,cxc:0,noCxc:0,pending:0}
 }
-function latestFor(b){return [...getRecords()].reverse().find(r=>r.business===b)}
+let globalMonth="";
+function fillGlobalPeriod(){
+  const el=document.getElementById("globalPeriod"),prev=el.value,months=distinctMonths();
+  el.innerHTML='<option value="">Todos los meses</option>'+months.map(m=>`<option value="${m}">${esc(monthLabel(m))}</option>`).join("");
+  if([...el.options].some(o=>o.value===prev))el.value=prev;
+  else if(months.length)el.value=months[0];
+  globalMonth=el.value
+}
+function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste()}
+function latestForMonth(b,month){return [...getRecords()].reverse().find(r=>r.business===b&&(!month||monthOf(r)===month))}
+function latestFor(b){return latestForMonth(b,"")}
 function renderDashboard(){
-  const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,loss:0};const recent=[];
-  visibleBusinessNames(true).forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
+  fillGlobalPeriod();
+  const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};const recent=[];
+  visibleBusinessNames(true).forEach((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
     const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
-    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
+    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
   });
-  kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.waste);kLoss.textContent=money(g.loss);
+  kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.mermas);kLoss.textContent=money(g.loss);
   const body=document.getElementById("recentBody");body.innerHTML="";
-  if(!recent.length)body.innerHTML='<tr><td colspan="10" class="empty">Aún no hay inventarios guardados. Las tarjetas muestran datos demostrativos.</td></tr>';
-  recent.slice(-5).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.theo)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td class="redtxt">${money(t.loss)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td></tr>`})
+  if(!recent.length)body.innerHTML='<tr><td colspan="10" class="empty">Aún no hay inventarios guardados para este periodo.</td></tr>';
+  recent.slice(-5).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.theo)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td class="redtxt">${money(t.loss)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td></tr>`})
 }
 function startNewInventory(){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
@@ -875,15 +886,15 @@ function renderCxc(){
   cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados para este filtro.</td></tr>'
 }
 function renderWaste(){
-  wasteCards.innerHTML=visibleBusinessNames(true).map((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.waste>5000?"red":"yellow"}"></span></div><div class="line"><span>Merma del periodo</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
+  wasteCards.innerHTML=visibleBusinessNames(true).map((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del periodo</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
   fillBusinessAndMonthFilter("repBusiness","repMonth");
   const business=document.getElementById("repBusiness").value,month=document.getElementById("repMonth").value;
   const records=getRecords().filter(r=>userCanSee(r.business)).filter(r=>!business||r.business===business).filter(r=>!month||monthOf(r)===month);
-  let total={phys:0,short:0,over:0,waste:0,loss:0};records.forEach(r=>{const t=calcRecord(r);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
+  let total={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};records.forEach(r=>{const t=calcRecord(r);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
   const label=(business||"Todos los negocios")+" — "+(month?monthLabel(month):"todos los meses");
-  reportText.innerHTML=records.length?`<div style="margin-bottom:10px;font-weight:700">${esc(label)} (${records.length} inventario${records.length===1?"":"s"})</div>Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.waste)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`:`<div class="empty">No hay inventarios guardados para "${esc(label)}".</div>`
+  reportText.innerHTML=records.length?`<div style="margin-bottom:10px;font-weight:700">${esc(label)} (${records.length} inventario${records.length===1?"":"s"})</div>Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.mermas)}</b> · Alimento de personal: <b>${money(total.staffFood)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`:`<div class="empty">No hay inventarios guardados para "${esc(label)}".</div>`
 }
 /* init() ahora se ejecuta desde onLoginSuccess() tras iniciar sesión */
 </script>
