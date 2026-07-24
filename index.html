@@ -273,9 +273,9 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
       </section>
-      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
+      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="renderCxc()" style="max-width:240px"></select><select id="cxcMonth" onchange="renderCxc()" style="max-width:220px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="renderReports()" style="max-width:240px"></select><select id="repMonth" onchange="renderReports()" style="max-width:220px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
     </div>
@@ -809,20 +809,36 @@ function onBusinessChangeInCapture(){
   loadCatalogIntoRows(b);
   renderInventory()
 }
-function allCxcRows(){
-  const out=[];getRecords().filter(rec=>userCanSee(rec.business)).forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
+const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+function monthOf(r){return(r.countDate||"").slice(0,7)}
+function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1]||mm} ${y}`}
+function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
+function fillBusinessAndMonthFilter(businessId,monthId){
+  const bEl=document.getElementById(businessId),mEl=document.getElementById(monthId);
+  const prevB=bEl.value,prevM=mEl.value;
+  bEl.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prevB?"selected":""}>${esc(b)}</option>`).join("");
+  mEl.innerHTML='<option value="">Todos los meses</option>'+distinctMonths().map(m=>`<option value="${m}" ${m===prevM?"selected":""}>${esc(monthLabel(m))}</option>`).join("")
+}
+function allCxcRows(business,month){
+  const out=[];getRecords().filter(rec=>userCanSee(rec.business)).filter(rec=>!business||rec.business===business).filter(rec=>!month||monthOf(rec)===month).forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
 }
 function renderCxc(){
-  const list=allCxcRows();let p=0,a=0,n=0;cxcBody.innerHTML="";
+  fillBusinessAndMonthFilter("cxcBusiness","cxcMonth");
+  const business=document.getElementById("cxcBusiness").value,month=document.getElementById("cxcMonth").value;
+  const list=allCxcRows(business,month);let p=0,a=0,n=0;cxcBody.innerHTML="";
   list.forEach(r=>{if(r.decision==="Sí")a+=r.amount;else if(r.decision==="No")n+=r.amount;else p+=r.amount;cxcBody.innerHTML+=`<tr><td>${r.business}</td><td>${r.product}</td><td class="redtxt">${money(r.amount)}</td><td>${r.decision}</td><td>${r.justification||"-"}</td><td>${r.responsible||"-"}</td></tr>`});
-  cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados.</td></tr>'
+  cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados para este filtro.</td></tr>'
 }
 function renderWaste(){
   wasteCards.innerHTML=visibleBusinessNames(true).map((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.waste>5000?"red":"yellow"}"></span></div><div class="line"><span>Merma del periodo</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
-  let total={phys:0,short:0,over:0,waste:0,loss:0};visibleBusinessNames(true).forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
-  reportText.innerHTML=`Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.waste)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`
+  fillBusinessAndMonthFilter("repBusiness","repMonth");
+  const business=document.getElementById("repBusiness").value,month=document.getElementById("repMonth").value;
+  const records=getRecords().filter(r=>userCanSee(r.business)).filter(r=>!business||r.business===business).filter(r=>!month||monthOf(r)===month);
+  let total={phys:0,short:0,over:0,waste:0,loss:0};records.forEach(r=>{const t=calcRecord(r);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
+  const label=(business||"Todos los negocios")+" — "+(month?monthLabel(month):"todos los meses");
+  reportText.innerHTML=records.length?`<div style="margin-bottom:10px;font-weight:700">${esc(label)} (${records.length} inventario${records.length===1?"":"s"})</div>Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.waste)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`:`<div class="empty">No hay inventarios guardados para "${esc(label)}".</div>`
 }
 /* init() ahora se ejecuta desde onLoginSuccess() tras iniciar sesión */
 </script>
