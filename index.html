@@ -175,7 +175,7 @@ textarea{min-height:76px;resize:vertical}
       <section id="dashboard" class="view active">
         <div class="page-title">
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
-          <div class="actions"><button class="btn primary" onclick="openView('capture')">+ Nuevo inventario</button></div>
+          <div class="actions"><button class="btn primary" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
         <div class="kpis">
           <div class="card kpi"><div><small>Inventario total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
@@ -197,6 +197,7 @@ textarea{min-height:76px;resize:vertical}
           <div><h2>Inventario operativo</h2><p>Captura teórico, físico, diferencias, mermas y decisión de CxC</p></div>
           <div class="actions"><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
         </div>
+        <div id="editBanner" class="card form-card" style="display:none;margin-bottom:14px;background:#fff7e6;border-color:#f0c869"></div>
 
         <div class="stagebar">
           <div class="stage done">1. Captura</div><div class="stage current">2. Revisión</div><div class="stage">3. Justificación</div>
@@ -476,10 +477,38 @@ function validateInventory(){
   Object.entries(rows).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=num(r.phys)-num(r.theo);if(d<0&&(!r.cxc||!String(r.justification).trim()))issues.push(`${meta.name}: ${r.product||"producto sin nombre"}`)})});
   return issues
 }
+let editingRecordId=null;
 function saveInventory(status){
   const issues=validateInventory();if(issues.length){alert("No se puede guardar. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
-  const record={id:Date.now(),business:fBusiness.value,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,period:fPeriod.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:JSON.parse(JSON.stringify(rows))};
-  const list=getRecords();list.push(record);setRecords(list);alert("Inventario guardado como "+status);renderDashboard();openView("dashboard")
+  const record={id:editingRecordId||Date.now(),business:fBusiness.value,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,period:fPeriod.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:JSON.parse(JSON.stringify(rows))};
+  let list=getRecords();
+  if(editingRecordId){list=list.map(r=>r.id===editingRecordId?record:r)} else {list.push(record)}
+  setRecords(list);
+  const wasEditing=!!editingRecordId;
+  editingRecordId=null;
+  document.getElementById("editBanner").style.display="none";
+  alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status);renderDashboard();openView("dashboard")
+}
+function editRecord(id){
+  const r=getRecords().find(x=>x.id===id);
+  if(!r)return;
+  editingRecordId=id;
+  fBusiness.value=r.business;fFrequency.value=r.frequency;fCount.value=r.countDate;fStart.value=r.startDate;fEnd.value=r.endDate;fPeriod.value=r.period;fSupervisor.value=r.supervisor;fStatus.value=r.workflow;fNotes.value=r.notes||"";
+  rows=JSON.parse(JSON.stringify(r.data));
+  activeGroup="Cocina";activeSection=sections["Cocina"][0].id;
+  const banner=document.getElementById("editBanner");
+  banner.style.display="block";
+  banner.innerHTML=`Estás editando el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Al guardar, se actualiza este mismo registro en vez de crear uno nuevo. <button class="btn" onclick="cancelEdit()" style="margin-left:10px">Cancelar edición</button>`;
+  renderTabs();renderInventory();
+  openView("capture")
+}
+function cancelEdit(){
+  editingRecordId=null;
+  document.getElementById("editBanner").style.display="none";
+  const b=fBusiness.value;
+  if(b&&catalogs[b]&&Object.values(catalogs[b]).some(l=>l.length))loadCatalogIntoRows(b);
+  else seedRows();
+  renderInventory()
 }
 function resetCapture(){
   if(confirm("¿Deseas limpiar la captura actual?")){
@@ -505,10 +534,17 @@ function renderDashboard(){
   if(!recent.length)body.innerHTML='<tr><td colspan="10" class="empty">Aún no hay inventarios guardados. Las tarjetas muestran datos demostrativos.</td></tr>';
   recent.slice(-5).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.theo)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td class="redtxt">${money(t.loss)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td></tr>`})
 }
-function openBusiness(b){fBusiness.value=b;onBusinessChangeInCapture();openView("capture")}
+function startNewInventory(){
+  if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
+  openView("capture")
+}
+function openBusiness(b){
+  if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
+  fBusiness.value=b;onBusinessChangeInCapture();openView("capture")
+}
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
-  getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&userCanSee(r.business)).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td><td><button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button></td></tr>`})
+  getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&userCanSee(r.business)).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${r.period}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.waste)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td><td><button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button></td></tr>`})
 }
 function deleteRecord(id){if(confirm("¿Eliminar este inventario?")){setRecords(getRecords().filter(r=>r.id!==id));renderHistory();renderDashboard()}}
 function clearHistory(){if(confirm("¿Eliminar todo el historial local?")){setRecords([]);renderHistory();renderDashboard()}}
