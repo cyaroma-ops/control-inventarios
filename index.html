@@ -439,14 +439,14 @@ function saveInventory(status){
 function resetCapture(){if(confirm("¿Deseas limpiar la captura actual?")){seedRows();renderInventory()}}
 function calcRecord(r){return totalsFor(r.data)}
 function demoMetrics(i){
-  const f=[1,.82,.40,.30,.73][i];return{theo:690000*f,phys:656500*f,short:10350*f,over:2350*f,waste:5950*f,loss:(10350+5950-2350)*f,cxc:6200*f,noCxc:3000*f,pending:1150*f}
+  return{theo:0,phys:0,short:0,over:0,waste:0,loss:0,cxc:0,noCxc:0,pending:0}
 }
 function latestFor(b){return [...getRecords()].reverse().find(r=>r.business===b)}
 function renderDashboard(){
   const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,loss:0};const recent=[];
   businesses.forEach((b,i)=>{const r=latestFor(b),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
-    const ratio=t.phys?100*t.loss/t.phys:0,cls=ratio<1?"green":ratio<=3?"yellow":"red",progress=r?100:60;
-    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${ratio.toFixed(2)}% pérdida</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Datos demostrativos"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
+    const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
+    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.waste)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
   });
   kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.waste);kLoss.textContent=money(g.loss);
   const body=document.getElementById("recentBody");body.innerHTML="";
@@ -485,3 +485,4 @@ function exportCatalog(){
 </script>
 </body>
 </html>
+  
