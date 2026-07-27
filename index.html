@@ -178,7 +178,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="actions"><button class="btn primary" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
         <div class="kpis">
-          <div class="card kpi"><div><small>Inventario total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
+          <div class="card kpi"><div><small>Inventario físico total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
           <div class="card kpi"><div><small>Faltantes totales</small><strong id="kShort" class="redtxt">$0</strong><small>Diferencias negativas</small></div><div class="ico">⌁</div></div>
           <div class="card kpi"><div><small>Sobrantes totales</small><strong id="kOver" class="greentxt">$0</strong><small>Diferencias positivas</small></div><div class="ico">↗</div></div>
           <div class="card kpi"><div><small>Mermas totales</small><strong id="kWaste" class="orangetxt">$0</strong><small>Pérdidas registradas</small></div><div class="ico">♲</div></div>
@@ -538,7 +538,7 @@ function renderDashboard(){
   const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};const recent=[];
   visibleBusinessNames(true).forEach((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
     const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
-    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
+    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario físico</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
   });
   kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.mermas);kLoss.textContent=money(g.loss);
   const body=document.getElementById("recentBody");body.innerHTML="";
@@ -885,16 +885,56 @@ function renderCxc(){
   list.forEach(r=>{if(r.decision==="Sí")a+=r.amount;else if(r.decision==="No")n+=r.amount;else p+=r.amount;cxcBody.innerHTML+=`<tr><td>${r.business}</td><td>${r.product}</td><td class="redtxt">${money(r.amount)}</td><td>${r.decision}</td><td>${r.justification||"-"}</td><td>${r.responsible||"-"}</td></tr>`});
   cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados para este filtro.</td></tr>'
 }
+function recordsInMonth(b,month){return getRecords().filter(r=>r.business===b&&(!month||monthOf(r)===month))}
+function monthFlowTotals(b,month){
+  let mermas=0,staffFood=0,cxcSi=0,cxcNo=0,cxcPend=0,count=0;
+  recordsInMonth(b,month).forEach(r=>{const t=calcRecord(r);mermas+=t.mermas;staffFood+=t.staffFood;cxcSi+=t.cxc;cxcNo+=t.noCxc;cxcPend+=t.pending;count++});
+  return{mermas,staffFood,cxcSi,cxcNo,cxcPend,count}
+}
+function categorizedStock(businessesList,month){
+  const cats=Object.values(sections).flat().filter(s=>!s.waste).map(s=>({id:s.id,name:s.name,phys:0,short:0,over:0}));
+  let lastCountDates=[];
+  businessesList.forEach(b=>{
+    const r=latestForMonth(b,month);if(!r)return;
+    lastCountDates.push({business:b,countDate:r.countDate});
+    cats.forEach(c=>{
+      (r.data[c.id]||[]).forEach(row=>{
+        c.phys+=num(row.phys)*num(row.cost);
+        const d=(num(row.phys)-num(row.theo))*num(row.cost);
+        if(d<0)c.short+=Math.abs(d);else c.over+=d
+      })
+    })
+  });
+  return{cats,lastCountDates}
+}
 function renderWaste(){
-  wasteCards.innerHTML=visibleBusinessNames(true).map((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${t.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del periodo</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
+  wasteCards.innerHTML=visibleBusinessNames(true).map(b=>{const f=monthFlowTotals(b,globalMonth);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${f.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del mes</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line"><span>Conteos incluidos</span><strong>${f.count}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
   fillBusinessAndMonthFilter("repBusiness","repMonth");
   const business=document.getElementById("repBusiness").value,month=document.getElementById("repMonth").value;
-  const records=getRecords().filter(r=>userCanSee(r.business)).filter(r=>!business||r.business===business).filter(r=>!month||monthOf(r)===month);
-  let total={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};records.forEach(r=>{const t=calcRecord(r);Object.keys(total).forEach(k=>total[k]+=t[k]||0)});
+  const businessesList=business?[business]:visibleBusinessNames(true);
   const label=(business||"Todos los negocios")+" — "+(month?monthLabel(month):"todos los meses");
-  reportText.innerHTML=records.length?`<div style="margin-bottom:10px;font-weight:700">${esc(label)} (${records.length} inventario${records.length===1?"":"s"})</div>Inventario disponible: <b>${money(total.phys)}</b> · Faltantes: <b>${money(total.short)}</b> · Sobrantes: <b>${money(total.over)}</b> · Mermas: <b>${money(total.mermas)}</b> · Alimento de personal: <b>${money(total.staffFood)}</b> · Pérdida neta estimada: <b>${money(total.loss)}</b>.`:`<div class="empty">No hay inventarios guardados para "${esc(label)}".</div>`
+  let flow={mermas:0,staffFood:0,cxcSi:0,cxcNo:0,cxcPend:0,count:0};
+  businessesList.forEach(b=>{const f=monthFlowTotals(b,month);flow.mermas+=f.mermas;flow.staffFood+=f.staffFood;flow.cxcSi+=f.cxcSi;flow.cxcNo+=f.cxcNo;flow.cxcPend+=f.cxcPend;flow.count+=f.count});
+  if(!flow.count){reportText.innerHTML=`<div style="margin-bottom:10px;font-weight:700">${esc(label)}</div><div class="empty">No hay inventarios guardados para "${esc(label)}".</div>`;return}
+  const{cats,lastCountDates}=categorizedStock(businessesList,month);
+  const stockTotal=cats.reduce((a,c)=>a+c.phys,0),shortTotal=cats.reduce((a,c)=>a+c.short,0),overTotal=cats.reduce((a,c)=>a+c.over,0);
+  let html=`<div style="margin-bottom:14px;font-weight:700">${esc(label)}</div>`;
+  html+=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">Inventario físico, faltantes y sobrantes: del último conteo capturado en el mes, por categoría.</div>`;
+  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Inventario físico</th><th style="padding:8px 6px">Faltantes</th><th style="padding:8px 6px">Sobrantes</th></tr></thead><tbody>`;
+  cats.forEach(c=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 6px">${esc(c.name)}</td><td style="padding:8px 6px">${money(c.phys)}</td><td style="padding:8px 6px" class="redtxt">${money(c.short)}</td><td style="padding:8px 6px" class="greentxt">${money(c.over)}</td></tr>`});
+  html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px">${money(stockTotal)}</td><td style="padding:8px 6px" class="redtxt">${money(shortTotal)}</td><td style="padding:8px 6px" class="greentxt">${money(overTotal)}</td></tr>`;
+  html+=`</tbody></table>`;
+  html+=`<div style="margin-bottom:6px;font-weight:700">Acumulado del mes (${flow.count} conteo${flow.count===1?"":"s"} capturado${flow.count===1?"":"s"})</div>`;
+  html+=`<div style="margin-bottom:16px">Mermas: <b>${money(flow.mermas)}</b> · Alimento de personal: <b>${money(flow.staffFood)}</b> · CxC aplicado: <b class="redtxt">${money(flow.cxcSi)}</b> · CxC no aplicado: <b>${money(flow.cxcNo)}</b> · CxC pendiente: <b class="orangetxt">${money(flow.cxcPend)}</b></div>`;
+  const allInMonth=businessesList.flatMap(b=>recordsInMonth(b,month)).sort((a,b)=>a.countDate.localeCompare(b.countDate));
+  if(allInMonth.length){
+    html+=`<div style="font-weight:700;margin-bottom:6px">Conteos incluidos este mes</div><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:6px">Fecha de conteo</th><th style="padding:6px">Negocio</th><th style="padding:6px">Estatus</th></tr></thead><tbody>`;
+    allInMonth.forEach(r=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(r.countDate)}</td><td style="padding:6px">${esc(r.business)}</td><td style="padding:6px"><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td></tr>`});
+    html+="</tbody></table>"
+  }
+  reportText.innerHTML=html
 }
 /* init() ahora se ejecuta desde onLoginSuccess() tras iniciar sesión */
 </script>
