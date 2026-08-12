@@ -255,7 +255,7 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="history" class="view">
         <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div></div>
-        <div class="card form-card"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="filterHistory()">Filtrar</button><button class="btn red" onclick="clearHistory()">Eliminar historial</button></div></div>
+        <div class="card form-card"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" onclick="clearHistory()">Eliminar historial</button></div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
@@ -587,20 +587,23 @@ function fillGlobalPeriod(){
   globalMonth=el.value
 }
 function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste();renderHistory()}
-function latestForMonth(b,month){return [...getRecords()].reverse().find(r=>r.business===b&&(!month||monthOf(r)===month))}
+function latestForMonth(b,month){
+  const list=getRecords().filter(r=>r.business===b&&(!month||monthOf(r)===month));
+  if(!list.length)return undefined;
+  return list.reduce((a,c)=>{
+    if(c.countDate!==a.countDate)return c.countDate>a.countDate?c:a;
+    return c.id>a.id?c:a
+  })
+}
 function latestFor(b){return latestForMonth(b,"")}
 async function bootDashboard(){
-  const el=document.getElementById("dashBusiness"),prev=el.value;
-  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames(true).map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
-  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames(true);if(names.length)el.value=names[0]}
-  el.dataset.inited="1";
+  const val=fillBusinessFilter("dashBusiness",bootDashboard);
   const msg=document.getElementById("dashLoadingMsg");
-  msg.textContent=el.value?"Cargando "+el.value+"…":"Cargando todos los negocios (puede tardar más)…";
-  await ensureRecordsFor(el.value);
+  msg.textContent=val?"Cargando "+val+"…":"Cargando todos los negocios (puede tardar más)…";
+  await ensureRecordsFor(val);
   msg.textContent="";
   renderDashboard()
 }
-function onDashBusinessChange(){bootDashboard()}
 function renderDashboard(){
   fillGlobalPeriod();
   const chosen=document.getElementById("dashBusiness").value;
@@ -624,16 +627,9 @@ async function openBusiness(b){
   await ensureCatalogsLoaded();
   fBusiness.value=b;onBusinessChangeInCapture();openView("capture")
 }
-async function filterHistory(){
-  await ensureRecordsFor(hBusiness.value);
-  renderHistory()
-}
 async function bootHistory(){
-  const el=document.getElementById("hBusiness"),prev=el.value;
-  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
-  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames();if(names.length)el.value=names[0]}
-  el.dataset.inited="1";
-  await ensureRecordsFor(el.value);
+  const val=fillBusinessFilter("hBusiness",bootHistory);
+  await ensureRecordsFor(val);
   renderHistory()
 }
 function renderHistory(){
@@ -974,11 +970,14 @@ const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","
 function monthOf(r){return(r.countDate||"").slice(0,7)}
 function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1]||mm} ${y}`}
 function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
-function fillBusinessFilter(businessId,defaultFirst){
-  const el=document.getElementById(businessId),prev=el.value;
-  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
-  if(!prev&&!el.dataset.inited&&defaultFirst){const names=visibleBusinessNames();if(names.length)el.value=names[0]}
-  el.dataset.inited="1";
+let currentBusiness=null;
+function fillBusinessFilter(businessId,onChange){
+  const el=document.getElementById(businessId);
+  const names=visibleBusinessNames();
+  el.innerHTML='<option value="">Todos los negocios</option>'+names.map(b=>`<option>${esc(b)}</option>`).join("");
+  if(currentBusiness===null&&names.length)currentBusiness=names[0];
+  el.value=(currentBusiness&&names.includes(currentBusiness))?currentBusiness:"";
+  el.onchange=async()=>{currentBusiness=el.value;await onChange()};
   return el.value
 }
 function fillMonthFilter(monthId){
@@ -987,13 +986,13 @@ function fillMonthFilter(monthId){
   return el.value
 }
 async function bootCxc(){
-  const business=fillBusinessFilter("cxcBusiness",true);
+  const business=fillBusinessFilter("cxcBusiness",bootCxc);
   await ensureRecordsFor(business);
   fillMonthFilter("cxcMonth");
   renderCxc()
 }
 async function bootReports(){
-  const business=fillBusinessFilter("repBusiness",true);
+  const business=fillBusinessFilter("repBusiness",bootReports);
   await ensureRecordsFor(business);
   fillMonthFilter("repMonth");
   renderReports()
@@ -1050,14 +1049,10 @@ function categorizedStock(businessesList,month){
   return{cats,lastCountDates}
 }
 async function bootWaste(){
-  const el=document.getElementById("wasteBusiness"),prev=el.value;
-  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames(true).map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
-  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames(true);if(names.length)el.value=names[0]}
-  el.dataset.inited="1";
-  await ensureRecordsFor(el.value);
+  const val=fillBusinessFilter("wasteBusiness",bootWaste);
+  await ensureRecordsFor(val);
   renderWaste()
 }
-function onWasteBusinessChange(){bootWaste()}
 function renderWaste(){
   const chosen=document.getElementById("wasteBusiness").value;
   const names=chosen?[chosen]:visibleBusinessNames(true);
