@@ -135,8 +135,9 @@ textarea{min-height:76px;resize:vertical}
     <div class="field"><label>Correo</label><input id="loginEmail" type="email" placeholder="tu@correo.com"></div>
     <div class="field"><label>Contraseña</label><input id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div id="loginError" class="login-error"></div>
-    <button class="btn primary" onclick="doLogin()">Entrar</button>
+    <button class="btn primary" id="loginBtn" onclick="doLogin()">Entrar</button>
     <div class="hint">Acceso restringido al personal autorizado de Roma & Associates</div>
+    <div id="loginLoading" style="display:none;margin-top:14px;font-size:13px;color:#70809a">Cargando tus datos…</div>
   </div>
 </div>
 
@@ -333,7 +334,7 @@ async function pushRecordsToCloud(){
   const { error } = await sb.from("inventarios_data").upsert({ id: 1, data: recordsCache, updated_at: new Date().toISOString() });
   if (error) console.error("Error al guardar en la nube:", error);
 }
-async function refreshFromCloud(){ await loadRecordsFromCloud(); await loadBusinessesFromCloud(); await loadCatalogsFromCloud(); }
+async function refreshFromCloud(){ await loadRecordsFromCloud(); await loadBusinessesFromCloud(); if(catalogsLoaded)await loadCatalogsFromCloud(); }
 
 /* ==================== ACCESO POR USUARIO ==================== */
 let currentUser = { id:null, email:null, isAdmin:false, businesses:[] };
@@ -371,16 +372,17 @@ async function doLogout(){
   location.reload();
 }
 async function onLoginSuccess(user){
-  document.getElementById("loginOverlay").style.display = "none";
-  document.getElementById("appRoot").style.display = "grid";
   const label = document.getElementById("userLabel"), avatar = document.getElementById("userAvatar");
   const name = (user.email||"Usuario").split("@")[0];
   label.innerHTML = `${name}<small>${user.email}</small>`;
   avatar.textContent = name.slice(0,2).toUpperCase();
+  document.getElementById("loginBtn").style.display="none";
+  document.getElementById("loginLoading").style.display="block";
   await ensureUserProfile(user);
   await loadRecordsFromCloud();
   await loadBusinessesFromCloud();
-  await loadCatalogsFromCloud();
+  document.getElementById("loginOverlay").style.display = "none";
+  document.getElementById("appRoot").style.display = "grid";
   init();
   document.querySelector('[data-view="users"]').style.display = currentUser.isAdmin ? "" : "none";
   renderUsersPanel();
@@ -435,6 +437,7 @@ function init(){
 async function openView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
+  if(id==="capture"||id==="products")await ensureCatalogsLoaded();
   if(id==="dashboard")renderDashboard();if(id==="history")renderHistory();if(id==="products")renderCatalogTable();if(id==="cxc")renderCxc();if(id==="waste")renderWaste();if(id==="reports")renderReports()
 }
 async function manualRefresh(){
@@ -579,8 +582,9 @@ function startNewInventory(){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
   openView("capture")
 }
-function openBusiness(b){
+async function openBusiness(b){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
+  await ensureCatalogsLoaded();
   fBusiness.value=b;onBusinessChangeInCapture();openView("capture")
 }
 function renderHistory(){
@@ -604,6 +608,12 @@ async function loadBusinessesFromCloud(){
   }
 }
 let catalogs = {};
+let catalogsLoaded = false;
+async function ensureCatalogsLoaded(){
+  if(catalogsLoaded)return;
+  await loadCatalogsFromCloud();
+  catalogsLoaded = true
+}
 async function loadCatalogsFromCloud(){
   const { data, error } = await sb.from("inventarios_data").select("data").eq("id", 3).maybeSingle();
   if (error) { console.error("Error al cargar catálogos:", error); return; }
