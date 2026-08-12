@@ -178,6 +178,7 @@ textarea{min-height:76px;resize:vertical}
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
           <div class="actions"><button class="btn primary" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
+        <div class="card form-card"><div class="flex"><select id="dashBusiness" onchange="onDashBusinessChange()" style="max-width:260px"></select><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
         <div class="kpis">
           <div class="card kpi"><div><small>Inventario físico total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
           <div class="card kpi"><div><small>Faltantes totales</small><strong id="kShort" class="redtxt">$0</strong><small>Diferencias negativas</small></div><div class="ico">⌁</div></div>
@@ -254,7 +255,7 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="history" class="view">
         <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div></div>
-        <div class="card form-card"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" onclick="clearHistory()">Eliminar historial local</button></div></div>
+        <div class="card form-card"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="filterHistory()">Filtrar</button><button class="btn red" onclick="clearHistory()">Eliminar historial</button></div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
@@ -273,9 +274,9 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
       </section>
-      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="renderCxc()" style="max-width:240px"></select><select id="cxcMonth" onchange="renderCxc()" style="max-width:220px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
-      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="renderReports()" style="max-width:240px"></select><select id="repMonth" onchange="renderReports()" style="max-width:220px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select><select id="cxcMonth" onchange="renderCxc()" style="max-width:220px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
+      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div class="card form-card"><div class="flex"><select id="wasteBusiness" onchange="onWasteBusinessChange()" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select><select id="repMonth" onchange="renderReports()" style="max-width:220px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
     </div>
@@ -319,22 +320,28 @@ const SUPABASE_URL = "https://izamyccydfubmmqseamu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_M9bGWrlybmKP0jGszU6obQ_nF_r0Fl_";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let recordsCache = [];
-const getRecords = () => recordsCache;
-function setRecords(v){
-  recordsCache = v;
-  pushRecordsToCloud();
+let recordsByBusiness = {};
+const recordsLoaded = new Set();
+const getRecords = () => Object.values(recordsByBusiness).flat();
+async function ensureBusinessRecordsLoaded(business){
+  if(!business || recordsLoaded.has(business))return;
+  const { data, error } = await sb.from("business_records").select("data").eq("business", business).maybeSingle();
+  if (error) { console.error("Error al cargar registros de "+business+":", error); recordsByBusiness[business]=[]; recordsLoaded.add(business); return; }
+  recordsByBusiness[business] = (data && Array.isArray(data.data)) ? data.data : [];
+  recordsLoaded.add(business);
 }
-async function loadRecordsFromCloud(){
-  const { data, error } = await sb.from("inventarios_data").select("data").eq("id", 1).maybeSingle();
-  if (error) { console.error("Error al cargar datos:", error); recordsCache = []; return; }
-  recordsCache = (data && data.data) ? data.data : [];
+async function ensureAllBusinessRecordsLoaded(){
+  for(const b of visibleBusinessNames())await ensureBusinessRecordsLoaded(b)
 }
-async function pushRecordsToCloud(){
-  const { error } = await sb.from("inventarios_data").upsert({ id: 1, data: recordsCache, updated_at: new Date().toISOString() });
-  if (error) console.error("Error al guardar en la nube:", error);
+async function ensureRecordsFor(business){
+  if(business)await ensureBusinessRecordsLoaded(business);
+  else await ensureAllBusinessRecordsLoaded()
 }
-async function refreshFromCloud(){ await loadRecordsFromCloud(); await loadBusinessesFromCloud(); if(catalogsLoaded)await loadCatalogsFromCloud(); }
+async function pushBusinessRecords(business){
+  const { error } = await sb.from("business_records").upsert({ business, data: recordsByBusiness[business]||[], updated_at: new Date().toISOString() });
+  if (error) console.error("Error al guardar registros de "+business+":", error);
+}
+async function refreshFromCloud(){ await loadBusinessesFromCloud(); if(catalogsLoaded)await loadCatalogsFromCloud() }
 
 /* ==================== ACCESO POR USUARIO ==================== */
 let currentUser = { id:null, email:null, isAdmin:false, businesses:[] };
@@ -379,7 +386,6 @@ async function onLoginSuccess(user){
   document.getElementById("loginBtn").style.display="none";
   document.getElementById("loginLoading").style.display="block";
   await ensureUserProfile(user);
-  await loadRecordsFromCloud();
   await loadBusinessesFromCloud();
   document.getElementById("loginOverlay").style.display = "none";
   document.getElementById("appRoot").style.display = "grid";
@@ -432,23 +438,34 @@ function init(){
   document.getElementById("fCount").value="2026-07-23";document.getElementById("fStart").value="2026-07-20";document.getElementById("fEnd").value="2026-07-26";
   document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>openView(b.dataset.view));
   document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeGroup=b.dataset.group;activeSection=sections[activeGroup][0].id;renderTabs();renderInventory()});
-  renderTabs();renderInventory();renderDashboard();renderBusinessCatalog();renderCatalogTable();renderCxc();renderWaste();renderReports()
+  renderTabs();renderInventory();renderBusinessCatalog();renderCatalogTable();bootDashboard()
 }
 async function openView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
   if(id==="capture"||id==="products")await ensureCatalogsLoaded();
-  if(id==="dashboard")renderDashboard();if(id==="history")renderHistory();if(id==="products")renderCatalogTable();if(id==="cxc")renderCxc();if(id==="waste")renderWaste();if(id==="reports")renderReports()
+  if(id==="dashboard")await bootDashboard();
+  if(id==="history")await bootHistory();
+  if(id==="products")renderCatalogTable();
+  if(id==="cxc")await bootCxc();
+  if(id==="waste")await bootWaste();
+  if(id==="reports")await bootReports();
 }
 async function manualRefresh(){
   const btn=document.getElementById("refreshBtn");
   btn.disabled=true;btn.textContent="Actualizando...";
   try{
     await refreshFromCloud();
-    document.querySelectorAll(".view.active").forEach(v=>{
-      const id=v.id;
-      if(id==="dashboard")renderDashboard();if(id==="history")renderHistory();if(id==="products")renderCatalogTable();if(id==="cxc")renderCxc();if(id==="waste")renderWaste();if(id==="reports")renderReports();if(id==="businesses")renderBusinessCatalog()
-    })
+    recordsLoaded.clear();recordsByBusiness={};
+    const active=document.querySelector(".view.active");
+    const id=active?active.id:"dashboard";
+    if(id==="dashboard")await bootDashboard();
+    else if(id==="history")await bootHistory();
+    else if(id==="products")renderCatalogTable();
+    else if(id==="cxc")await bootCxc();
+    else if(id==="waste")await bootWaste();
+    else if(id==="reports")await bootReports();
+    else if(id==="businesses")renderBusinessCatalog()
   } finally {
     btn.disabled=false;btn.textContent="🔄 Actualizar"
   }
@@ -511,22 +528,28 @@ function validateInventory(){
   return issues
 }
 let editingRecordId=null;
-function saveInventory(status){
+async function saveInventory(status){
   const issues=validateInventory();if(issues.length){alert("No se puede guardar. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
-  const record={id:editingRecordId||Date.now(),business:fBusiness.value,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:JSON.parse(JSON.stringify(rows))};
-  let list=getRecords();
-  if(editingRecordId){list=list.map(r=>r.id===editingRecordId?record:r)} else {list.push(record)}
-  setRecords(list);
+  const business=fBusiness.value;
+  if(!business){alert("Selecciona un negocio antes de guardar.");return}
+  await ensureBusinessRecordsLoaded(business);
+  const record={id:editingRecordId||Date.now(),business,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:JSON.parse(JSON.stringify(rows))};
+  let list=recordsByBusiness[business]||[];
+  if(editingRecordId){list=list.map(r=>r.id===editingRecordId?record:r)} else {list=[...list,record]}
+  recordsByBusiness[business]=list;
+  await pushBusinessRecords(business);
   const wasEditing=!!editingRecordId;
   editingRecordId=null;
   document.getElementById("editBanner").style.display="none";
-  alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status);renderDashboard();openView("dashboard")
+  alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status);await ensureRecordsFor(document.getElementById("dashBusiness")?.value||"");renderDashboard();openView("dashboard")
 }
-function editRecord(id){
+async function editRecord(id){
+  await ensureAllBusinessRecordsLoaded();
   const r=getRecords().find(x=>x.id===id);
   if(!r)return;
   editingRecordId=id;
   fBusiness.value=r.business;fFrequency.value=r.frequency;fCount.value=r.countDate;fStart.value=r.startDate;fEnd.value=r.endDate;fSupervisor.value=r.supervisor;fStatus.value=r.workflow;fNotes.value=r.notes||"";
+  await ensureCatalogsLoaded();
   rows=JSON.parse(JSON.stringify(r.data));
   activeGroup="Cocina";activeSection=sections["Cocina"][0].id;
   const banner=document.getElementById("editBanner");
@@ -566,10 +589,24 @@ function fillGlobalPeriod(){
 function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste();renderHistory()}
 function latestForMonth(b,month){return [...getRecords()].reverse().find(r=>r.business===b&&(!month||monthOf(r)===month))}
 function latestFor(b){return latestForMonth(b,"")}
+async function bootDashboard(){
+  const el=document.getElementById("dashBusiness"),prev=el.value;
+  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames(true).map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
+  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames(true);if(names.length)el.value=names[0]}
+  el.dataset.inited="1";
+  const msg=document.getElementById("dashLoadingMsg");
+  msg.textContent=el.value?"Cargando "+el.value+"…":"Cargando todos los negocios (puede tardar más)…";
+  await ensureRecordsFor(el.value);
+  msg.textContent="";
+  renderDashboard()
+}
+function onDashBusinessChange(){bootDashboard()}
 function renderDashboard(){
   fillGlobalPeriod();
+  const chosen=document.getElementById("dashBusiness").value;
+  const names=chosen?[chosen]:visibleBusinessNames(true);
   const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};const recent=[];
-  visibleBusinessNames(true).forEach((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
+  names.forEach((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
     const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
     grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario físico</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${b}')">Ver detalle →</button></div>`
   });
@@ -587,13 +624,40 @@ async function openBusiness(b){
   await ensureCatalogsLoaded();
   fBusiness.value=b;onBusinessChangeInCapture();openView("capture")
 }
+async function filterHistory(){
+  await ensureRecordsFor(hBusiness.value);
+  renderHistory()
+}
+async function bootHistory(){
+  const el=document.getElementById("hBusiness"),prev=el.value;
+  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
+  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames();if(names.length)el.value=names[0]}
+  el.dataset.inited="1";
+  await ensureRecordsFor(el.value);
+  renderHistory()
+}
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${r.countDate}</td><td>${r.business}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${r.status}</span></td><td><button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button></td></tr>`})
   if(!body.innerHTML)body.innerHTML='<tr><td colspan="9" class="empty">No hay inventarios guardados para este filtro.</td></tr>'
 }
-function deleteRecord(id){if(confirm("¿Eliminar este inventario?")){setRecords(getRecords().filter(r=>r.id!==id));renderHistory();renderDashboard()}}
-function clearHistory(){if(confirm("¿Eliminar todo el historial local?")){setRecords([]);renderHistory();renderDashboard()}}
+async function deleteRecord(id){
+  if(!confirm("¿Eliminar este inventario?"))return;
+  await ensureAllBusinessRecordsLoaded();
+  const rec=getRecords().find(r=>r.id===id);
+  if(!rec)return;
+  recordsByBusiness[rec.business]=(recordsByBusiness[rec.business]||[]).filter(r=>r.id!==id);
+  await pushBusinessRecords(rec.business);
+  renderHistory();renderDashboard()
+}
+async function clearHistory(){
+  const b=hBusiness.value;
+  const label=b||"TODOS los negocios";
+  if(!confirm(`¿Eliminar el historial de ${label}? Esta acción no se puede deshacer.`))return;
+  const targets=b?[b]:visibleBusinessNames();
+  for(const biz of targets){recordsByBusiness[biz]=[];recordsLoaded.add(biz);await pushBusinessRecords(biz)}
+  renderHistory();renderDashboard()
+}
 function renderBusinessCatalog(){
   const list = currentUser.isAdmin ? businesses : businesses.filter(b=>currentUser.businesses.includes(b.name));
   businessCatalog.innerHTML=list.map(b=>`<div class="card business"><div class="business-head"><h4>${b.name}</h4><span class="dot ${b.active?"green":"red"}"></span></div><div class="line"><span>Áreas</span><strong>Cocina y Barra</strong></div><div class="line"><span>Estado</span><strong>${b.active?"Activo":"Inactivo"}</strong></div>${b.active?`<button class="btn" onclick="openBusiness('${b.name}')">Capturar inventario</button>`:""}${currentUser.isAdmin?`<button class="btn ${b.active?"":"green"}" onclick="toggleBusiness('${b.name}')">${b.active?"Desactivar":"Activar"}</button>`:""}</div>`).join("");
@@ -910,17 +974,34 @@ const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","
 function monthOf(r){return(r.countDate||"").slice(0,7)}
 function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1]||mm} ${y}`}
 function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
-function fillBusinessAndMonthFilter(businessId,monthId){
-  const bEl=document.getElementById(businessId),mEl=document.getElementById(monthId);
-  const prevB=bEl.value,prevM=mEl.value;
-  bEl.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prevB?"selected":""}>${esc(b)}</option>`).join("");
-  mEl.innerHTML='<option value="">Todos los meses</option>'+distinctMonths().map(m=>`<option value="${m}" ${m===prevM?"selected":""}>${esc(monthLabel(m))}</option>`).join("")
+function fillBusinessFilter(businessId,defaultFirst){
+  const el=document.getElementById(businessId),prev=el.value;
+  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames().map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
+  if(!prev&&!el.dataset.inited&&defaultFirst){const names=visibleBusinessNames();if(names.length)el.value=names[0]}
+  el.dataset.inited="1";
+  return el.value
+}
+function fillMonthFilter(monthId){
+  const el=document.getElementById(monthId),prev=el.value;
+  el.innerHTML='<option value="">Todos los meses</option>'+distinctMonths().map(m=>`<option value="${m}" ${m===prev?"selected":""}>${esc(monthLabel(m))}</option>`).join("");
+  return el.value
+}
+async function bootCxc(){
+  const business=fillBusinessFilter("cxcBusiness",true);
+  await ensureRecordsFor(business);
+  fillMonthFilter("cxcMonth");
+  renderCxc()
+}
+async function bootReports(){
+  const business=fillBusinessFilter("repBusiness",true);
+  await ensureRecordsFor(business);
+  fillMonthFilter("repMonth");
+  renderReports()
 }
 function allCxcRows(business,month){
   const out=[];getRecords().filter(rec=>userCanSee(rec.business)).filter(rec=>!business||rec.business===business).filter(rec=>!month||monthOf(rec)===month).forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
 }
 function renderCxc(){
-  fillBusinessAndMonthFilter("cxcBusiness","cxcMonth");
   const business=document.getElementById("cxcBusiness").value,month=document.getElementById("cxcMonth").value;
   const list=allCxcRows(business,month);let p=0,a=0,n=0;cxcBody.innerHTML="";
   list.forEach(r=>{if(r.decision==="Sí")a+=r.amount;else if(r.decision==="No")n+=r.amount;else p+=r.amount;cxcBody.innerHTML+=`<tr><td>${r.business}</td><td>${r.product}</td><td class="redtxt">${money(r.amount)}</td><td>${r.decision}</td><td>${r.justification||"-"}</td><td>${r.responsible||"-"}</td></tr>`});
@@ -968,11 +1049,21 @@ function categorizedStock(businessesList,month){
   });
   return{cats,lastCountDates}
 }
+async function bootWaste(){
+  const el=document.getElementById("wasteBusiness"),prev=el.value;
+  el.innerHTML='<option value="">Todos los negocios</option>'+visibleBusinessNames(true).map(b=>`<option ${b===prev?"selected":""}>${esc(b)}</option>`).join("");
+  if(!prev&&!el.dataset.inited){const names=visibleBusinessNames(true);if(names.length)el.value=names[0]}
+  el.dataset.inited="1";
+  await ensureRecordsFor(el.value);
+  renderWaste()
+}
+function onWasteBusinessChange(){bootWaste()}
 function renderWaste(){
-  wasteCards.innerHTML=visibleBusinessNames(true).map(b=>{const f=monthFlowTotals(b,globalMonth);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${f.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del mes</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line"><span>Conteos incluidos</span><strong>${f.count}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
+  const chosen=document.getElementById("wasteBusiness").value;
+  const names=chosen?[chosen]:visibleBusinessNames(true);
+  wasteCards.innerHTML=names.map(b=>{const f=monthFlowTotals(b,globalMonth);return`<div class="card business"><div class="business-head"><h4>${b}</h4><span class="dot ${f.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del mes</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line"><span>Conteos incluidos</span><strong>${f.count}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
-  fillBusinessAndMonthFilter("repBusiness","repMonth");
   const business=document.getElementById("repBusiness").value,month=document.getElementById("repMonth").value;
   const businessesList=business?[business]:visibleBusinessNames(true);
   const label=(business||"Todos los negocios")+" — "+(month?monthLabel(month):"todos los meses");
