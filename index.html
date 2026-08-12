@@ -168,7 +168,7 @@ textarea{min-height:76px;resize:vertical}
   <main class="main">
     <div class="topbar">
       <div class="period-control">▣ <select id="globalPeriod" onchange="onGlobalPeriodChange()" style="border:0;padding:0"></select></div>
-      <div class="top-actions">♧ ⇥</div>
+      <div class="top-actions"><button class="btn" id="refreshBtn" onclick="manualRefresh()" style="padding:8px 12px;font-size:13px">🔄 Actualizar</button> ♧ ⇥</div>
     </div>
 
     <div class="content">
@@ -435,8 +435,20 @@ function init(){
 async function openView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
-  if(["dashboard","history","cxc","waste","reports"].includes(id)) await refreshFromCloud();
   if(id==="dashboard")renderDashboard();if(id==="history")renderHistory();if(id==="products")renderCatalogTable();if(id==="cxc")renderCxc();if(id==="waste")renderWaste();if(id==="reports")renderReports()
+}
+async function manualRefresh(){
+  const btn=document.getElementById("refreshBtn");
+  btn.disabled=true;btn.textContent="Actualizando...";
+  try{
+    await refreshFromCloud();
+    document.querySelectorAll(".view.active").forEach(v=>{
+      const id=v.id;
+      if(id==="dashboard")renderDashboard();if(id==="history")renderHistory();if(id==="products")renderCatalogTable();if(id==="cxc")renderCxc();if(id==="waste")renderWaste();if(id==="reports")renderReports();if(id==="businesses")renderBusinessCatalog()
+    })
+  } finally {
+    btn.disabled=false;btn.textContent="🔄 Actualizar"
+  }
 }
 function renderTabs(){
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.group===activeGroup));
