@@ -250,7 +250,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="summary-grid">
           <div class="card summary"><h4>Cocina</h4><div class="line"><span>Almacén general</span><strong id="sKg">$0</strong></div><div class="line"><span>Producción</span><strong id="sKp">$0</strong></div><div class="line total"><span>Inventario cocina</span><strong id="sK">$0</strong></div><div class="line"><span>Alimento de personal</span><strong id="sKf" class="orangetxt">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sKw" class="orangetxt">$0</strong></div></div>
           <div class="card summary"><h4>Barra</h4><div class="line"><span>Almacén general</span><strong id="sBg">$0</strong></div><div class="line"><span>Producción</span><strong id="sBp">$0</strong></div><div class="line"><span>Almacén de vinos</span><strong id="sBw">$0</strong></div><div class="line total"><span>Inventario barra</span><strong id="sB">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sBmw" class="orangetxt">$0</strong></div></div>
-          <div class="card summary"><h4>Diferencias</h4><div class="line"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div><div class="line"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div><div class="line"><span>Diferencia neta</span><strong id="sNet">$0</strong></div><div class="line total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div></div>
+          <div class="card summary"><h4>Diferencias</h4><div class="line"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div><div class="line"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div><div class="line"><span>Diferencia neta</span><strong id="sNet">$0</strong></div><div class="line total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div><div id="sByCategory"></div></div>
           <div class="card summary"><h4>CxC por faltantes</h4><div class="line"><span>Aplicar a CxC</span><strong id="sCxc" class="redtxt">$0</strong></div><div class="line"><span>No aplicar</span><strong id="sNoCxc">$0</strong></div><div class="line"><span>Pendiente</span><strong id="sPending" class="orangetxt">$0</strong></div><div class="line total"><span>Faltantes evaluados</span><strong id="sEvaluated">$0</strong></div></div>
         </div>
       </section>
@@ -529,12 +529,32 @@ function edit(id,i,field,value){
 }
 function addProduct(){rows[activeSection].push({code:"",product:"",unit:"pieza",theo:0,phys:0,cost:0,reason:"",comment:"",cxc:"",justification:"",responsible:""});renderInventory()}
 function delRow(i){rows[activeSection].splice(i,1);renderInventory()}
+function categoryDiffFor(data=rows){
+  const cats=[];
+  Object.values(sections).flat().filter(s=>!s.waste).forEach(s=>{
+    let short=0,over=0;
+    (data[s.id]||[]).forEach(r=>{
+      const d=(num(r.phys)-num(r.theo))*num(r.cost);
+      if(d<0)short+=Math.abs(d);else over+=d
+    });
+    cats.push({name:s.name,short,over})
+  });
+  return cats
+}
+function categoryDiffTableHtml(data=rows){
+  const cats=categoryDiffFor(data);
+  let html='<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Faltantes</th><th style="padding:4px 2px">Sobrantes</th></tr></thead><tbody>';
+  cats.forEach(c=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(c.name)}</td><td style="padding:4px 2px" class="redtxt">${money(c.short)}</td><td style="padding:4px 2px" class="greentxt">${money(c.over)}</td></tr>`});
+  html+="</tbody></table>";
+  return html
+}
 function updateCaptureSummary(){
   const t=totalsFor();
   ["capTheo","capPhys","capShort","capOver"].forEach((id,i)=>document.getElementById(id).textContent=money([t.theo,t.phys,t.short,t.over][i]));
   document.getElementById("sKg").textContent=money(sectionInventory("kg"));document.getElementById("sKp").textContent=money(sectionInventory("kp"));document.getElementById("sK").textContent=money(sectionInventory("kg")+sectionInventory("kp"));document.getElementById("sKf").textContent=money(sectionInventory("kf"));document.getElementById("sKw").textContent=money(sectionInventory("kw"));
   document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw"));document.getElementById("sBmw").textContent=money(sectionInventory("bm"));
   document.getElementById("sShort").textContent=money(t.short);document.getElementById("sOver").textContent=money(t.over);document.getElementById("sNet").textContent=money(t.over-t.short);document.getElementById("sLoss").textContent=money(t.loss);
+  document.getElementById("sByCategory").innerHTML=categoryDiffTableHtml();
   document.getElementById("sCxc").textContent=money(t.cxc);document.getElementById("sNoCxc").textContent=money(t.noCxc);document.getElementById("sPending").textContent=money(t.pending);document.getElementById("sEvaluated").textContent=money(t.cxc+t.noCxc)
 }
 function validateInventory(){
@@ -669,8 +689,16 @@ async function bootHistory(){
 }
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
-  getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse().forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`;body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`})
-  if(!body.innerHTML)body.innerHTML='<tr><td colspan="9" class="empty">No hay inventarios guardados para este filtro.</td></tr>'
+  const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
+  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`;
+    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> ${actions}</td></tr>`;
+    body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}</td></tr>`
+  });
+  if(!list.length)body.innerHTML='<tr><td colspan="9" class="empty">No hay inventarios guardados para este filtro.</td></tr>'
+}
+function toggleDiffRow(id){
+  const row=document.getElementById(`diffrow-${id}`);
+  if(row)row.style.display=row.style.display==="none"?"table-row":"none"
 }
 async function deleteRecord(id){
   if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede eliminar inventarios.");return}
