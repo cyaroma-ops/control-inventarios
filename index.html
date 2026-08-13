@@ -112,7 +112,10 @@ textarea{min-height:76px;resize:vertical}
 .inventory-table input,.inventory-table select{padding:7px;font-size:12px;min-width:90px}
 .inventory-table .wide{min-width:180px}
 .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:14px;margin-top:18px}
-.summary{padding:16px}.summary h4{margin:0 0 12px}
+.summary{padding:16px;min-width:0;overflow-wrap:anywhere}.summary h4{margin:0 0 12px}
+#sByCategory{overflow-x:auto}
+.summary .line{min-width:0}
+.summary .line span:last-child{text-align:right;flex-shrink:0;margin-left:8px}
 .notice{padding:12px 14px;border-radius:9px;background:#fff8e7;color:#8a5a00;border:1px solid #f3dfae;font-size:13px}
 .stagebar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:16px 0}
 .stage{padding:11px 8px;border:1px solid var(--line);border-radius:9px;text-align:center;font-size:11px;background:#fff}
@@ -648,13 +651,32 @@ function productDiffTableHtml(data=rows){
   });
   return html
 }
+function categoryDiffLinesHtml(data=rows){
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    const nonWaste=list.filter(s=>!s.waste);
+    if(!nonWaste.length)return;
+    html+=`<div style="font-weight:700;margin-top:10px;font-size:12px;color:var(--muted)">${esc(group)}</div>`;
+    nonWaste.forEach(s=>{
+      let short=0,over=0;
+      (data[s.id]||[]).forEach(r=>{
+        const d=(num(r.phys)-num(r.theo))*num(r.cost);
+        if(d<0)short+=Math.abs(d);else over+=d
+      });
+      const re=new RegExp("\\s*"+group,"i");
+      const shortLabel=(s.name.replace(re,"").trim())||s.name;
+      html+=`<div class="line" style="font-size:12.5px"><span>${esc(shortLabel)}</span><span><span class="redtxt">${money(short)}</span> / <span class="greentxt">${money(over)}</span></span></div>`
+    })
+  });
+  return html
+}
 function updateCaptureSummary(){
   const t=totalsFor();
   ["capTheo","capPhys","capShort","capOver"].forEach((id,i)=>document.getElementById(id).textContent=money([t.theo,t.phys,t.short,t.over][i]));
   document.getElementById("sKg").textContent=money(sectionInventory("kg"));document.getElementById("sKp").textContent=money(sectionInventory("kp"));document.getElementById("sK").textContent=money(sectionInventory("kg")+sectionInventory("kp"));document.getElementById("sKf").textContent=money(sectionInventory("kf"));document.getElementById("sKw").textContent=money(sectionInventory("kw"));
   document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw"));document.getElementById("sBmw").textContent=money(sectionInventory("bm"));
   document.getElementById("sShort").textContent=money(t.short);document.getElementById("sOver").textContent=money(t.over);document.getElementById("sNet").textContent=money(t.over-t.short);document.getElementById("sLoss").textContent=money(t.loss);
-  document.getElementById("sByCategory").innerHTML=categoryDiffTableHtml();
+  document.getElementById("sByCategory").innerHTML=categoryDiffLinesHtml();
   document.getElementById("sCxc").textContent=money(t.cxc);document.getElementById("sNoCxc").textContent=money(t.noCxc);document.getElementById("sPending").textContent=money(t.pending);document.getElementById("sEvaluated").textContent=money(t.cxc+t.noCxc)
 }
 function validateInventory(){
