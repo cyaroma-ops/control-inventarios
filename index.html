@@ -1231,13 +1231,19 @@ function categorizedStock(businessesList,month){
   const cats=Object.values(sections).flat().filter(s=>!s.waste).map(s=>({id:s.id,name:s.name,phys:0,short:0,over:0}));
   let lastCountDates=[];
   businessesList.forEach(b=>{
-    const r=latestForMonth(b,month);if(!r)return;
-    lastCountDates.push({business:b,countDate:r.countDate});
-    cats.forEach(c=>{
-      (r.data[c.id]||[]).forEach(row=>{
-        c.phys+=num(row.phys)*num(row.cost);
-        const d=(num(row.phys)-num(row.theo))*num(row.cost);
-        if(d<0)c.short+=Math.abs(d);else c.over+=d
+    const r=latestForMonth(b,month);
+    if(r){
+      lastCountDates.push({business:b,countDate:r.countDate});
+      cats.forEach(c=>{
+        (r.data[c.id]||[]).forEach(row=>{ c.phys+=num(row.phys)*num(row.cost) })
+      })
+    }
+    recordsInMonth(b,month).forEach(rec=>{
+      cats.forEach(c=>{
+        (rec.data[c.id]||[]).forEach(row=>{
+          const d=(num(row.phys)-num(row.theo))*num(row.cost);
+          if(d<0)c.short+=Math.abs(d);else c.over+=d
+        })
       })
     })
   });
@@ -1263,7 +1269,7 @@ function renderReports(){
   const{cats,lastCountDates}=categorizedStock(businessesList,month);
   const stockTotal=cats.reduce((a,c)=>a+c.phys,0),shortTotal=cats.reduce((a,c)=>a+c.short,0),overTotal=cats.reduce((a,c)=>a+c.over,0),netTotal=shortTotal-overTotal;
   let html=`<div style="margin-bottom:14px;font-weight:700">${esc(label)}</div>`;
-  html+=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">Inventario físico, faltantes y sobrantes: del último conteo capturado en el mes, por categoría. La "Diferencia neta" (faltantes menos sobrantes) suele ser menor al faltante bruto — buena parte del faltante ya se compensa con sobrante en otro producto, casi siempre por mala clasificación o por usar un insumo distinto al de la receta.</div>`;
+  html+=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">Inventario físico: del último conteo capturado en el mes, por categoría. Faltantes y sobrantes: acumulados de todos los conteos del mes (${flow.count} conteo${flow.count===1?"":"s"}). La "Diferencia neta" (faltantes menos sobrantes) suele ser menor al faltante bruto — buena parte del faltante ya se compensa con sobrante en otro producto, casi siempre por mala clasificación o por usar un insumo distinto al de la receta.</div>`;
   html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Inventario físico</th><th style="padding:8px 6px">Faltantes</th><th style="padding:8px 6px">Sobrantes</th><th style="padding:8px 6px">Diferencia neta</th></tr></thead><tbody>`;
   cats.forEach(c=>{const net=c.short-c.over;html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 6px">${esc(c.name)}</td><td style="padding:8px 6px">${money(c.phys)}</td><td style="padding:8px 6px" class="redtxt">${money(c.short)}</td><td style="padding:8px 6px" class="greentxt">${money(c.over)}</td><td style="padding:8px 6px" class="${net<0?"greentxt":"redtxt"}">${money(net)}</td></tr>`});
   html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px">${money(stockTotal)}</td><td style="padding:8px 6px" class="redtxt">${money(shortTotal)}</td><td style="padding:8px 6px" class="greentxt">${money(overTotal)}</td><td style="padding:8px 6px" class="${netTotal<0?"greentxt":"redtxt"}">${money(netTotal)}</td></tr>`;
