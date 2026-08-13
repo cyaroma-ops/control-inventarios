@@ -26,7 +26,7 @@
 .brand-mark img{width:100%;height:100%;object-fit:contain}
 .userbox .logout{margin-left:auto;background:transparent;border:0;color:#8fa3c2;font-size:11px;text-decoration:underline}
 :root{
-  --nav:#0f172a;--nav2:#13213b;--bg:#f4f7fb;--card:#fff;--text:#172033;
+  --nav:#0d1f66;--nav2:#132b7a;--bg:#f4f7fb;--card:#fff;--text:#172033;
   --muted:#667085;--line:#e5eaf1;--blue:#185adb;--blue2:#0f4bb8;
   --green:#15965a;--red:#dc2f34;--orange:#e88719;--purple:#7657e8;
   --shadow:0 8px 24px rgba(15,23,42,.07)
@@ -37,20 +37,23 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 .app{min-height:100vh;display:grid;grid-template-columns:244px 1fr}
 .sidebar{
-  background:linear-gradient(180deg,var(--nav),#0b1427);color:#fff;position:sticky;top:0;
+  background:linear-gradient(180deg,var(--nav),#081338);color:#fff;position:sticky;top:0;
   height:100vh;padding:24px 18px;display:flex;flex-direction:column
 }
 .brand{display:flex;gap:12px;align-items:center;margin-bottom:30px}
-.brand-mark{width:42px;height:42px;border:2px solid #6957ff;border-radius:12px;display:grid;place-items:center;font-size:22px}
+.brand-mark{width:42px;height:42px;border:1px solid #e5eaf1;border-radius:12px;display:grid;place-items:center;font-size:22px;background:#fff;padding:5px}
 .brand h1{font-size:18px;line-height:1.1;margin:0}.brand small{color:#79b6ff}
 .nav{display:grid;gap:7px}.nav button{
   border:0;background:transparent;color:#dbe5f4;text-align:left;padding:12px 13px;border-radius:9px
 }
-.nav button.active,.nav button:hover{background:#18345d;color:#fff}
+.nav button.active,.nav button:hover{background:var(--nav2);color:#fff}
 .nav button span{display:inline-block;width:28px}
 .userbox{margin-top:auto;border-top:1px solid #23314c;padding-top:17px;display:flex;gap:10px;align-items:center}
-.avatar{width:36px;height:36px;border-radius:50%;background:var(--purple);display:grid;place-items:center}
+.avatar{width:36px;height:36px;min-width:36px;min-height:36px;flex-shrink:0;border-radius:50%;background:var(--purple);display:grid;place-items:center;overflow:hidden;font-size:13px;font-weight:700}
 .userbox small{display:block;color:#aab7ca}
+.userbox{min-width:0}
+.userbox>div:not(.avatar){min-width:0;flex:1;overflow:hidden}
+.userbox>div:not(.avatar)>small,.userbox>div:not(.avatar){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .main{min-width:0}
 .topbar{
   height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
@@ -153,11 +156,11 @@ textarea{min-height:76px;resize:vertical}
       <button class="active" data-view="dashboard"><span>▣</span>Dashboard</button>
       <button data-view="capture" id="navCapture"><span>▤</span>Nuevo inventario</button>
       <button data-view="history"><span>▦</span>Historial</button>
-      <button data-view="businesses"><span>▦</span>Negocios</button>
-      <button data-view="products"><span>◇</span>Productos</button>
       <button data-view="cxc"><span>▧</span>CxC por inventarios</button>
       <button data-view="waste"><span>♲</span>Mermas</button>
       <button data-view="reports"><span>▥</span>Reportes</button>
+      <button data-view="businesses"><span>▦</span>Negocios</button>
+      <button data-view="products"><span>◇</span>Productos</button>
       <button data-view="users"><span>♙</span>Usuarios</button>
       <button data-view="settings"><span>⚙</span>Configuración</button>
     </nav>
@@ -276,9 +279,9 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
       </section>
-      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select><select id="cxcMonth" onchange="renderCxc()" style="max-width:220px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
+      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div class="card form-card"><div class="flex"><select id="wasteBusiness" onchange="onWasteBusinessChange()" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select><select id="repMonth" onchange="renderReports()" style="max-width:220px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
     </div>
@@ -661,7 +664,7 @@ function fillGlobalPeriod(){
   else if(months.length)el.value=months[0];
   globalMonth=el.value
 }
-function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste();renderHistory()}
+function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste();renderHistory();renderCxc();renderReports()}
 function latestForMonth(b,month){
   const list=getRecords().filter(r=>r.business===b&&(!month||monthOf(r)===month));
   if(!list.length)return undefined;
@@ -683,10 +686,13 @@ function renderDashboard(){
   fillGlobalPeriod();
   const chosen=document.getElementById("dashBusiness").value;
   const names=chosen?[chosen]:visibleBusinessNames(true);
-  const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0};const recent=[];
-  names.forEach((b,i)=>{const r=latestForMonth(b,globalMonth),t=r?calcRecord(r):demoMetrics(i);Object.keys(g).forEach(k=>g[k]+=t[k]||0);if(r)recent.push(r);
-    const ratio=t.phys?100*t.loss/t.phys:0,cls=r?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=r?100:0;
-    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${esc(b)}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario físico</span><strong>${money(t.phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(t.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(t.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(t.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(t.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(t.loss)}</strong></div><span class="badge ${cls}">${r?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${r?"Inventario capturado":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${escJs(b)}')">Ver detalle →</button></div>`
+  const grid=document.getElementById("businessGrid");grid.innerHTML="";let g={phys:0,short:0,over:0,mermas:0,staffFood:0,loss:0};const recent=[];
+  names.forEach((b,i)=>{
+    const r=latestForMonth(b,globalMonth),f=monthFlowTotals(b,globalMonth),phys=r?calcRecord(r).phys:0;
+    g.phys+=phys;g.short+=f.short;g.over+=f.over;g.mermas+=f.mermas;g.staffFood+=f.staffFood;g.loss+=f.loss;
+    if(r)recent.push(r);
+    const ratio=phys?100*f.loss/phys:0,cls=f.count?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=f.count?100:0;
+    grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${esc(b)}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario físico</span><strong>${money(phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(f.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(f.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(f.loss)}</strong></div><span class="badge ${cls}">${f.count?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${f.count?f.count+" conteo"+(f.count===1?"":"s")+" este mes":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${escJs(b)}')">Ver detalle →</button></div>`
   });
   kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.mermas);kLoss.textContent=money(g.loss);
   const body=document.getElementById("recentBody");body.innerHTML="";
@@ -1068,37 +1074,31 @@ function fillBusinessFilter(businessId,onChange){
   el.onchange=async()=>{currentBusiness=el.value;await onChange()};
   return el.value
 }
-function fillMonthFilter(monthId){
-  const el=document.getElementById(monthId),prev=el.value;
-  el.innerHTML='<option value="">Todos los meses</option>'+distinctMonths().map(m=>`<option value="${m}" ${m===prev?"selected":""}>${esc(monthLabel(m))}</option>`).join("");
-  return el.value
-}
 async function bootCxc(){
   const business=fillBusinessFilter("cxcBusiness",bootCxc);
   await ensureRecordsFor(business);
-  fillMonthFilter("cxcMonth");
   renderCxc()
 }
 async function bootReports(){
   const business=fillBusinessFilter("repBusiness",bootReports);
   await ensureRecordsFor(business);
-  fillMonthFilter("repMonth");
   renderReports()
 }
 function allCxcRows(business,month){
   const out=[];getRecords().filter(rec=>userCanSee(rec.business)).filter(rec=>!business||rec.business===business).filter(rec=>!month||monthOf(rec)===month).forEach(rec=>Object.entries(rec.data).forEach(([id,list])=>{const meta=sectionMeta(id);if(meta.waste)return;list.forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)out.push({business:rec.business,product:r.product,amount:Math.abs(d),decision:r.cxc||"Pendiente",justification:r.justification,responsible:r.responsible})})}));return out
 }
 function renderCxc(){
-  const business=document.getElementById("cxcBusiness").value,month=document.getElementById("cxcMonth").value;
+  const business=document.getElementById("cxcBusiness").value,month=globalMonth;
   const list=allCxcRows(business,month);let p=0,a=0,n=0;cxcBody.innerHTML="";
   list.forEach(r=>{if(r.decision==="Sí")a+=r.amount;else if(r.decision==="No")n+=r.amount;else p+=r.amount;cxcBody.innerHTML+=`<tr><td>${esc(r.business)}</td><td>${esc(r.product)}</td><td class="redtxt">${money(r.amount)}</td><td>${esc(r.decision)}</td><td>${esc(r.justification||"-")}</td><td>${esc(r.responsible||"-")}</td></tr>`});
   cPending.textContent=money(p);cApplied.textContent=money(a);cRejected.textContent=money(n);if(!list.length)cxcBody.innerHTML='<tr><td colspan="6" class="empty">No hay faltantes guardados para este filtro.</td></tr>'
 }
 function recordsInMonth(b,month){return getRecords().filter(r=>r.business===b&&(!month||monthOf(r)===month))}
 function monthFlowTotals(b,month){
-  let mermas=0,staffFood=0,cxcSi=0,cxcNo=0,cxcPend=0,count=0;
-  recordsInMonth(b,month).forEach(r=>{const t=calcRecord(r);mermas+=t.mermas;staffFood+=t.staffFood;cxcSi+=t.cxc;cxcNo+=t.noCxc;cxcPend+=t.pending;count++});
-  return{mermas,staffFood,cxcSi,cxcNo,cxcPend,count}
+  let mermas=0,staffFood=0,cxcSi=0,cxcNo=0,cxcPend=0,short=0,over=0,count=0;
+  recordsInMonth(b,month).forEach(r=>{const t=calcRecord(r);mermas+=t.mermas;staffFood+=t.staffFood;cxcSi+=t.cxc;cxcNo+=t.noCxc;cxcPend+=t.pending;short+=t.short;over+=t.over;count++});
+  const loss=short+mermas+staffFood-over;
+  return{mermas,staffFood,cxcSi,cxcNo,cxcPend,short,over,loss,count}
 }
 function monthFlowByCategory(businessesList,month){
   const waste={};const cxc={};
@@ -1147,7 +1147,7 @@ function renderWaste(){
   wasteCards.innerHTML=names.map(b=>{const f=monthFlowTotals(b,globalMonth);return`<div class="card business"><div class="business-head"><h4>${esc(b)}</h4><span class="dot ${f.mermas>5000?"red":"yellow"}"></span></div><div class="line"><span>Mermas del mes</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line"><span>Conteos incluidos</span><strong>${f.count}</strong></div><div class="line"><span>Separada del inventario</span><strong>Sí</strong></div></div>`}).join("")
 }
 function renderReports(){
-  const business=document.getElementById("repBusiness").value,month=document.getElementById("repMonth").value;
+  const business=document.getElementById("repBusiness").value,month=globalMonth;
   const businessesList=business?[business]:visibleBusinessNames(true);
   const label=(business||"Todos los negocios")+" — "+(month?monthLabel(month):"todos los meses");
   let flow={mermas:0,staffFood:0,cxcSi:0,cxcNo:0,cxcPend:0,count:0};
