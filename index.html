@@ -602,19 +602,33 @@ function categoryDiffFor(data=rows){
   return cats
 }
 function categoryDiffTableHtml(data=rows){
-  const cats=categoryDiffFor(data);
-  let html='<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Faltantes</th><th style="padding:4px 2px">Sobrantes</th></tr></thead><tbody>';
-  cats.forEach(c=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(c.name)}</td><td style="padding:4px 2px" class="redtxt">${money(c.short)}</td><td style="padding:4px 2px" class="greentxt">${money(c.over)}</td></tr>`});
-  html+="</tbody></table>";
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    const nonWaste=list.filter(s=>!s.waste);
+    if(!nonWaste.length)return;
+    html+=`<div style="font-weight:700;margin-top:12px;font-size:12.5px">${esc(group)}</div>`;
+    html+='<table style="width:100%;border-collapse:collapse;margin-top:4px;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Faltantes</th><th style="padding:4px 2px">Sobrantes</th></tr></thead><tbody>';
+    nonWaste.forEach(s=>{
+      let short=0,over=0;
+      (data[s.id]||[]).forEach(r=>{
+        const d=(num(r.phys)-num(r.theo))*num(r.cost);
+        if(d<0)short+=Math.abs(d);else over+=d
+      });
+      html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(s.name)}</td><td style="padding:4px 2px" class="redtxt">${money(short)}</td><td style="padding:4px 2px" class="greentxt">${money(over)}</td></tr>`
+    });
+    html+="</tbody></table>"
+  });
   return html
 }
 function productDiffRows(data=rows){
   const out=[];
-  Object.values(sections).flat().filter(s=>!s.waste).forEach(s=>{
-    (data[s.id]||[]).forEach(r=>{
-      const diff=num(r.phys)-num(r.theo);
-      if(diff===0)return;
-      out.push({dept:s.name,code:r.code,product:r.product,unit:r.unit,theo:num(r.theo),phys:num(r.phys),diff,amount:diff*num(r.cost)})
+  Object.entries(sections).forEach(([group,list])=>{
+    list.filter(s=>!s.waste).forEach(s=>{
+      (data[s.id]||[]).forEach(r=>{
+        const diff=num(r.phys)-num(r.theo);
+        if(diff===0)return;
+        out.push({group,dept:s.name,code:r.code,product:r.product,unit:r.unit,theo:num(r.theo),phys:num(r.phys),diff,amount:diff*num(r.cost)})
+      })
     })
   });
   out.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
@@ -623,9 +637,15 @@ function productDiffRows(data=rows){
 function productDiffTableHtml(data=rows){
   const list=productDiffRows(data);
   if(!list.length)return '<div class="empty" style="margin-top:10px">No hay diferencias en productos en este inventario.</div>';
-  let html='<div style="font-weight:700;margin-top:14px;margin-bottom:4px">Productos con diferencia</div><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Código</th><th style="padding:4px 2px">Producto</th><th style="padding:4px 2px">Unidad</th><th style="padding:4px 2px">Teórico</th><th style="padding:4px 2px">Físico</th><th style="padding:4px 2px">Diferencia</th><th style="padding:4px 2px">Importe</th></tr></thead><tbody>';
-  list.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.dept)}</td><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${r.theo}</td><td style="padding:4px 2px">${r.phys}</td><td style="padding:4px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:4px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
-  html+="</tbody></table>";
+  let html='<div style="font-weight:700;margin-top:14px;margin-bottom:4px">Productos con diferencia</div>';
+  Object.keys(sections).forEach(group=>{
+    const groupList=list.filter(r=>r.group===group);
+    if(!groupList.length)return;
+    html+=`<div style="font-weight:700;margin-top:8px;font-size:12.5px">${esc(group)}</div>`;
+    html+='<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Código</th><th style="padding:4px 2px">Producto</th><th style="padding:4px 2px">Unidad</th><th style="padding:4px 2px">Teórico</th><th style="padding:4px 2px">Físico</th><th style="padding:4px 2px">Diferencia</th><th style="padding:4px 2px">Importe</th></tr></thead><tbody>';
+    groupList.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.dept)}</td><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${r.theo}</td><td style="padding:4px 2px">${r.phys}</td><td style="padding:4px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:4px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
+    html+="</tbody></table>"
+  });
   return html
 }
 function updateCaptureSummary(){
