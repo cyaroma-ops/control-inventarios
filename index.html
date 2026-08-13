@@ -1207,14 +1207,15 @@ const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","
 function monthOf(r){return(r.countDate||"").slice(0,7)}
 function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1]||mm} ${y}`}
 function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
-let currentBusiness=null;
+let currentBusiness=(function(){try{const v=localStorage.getItem("cyaroma_currentBusiness");return v===null?null:v}catch(e){return null}})();
+function saveCurrentBusiness(v){currentBusiness=v;try{localStorage.setItem("cyaroma_currentBusiness",v||"")}catch(e){}}
 function fillBusinessFilter(businessId,onChange){
   const el=document.getElementById(businessId);
   const names=visibleBusinessNames();
   el.innerHTML='<option value="">Todos los negocios</option>'+names.map(b=>`<option>${esc(b)}</option>`).join("");
-  if(currentBusiness===null&&names.length)currentBusiness=names[0];
+  if(currentBusiness===null&&names.length){saveCurrentBusiness(names[0])}
   el.value=(currentBusiness&&names.includes(currentBusiness))?currentBusiness:"";
-  el.onchange=async()=>{currentBusiness=el.value;await onChange()};
+  el.onchange=async()=>{saveCurrentBusiness(el.value);await onChange()};
   return el.value
 }
 async function bootCxc(){
