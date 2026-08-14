@@ -305,7 +305,7 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="tomafisica" class="view">
         <div id="tomaListView">
-          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn primary" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
           <div class="card form-card"><div class="flex"><select id="tomaBusiness" onchange="bootTomaList()" style="max-width:260px"></select></div></div>
           <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
         </div>
@@ -315,8 +315,10 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
               <div><label>Negocio</label><select id="tomaCapBusiness" disabled></select></div>
               <div><label>Fecha de la toma</label><input type="date" id="tomaCapDate"></div>
-              <div><label>Archivo del catálogo de esta toma (PDF, Excel o CSV)</label><input type="file" id="tomaCapFile" accept=".pdf,.xlsx,.xls,.csv"></div>
-              <button class="btn primary" onclick="uploadTomaCatalog()">Cargar catálogo de esta toma</button>
+              <div id="tomaCapUploadBox" class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
+                <div><label>Archivo del catálogo de esta toma (PDF, Excel o CSV)</label><input type="file" id="tomaCapFile" accept=".pdf,.xlsx,.xls,.csv"></div>
+                <button class="btn primary" onclick="uploadTomaCatalog()">Cargar catálogo de esta toma</button>
+              </div>
             </div>
             <div id="tomaCapMsg" style="margin-top:10px;font-size:13px;font-weight:600"></div>
           </div>
@@ -414,15 +416,16 @@ async function ensureUserProfile(user){
   const { data, error } = await sb.from("user_access").select("*").eq("id", user.id).maybeSingle();
   if (error){ console.error("Error al leer perfil de acceso:", error); return; }
   if (!data){
-    const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false });
+    const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false, can_capture_tomas:false });
     if (insErr) console.error("Error al crear perfil de acceso:", insErr);
-    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, name:"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, name:"" };
   } else {
-    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, name:data.display_name||"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, name:data.display_name||"" };
   }
 }
 function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.includes(name); }
-function canEditTomaFisica(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
+function canManageTomas(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
+function canCaptureTomas(){ return canManageTomas() || currentUser.canCaptureTomas; }
 async function loadAllUserAccess(){
   const { data, error } = await sb.from("user_access").select("*").order("email");
   if (error){ console.error("Error al leer usuarios:", error); return []; }
@@ -1051,6 +1054,7 @@ function parsePhysicalCountCatalogPdf(text){
 }
 async function bootTomaList(){
   const val=fillBusinessFilter("tomaBusiness",bootTomaList);
+  document.getElementById("btnNewToma").style.display=canManageTomas()?"":"none";
   await ensureTomasLoadedFor(val);
   renderTomaList()
 }
@@ -1058,10 +1062,11 @@ function renderTomaList(){
   const b=document.getElementById("tomaBusiness").value,body=document.getElementById("tomaListBody");
   if(!b){body.innerHTML='<tr><td colspan="7" class="empty">Selecciona un negocio.</td></tr>';return}
   const list=(tomasByBusiness[b]||[]).slice().sort((a,c)=>String(c.countDate).localeCompare(String(a.countDate)));
-  if(!list.length){body.innerHTML='<tr><td colspan="7" class="empty">Este negocio todavía no tiene tomas físicas guardadas.</td></tr>';return}
+  if(!list.length){body.innerHTML=`<tr><td colspan="7" class="empty">${canManageTomas()?"Este negocio todavía no tiene tomas físicas guardadas.":"Todavía no hay ninguna toma física preparada por tu supervisor para este negocio."}</td></tr>`;return}
   body.innerHTML=list.map(t=>{
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
-    const actionBtn=!canEditTomaFisica()?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Editar</button> <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`;
+    const canCap=canCaptureTomas(),canMan=canManageTomas();
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?"Editar":"Capturar"}</button>${canMan?` <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`:""}`;
     return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${t.status==="Terminado"?"green":"yellow"}">${esc(t.status)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}</td><td>${actionBtn}</td></tr>`
   }).join("")
 }
@@ -1069,13 +1074,14 @@ let currentToma=null;
 function startNewToma(){
   const b=document.getElementById("tomaBusiness").value;
   if(!b){alert("Selecciona un negocio primero.");return}
-  if(!canEditTomaFisica()){alert("Tu cuenta es de solo lectura y no puede crear tomas.");return}
+  if(!canManageTomas()){alert("No tienes permiso para crear tomas físicas. Pídele a tu supervisor que la prepare y cárguela primero.");return}
   currentToma={id:Date.now(),business:b,countDate:new Date().toISOString().slice(0,10),catalog:[],quantities:{},status:"Borrador"};
   document.getElementById("tomaCaptureTitle").textContent="Nueva toma física";
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(b)}</option>`;
   document.getElementById("tomaCapDate").value=currentToma.countDate;
   document.getElementById("tomaCapFile").value="";
   document.getElementById("tomaCapMsg").textContent="";
+  document.getElementById("tomaCapUploadBox").style.display="block";
   document.getElementById("tomaCapActions").style.display="none";
   document.getElementById("tomaCapGroups").innerHTML="";
   document.getElementById("tomaListView").style.display="none";
@@ -1085,12 +1091,14 @@ function openToma(business,id){
   const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
   if(!t)return;
   currentToma=JSON.parse(JSON.stringify(t));
-  document.getElementById("tomaCaptureTitle").textContent=(!canEditTomaFisica()?"Viendo toma física — ":"Editando toma física — ")+business+" ("+t.countDate+")";
+  const canCap=canCaptureTomas(),canMan=canManageTomas();
+  document.getElementById("tomaCaptureTitle").textContent=(!canCap?"Viendo toma física — ":canMan?"Editando toma física — ":"Capturando cantidades — ")+business+" ("+t.countDate+")";
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(business)}</option>`;
   document.getElementById("tomaCapDate").value=t.countDate;
   document.getElementById("tomaCapFile").value="";
   document.getElementById("tomaCapMsg").textContent="";
-  document.getElementById("tomaCapActions").style.display=!canEditTomaFisica()?"none":"flex";
+  document.getElementById("tomaCapUploadBox").style.display=canMan?"block":"none";
+  document.getElementById("tomaCapActions").style.display=canCap?"flex":"none";
   renderTomaGroups();
   document.getElementById("tomaListView").style.display="none";
   document.getElementById("tomaCaptureView").style.display="block"
@@ -1104,7 +1112,7 @@ function closeTomaCapture(){
 async function uploadTomaCatalog(){
   const fileInput=document.getElementById("tomaCapFile"),msg=document.getElementById("tomaCapMsg");
   if(!currentToma)return;
-  if(!canEditTomaFisica()){msg.style.color="#dc2f34";msg.textContent="Tu cuenta es de solo lectura.";return}
+  if(!canManageTomas()){msg.style.color="#dc2f34";msg.textContent="No tienes permiso para cargar o reemplazar el catálogo de esta toma.";return}
   if(!fileInput.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo.";return}
   const file=fileInput.files[0],name=file.name.toLowerCase();
   try{
@@ -1136,7 +1144,7 @@ function renderTomaGroups(){
   const box=document.getElementById("tomaCapGroups");
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
   const groups=[...new Set(currentToma.catalog.map(it=>it.group))];
-  const readOnly=!canEditTomaFisica();
+  const readOnly=!canCaptureTomas();
   box.innerHTML=groups.map(g=>{
     const items=currentToma.catalog.filter(it=>it.group===g);
     return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Enteros</th><th>Fracción / copas</th></tr></thead><tbody>${items.map(it=>{
@@ -1170,7 +1178,7 @@ function updateTomaCount(){
 }
 async function saveToma(status){
   if(!currentToma)return;
-  if(!canEditTomaFisica()){alert("Tu cuenta es de solo lectura y no puede guardar.");return}
+  if(!canCaptureTomas()){alert("Tu cuenta no tiene permiso para capturar en Toma física.");return}
   if(!currentToma.catalog.length){alert("Carga primero el catálogo de esta toma.");return}
   currentToma.countDate=document.getElementById("tomaCapDate").value||currentToma.countDate;
   currentToma.status=status;
@@ -1186,7 +1194,7 @@ async function saveToma(status){
   closeTomaCapture()
 }
 async function deleteToma(business,id){
-  if(!canEditTomaFisica())return;
+  if(!canManageTomas())return;
   if(!confirm("¿Eliminar esta toma física? Esta acción no se puede deshacer."))return;
   await ensureTomasLoadedFor(business);
   tomasByBusiness[business]=(tomasByBusiness[business]||[]).filter(t=>String(t.id)!==String(id));
@@ -1208,11 +1216,12 @@ async function renderUsersPanel(){
         <div class="flex" style="align-items:center;gap:10px"><input id="name-${u.id}" value="${esc(u.display_name||'')}" placeholder="Nombre (opcional)" style="max-width:220px"><span style="color:var(--muted);font-size:13px">${esc(u.email)}</span>${u.id===currentUser.id?' <small>(tú)</small>':''}</div>
         <div class="flex" style="gap:16px;flex-wrap:wrap">
           <label style="font-weight:600;font-size:13px"><input type="checkbox" class="viewonly-${u.id}" id="viewonly-${u.id}" ${u.view_only?"checked":""} style="width:auto;margin-right:6px">Solo lectura</label>
-          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomaedit-${u.id}" ${u.can_edit_tomas?"checked":""} style="width:auto;margin-right:6px">Puede editar Tomas físicas</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomaedit-${u.id}" ${u.can_edit_tomas?"checked":""} style="width:auto;margin-right:6px">Administrar Tomas físicas</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomacapture-${u.id}" ${u.can_capture_tomas?"checked":""} style="width:auto;margin-right:6px">Capturar cantidades en Tomas físicas</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="admin-${u.id}" ${u.is_admin?"checked":""} style="width:auto;margin-right:6px">Administrador</label>
         </div>
       </div>
-      <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. "Puede editar Tomas físicas" es una excepción a lo anterior: aunque la cuenta sea de solo lectura en todo lo demás, sí podrá capturar y guardar en el apartado de Toma física.</div>
+      <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.).</div>
       <div class="flex" style="flex-wrap:wrap;gap:10px;margin:12px 0">
         ${businesses.map(b=>`<label style="font-size:13px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px"><input type="checkbox" class="biz-${u.id}" value="${esc(b.name)}" ${u.businesses&&u.businesses.includes(b.name)?"checked":""} style="width:auto;margin-right:6px">${esc(b.name)}</label>`).join("")}
       </div>
@@ -1223,12 +1232,13 @@ async function saveUserAccess(userId){
   const isAdmin = document.getElementById(`admin-${userId}`).checked;
   const viewOnly = document.getElementById(`viewonly-${userId}`).checked;
   const canEditTomas = document.getElementById(`tomaedit-${userId}`).checked;
+  const canCaptureTomas = document.getElementById(`tomacapture-${userId}`).checked;
   const name = document.getElementById(`name-${userId}`).value.trim();
   const checked = Array.from(document.querySelectorAll(`.biz-${userId}:checked`)).map(el=>el.value);
-  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
+  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
   if (error){ alert("No se pudo guardar el acceso."); console.error(error); return; }
   if (userId === currentUser.id){
-    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.businesses = checked; currentUser.name = name;
+    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.businesses = checked; currentUser.name = name;
     applyViewOnlyUI();
     const label=document.getElementById("userLabel"),avatar=document.getElementById("userAvatar");
     const shownName=name||currentUser.email.split("@")[0];
