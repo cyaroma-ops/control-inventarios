@@ -95,6 +95,22 @@ button{cursor:pointer}
 .progress span{display:block;height:100%;background:var(--blue)}
 .business .btn{width:100%;margin-top:12px}
 .table-card{margin-top:20px;overflow:hidden}
+.toma-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.toma-row:last-child{border-bottom:none}
+.toma-row-filled{background:#f4faf6}
+.toma-row-info{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px}
+.toma-row-info strong{font-size:14.5px}
+.toma-row-info span{font-size:12.5px;color:var(--muted)}
+.toma-row-inputs{display:flex;gap:10px}
+.toma-row-inputs div{display:flex;flex-direction:column;gap:3px}
+.toma-row-inputs label{font-size:11px;color:var(--muted)}
+.toma-input{width:104px;height:44px;font-size:16px;text-align:center;border-radius:9px}
+@media(max-width:600px){
+  .toma-row{flex-direction:column;align-items:stretch}
+  .toma-row-inputs{justify-content:stretch}
+  .toma-row-inputs div{flex:1}
+  .toma-input{width:100%}
+}
 .table-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:16px;border-bottom:1px solid var(--line)}
 .table-wrap{overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:1050px}
@@ -340,7 +356,7 @@ textarea{min-height:76px;resize:vertical}
             </div>
             <div id="tomaCapMsg" style="margin-top:10px;font-size:13px;font-weight:600"></div>
           </div>
-          <div id="tomaCapActions" class="card form-card" style="display:none"><div class="flex"><button class="btn" onclick="saveToma('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveToma('Terminado')">Terminar toma</button><span id="tomaCapCount" style="font-size:13px;color:var(--muted);align-self:center"></span></div></div>
+          <div id="tomaCapActions" class="card form-card" style="display:none;position:sticky;top:8px;z-index:4"><div class="flex" style="flex-wrap:wrap"><button class="btn" onclick="saveToma('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveToma('Terminado')">Terminar toma</button><span id="tomaCapCount" style="font-size:13px;font-weight:600;color:var(--muted);align-self:center"></span></div></div>
           <div id="tomaCapGroups"></div>
         </div>
       </section>
@@ -1199,14 +1215,45 @@ function renderTomaGroups(){
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
   const groups=[...new Set(currentToma.catalog.map(it=>it.group))];
   const readOnly=!canCaptureTomas();
-  box.innerHTML=groups.map(g=>{
+  let html=`<div class="card form-card" style="position:sticky;top:76px;z-index:3;margin-top:14px">
+    <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" oninput="filterTomaItems(this.value)" style="font-size:16px">
+    <div class="flex" style="flex-wrap:wrap;gap:8px;margin-top:10px">
+      ${groups.map(g=>`<button type="button" class="btn" onclick="jumpToTomaGroup('${escJs(g)}')">${esc(g)}</button>`).join("")}
+    </div>
+  </div>`;
+  html+=groups.map(g=>{
     const items=currentToma.catalog.filter(it=>it.group===g);
-    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Enteros</th><th>Fracción / copas</th></tr></thead><tbody>${items.map(it=>{
-      const q=currentToma.quantities[it.code]||{};
-      return`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)" style="max-width:100px"></td><td><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" style="max-width:100px" placeholder="ej. .700 o 110ML"></td></tr>`
-    }).join("")}</tbody></table></div></div>`
+    return`<div class="card table-card toma-group-card" id="tomagrp-${esc(g).replace(/\s+/g,"_")}" style="margin-top:14px">
+      <h3 style="margin:0 0 12px">${esc(g)} <small style="color:var(--muted);font-weight:400">(${items.length})</small></h3>
+      ${items.map(it=>{
+        const q=currentToma.quantities[it.code]||{};
+        const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
+        return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
+          <div class="toma-row-info"><strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span></div>
+          <div class="toma-row-inputs">
+            <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
+            <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
+          </div>
+        </div>`
+      }).join("")}
+    </div>`
   }).join("");
+  box.innerHTML=html;
   updateTomaCount()
+}
+function filterTomaItems(q){
+  const term=q.trim().toLowerCase();
+  document.querySelectorAll(".toma-row").forEach(row=>{
+    row.style.display=(!term||row.dataset.search.includes(term))?"":"none"
+  });
+  document.querySelectorAll(".toma-group-card").forEach(card=>{
+    const anyVisible=[...card.querySelectorAll(".toma-row")].some(r=>r.style.display!=="none");
+    card.style.display=anyVisible?"":"none"
+  })
+}
+function jumpToTomaGroup(g){
+  const el=document.getElementById(`tomagrp-${g.replace(/\s+/g,"_")}`);
+  if(el)el.scrollIntoView({behavior:"smooth",block:"start"})
 }
 function tomaInputKeydown(event,el){
   if(event.key!=="Enter")return;
@@ -1223,6 +1270,8 @@ function setTomaQty(code,field,value){
   else{q[field]=v}
   if(q.enteros===undefined&&q.fraccion===undefined){delete currentToma.quantities[code]}
   else{currentToma.quantities[code]=q}
+  const row=document.querySelector(`[data-code="${CSS.escape(code)}"]`);
+  if(row)row.classList.toggle("toma-row-filled",q.enteros!==undefined||q.fraccion!==undefined);
   updateTomaCount()
 }
 function updateTomaCount(){
