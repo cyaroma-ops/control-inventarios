@@ -162,6 +162,7 @@ textarea{min-height:76px;resize:vertical}
     <button class="btn primary" id="loginBtn" onclick="doLogin()">Entrar</button>
     <div style="margin-top:10px"><a href="#" onclick="toggleForgotPassword();return false" style="font-size:12.5px;color:#70809a;text-decoration:underline">¿Olvidaste tu contraseña?</a></div>
     <div class="hint">Acceso restringido al personal autorizado de Roma & Associates</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:16px">© <span id="footerYearLogin"></span> CYAroma / Roma & Associates. Todos los derechos reservados.</div>
     <div id="loginLoading" style="display:none;margin-top:14px;font-size:13px;color:#70809a">Cargando tus datos…</div>
   </div>
   <div class="login-card" id="forgotCard" style="display:none">
@@ -207,6 +208,7 @@ textarea{min-height:76px;resize:vertical}
       <div id="userLabel">Cargando...<small>&nbsp;</small></div>
       <button class="logout" onclick="doLogout()">Salir</button>
     </div>
+    <div style="text-align:center;font-size:11px;color:#5b6b8c;margin-top:12px;padding-top:12px;border-top:1px solid #23314c">© <span id="footerYear"></span> CYAroma / Roma & Associates<br>Todos los derechos reservados.</div>
   </aside>
 
   <main class="main">
@@ -529,6 +531,10 @@ window.addEventListener("beforeprint",()=>{
 window.addEventListener("afterprint",()=>{
   if(titleBeforePrint)document.title=titleBeforePrint
 });
+(function(){
+  const y=new Date().getFullYear();
+  ["footerYear","footerYearLogin"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=y})
+})();
 checkSession();
 
 function seedRows(){
