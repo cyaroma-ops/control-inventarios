@@ -1148,6 +1148,7 @@ function startNewToma(){
   if(!b){alert("Selecciona un negocio primero.");return}
   if(!canManageTomas()){alert("No tienes permiso para crear tomas físicas. Pídele a tu supervisor que la prepare y cárguela primero.");return}
   currentToma={id:Date.now(),business:b,countDate:new Date().toISOString().slice(0,10),department:"",catalog:[],quantities:{},status:"Borrador"};
+  tomaDirtyCodes=new Set();
   document.getElementById("tomaCaptureTitle").textContent="Nueva toma física";
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(b)}</option>`;
   document.getElementById("tomaCapDate").value=currentToma.countDate;
@@ -1165,6 +1166,7 @@ function openToma(business,id){
   if(!t)return;
   if(!canManageTomas()&&!userCanAccessTomaDepartment(t.department)){alert("Esta toma es del departamento \""+(t.department||"sin especificar")+"\" y tu cuenta no tiene acceso a ese departamento. Pídele a tu supervisor que te lo asigne en Usuarios.");return}
   currentToma=JSON.parse(JSON.stringify(t));
+  tomaDirtyCodes=new Set();
   const canCap=canCaptureTomas(),canMan=canManageTomas();
   document.getElementById("tomaCaptureTitle").textContent=(!canCap?"Viendo toma física — ":canMan?"Editando toma física — ":"Capturando cantidades — ")+business+" ("+t.countDate+")"+(t.department?" — "+t.department:"");
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(business)}</option>`;
@@ -1276,6 +1278,7 @@ function tomaInputKeydown(event,el){
 }
 function setTomaQty(code,field,value){
   if(!currentToma)return;
+  tomaDirtyCodes.add(code);
   const q=currentToma.quantities[code]||{};
   const v=value.trim();
   if(v===""){delete q[field]}
@@ -1291,6 +1294,7 @@ function updateTomaCount(){
   if(!el||!currentToma)return;
   el.textContent=`${Object.keys(currentToma.quantities).length} de ${currentToma.catalog.length} productos capturados`
 }
+let tomaDirtyCodes=new Set();
 async function saveToma(status){
   if(!currentToma)return;
   if(!canCaptureTomas()){alert("Tu cuenta no tiene permiso para capturar en Toma física.");return}
@@ -1300,12 +1304,26 @@ async function saveToma(status){
   currentToma.status=status;
   currentToma.updatedAt=new Date().toISOString();
   const business=currentToma.business;
-  await ensureTomasLoadedFor(business);
-  let list=tomasByBusiness[business]||[];
-  const idx=list.findIndex(t=>String(t.id)===String(currentToma.id));
-  if(idx>=0)list[idx]=currentToma;else list=[...list,currentToma];
-  tomasByBusiness[business]=list;
+  const{data,error}=await sb.from("physical_takes").select("data").eq("business",business).maybeSingle();
+  const freshList=(!error&&data&&Array.isArray(data.data))?data.data:(tomasByBusiness[business]||[]);
+  const idx=freshList.findIndex(t=>String(t.id)===String(currentToma.id));
+  if(idx>=0){
+    const serverToma=freshList[idx];
+    const mergedQuantities={...(serverToma.quantities||{})};
+    tomaDirtyCodes.forEach(code=>{
+      if(currentToma.quantities[code]!==undefined)mergedQuantities[code]=currentToma.quantities[code];
+      else delete mergedQuantities[code]
+    });
+    currentToma.quantities=mergedQuantities;
+    if(!canManageTomas())currentToma.catalog=serverToma.catalog;
+    freshList[idx]=currentToma
+  } else {
+    freshList.push(currentToma)
+  }
+  tomasByBusiness[business]=freshList;
+  tomasLoaded.add(business);
   await pushTomasToCloud(business);
+  tomaDirtyCodes=new Set();
   alert("Toma guardada como "+status+".");
   closeTomaCapture()
 }
