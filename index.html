@@ -674,10 +674,9 @@ function productDiffRows(data=rows){
   out.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
   return out
 }
-function productDiffTableHtml(data=rows){
-  const list=productDiffRows(data);
-  if(!list.length)return '<div class="empty" style="margin-top:10px">No hay diferencias en productos en este inventario.</div>';
-  let html='<div style="font-weight:700;margin-top:14px;margin-bottom:4px">Productos con diferencia</div>';
+function productDiffSubTableHtml(list){
+  if(!list.length)return '<div class="empty" style="margin-top:6px">No hay productos en esta categoría.</div>';
+  let html="";
   Object.keys(sections).forEach(group=>{
     const groupList=list.filter(r=>r.group===group);
     if(!groupList.length)return;
@@ -687,6 +686,22 @@ function productDiffTableHtml(data=rows){
     html+="</tbody></table>"
   });
   return html
+}
+function productDiffTableHtml(data=rows,recordId=0){
+  const list=productDiffRows(data);
+  if(!list.length)return '<div class="empty" style="margin-top:10px">No hay diferencias en productos en este inventario.</div>';
+  const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
+  let html='<div style="font-weight:700;margin-top:14px;margin-bottom:8px">Productos con diferencia</div>';
+  html+=`<div class="flex" style="gap:8px;margin-bottom:10px"><button type="button" class="btn primary" id="tabF-${recordId}" onclick="showDiffTab(${recordId},'f')">Faltantes (${faltantes.length})</button><button type="button" class="btn" id="tabS-${recordId}" onclick="showDiffTab(${recordId},'s')">Sobrantes (${sobrantes.length})</button></div>`;
+  html+=`<div id="tabFbox-${recordId}">${productDiffSubTableHtml(faltantes)}</div>`;
+  html+=`<div id="tabSbox-${recordId}" style="display:none">${productDiffSubTableHtml(sobrantes)}</div>`;
+  return html
+}
+function showDiffTab(recordId,which){
+  const fbox=document.getElementById(`tabFbox-${recordId}`),sbox=document.getElementById(`tabSbox-${recordId}`);
+  const tf=document.getElementById(`tabF-${recordId}`),ts=document.getElementById(`tabS-${recordId}`);
+  if(which==="f"){fbox.style.display="";sbox.style.display="none";tf.classList.add("primary");ts.classList.remove("primary")}
+  else{fbox.style.display="none";sbox.style.display="";ts.classList.add("primary");tf.classList.remove("primary")}
 }
 function categoryDiffLinesHtml(data=rows){
   let html="";
@@ -854,7 +869,7 @@ function renderHistory(){
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
   list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`;
     body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
-    body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data)}</td></tr>`;
+    body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
   });
   if(!list.length)body.innerHTML='<tr><td colspan="9" class="empty">No hay inventarios guardados para este filtro.</td></tr>'
