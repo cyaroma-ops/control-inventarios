@@ -674,18 +674,31 @@ function productDiffRows(data=rows){
   out.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
   return out
 }
-function productDiffSubTableHtml(list){
+function productDiffSubTableHtml(list,uid){
   if(!list.length)return '<div class="empty" style="margin-top:6px">No hay productos en esta categoría.</div>';
-  let html="";
-  Object.keys(sections).forEach(group=>{
-    const groupList=list.filter(r=>r.group===group);
-    if(!groupList.length)return;
-    html+=`<div style="font-weight:700;margin-top:8px;font-size:12.5px">${esc(group)}</div>`;
+  const groups=Object.keys(sections).filter(g=>list.some(r=>r.group===g));
+  if(!groups.length)return '<div class="empty" style="margin-top:6px">No hay productos en esta categoría.</div>';
+  let html=`<div class="flex" style="gap:6px;margin-top:6px;margin-bottom:8px">`;
+  groups.forEach((g,i)=>{
+    const count=list.filter(r=>r.group===g).length;
+    html+=`<button type="button" class="btn ${i===0?"primary":""}" id="grp-${uid}-${g}" onclick="showDiffGroup('${uid}','${g}')">${esc(g)} (${count})</button>`
+  });
+  html+="</div>";
+  groups.forEach((g,i)=>{
+    const groupList=list.filter(r=>r.group===g);
+    html+=`<div id="grpbox-${uid}-${g}" style="${i===0?"":"display:none"}">`;
     html+='<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Código</th><th style="padding:4px 2px">Producto</th><th style="padding:4px 2px">Unidad</th><th style="padding:4px 2px">Costo</th><th style="padding:4px 2px">Teórico</th><th style="padding:4px 2px">Físico</th><th style="padding:4px 2px">Diferencia</th><th style="padding:4px 2px">Importe</th></tr></thead><tbody>';
     groupList.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.dept)}</td><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${money(r.cost)}</td><td style="padding:4px 2px">${r.theo}</td><td style="padding:4px 2px">${r.phys}</td><td style="padding:4px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:4px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
-    html+="</tbody></table>"
+    html+="</tbody></table></div>"
   });
   return html
+}
+function showDiffGroup(uid,group){
+  document.querySelectorAll(`[id^="grpbox-${uid}-"]`).forEach(el=>el.style.display="none");
+  document.querySelectorAll(`[id^="grp-${uid}-"]`).forEach(el=>el.classList.remove("primary"));
+  const box=document.getElementById(`grpbox-${uid}-${group}`),btn=document.getElementById(`grp-${uid}-${group}`);
+  if(box)box.style.display="";
+  if(btn)btn.classList.add("primary")
 }
 function productDiffTableHtml(data=rows,recordId=0){
   const list=productDiffRows(data);
@@ -693,8 +706,8 @@ function productDiffTableHtml(data=rows,recordId=0){
   const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
   let html='<div style="font-weight:700;margin-top:14px;margin-bottom:8px">Productos con diferencia</div>';
   html+=`<div class="flex" style="gap:8px;margin-bottom:10px"><button type="button" class="btn primary" id="tabF-${recordId}" onclick="showDiffTab(${recordId},'f')">Faltantes (${faltantes.length})</button><button type="button" class="btn" id="tabS-${recordId}" onclick="showDiffTab(${recordId},'s')">Sobrantes (${sobrantes.length})</button></div>`;
-  html+=`<div id="tabFbox-${recordId}">${productDiffSubTableHtml(faltantes)}</div>`;
-  html+=`<div id="tabSbox-${recordId}" style="display:none">${productDiffSubTableHtml(sobrantes)}</div>`;
+  html+=`<div id="tabFbox-${recordId}">${productDiffSubTableHtml(faltantes,recordId+"-f")}</div>`;
+  html+=`<div id="tabSbox-${recordId}" style="display:none">${productDiffSubTableHtml(sobrantes,recordId+"-s")}</div>`;
   return html
 }
 function showDiffTab(recordId,which){
