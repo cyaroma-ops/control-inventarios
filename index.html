@@ -347,7 +347,18 @@ textarea{min-height:76px;resize:vertical}
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="wasteBusiness" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
       <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
-      <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
+      <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div>
+        <div class="card form-card">
+          <h3 style="margin-top:0">Cambiar mi contraseña</h3>
+          <p class="empty" style="margin-top:-4px">Cambia tu contraseña directamente aquí — no se envía ningún correo, el cambio es inmediato.</p>
+          <div class="form-grid">
+            <div><label>Nueva contraseña</label><input type="password" id="myNewPass1" placeholder="••••••••"></div>
+            <div><label>Confirmar contraseña</label><input type="password" id="myNewPass2" placeholder="••••••••"></div>
+          </div>
+          <div id="myPassMsg" style="font-size:13px;min-height:16px;margin:8px 0"></div>
+          <button class="btn primary" onclick="changeMyPassword()">Guardar nueva contraseña</button>
+        </div>
+      </section>
     </div>
   </main>
 </div>
@@ -472,6 +483,18 @@ async function submitNewPassword(){
   msg.style.color="#1f9d55";msg.textContent="¡Listo! Tu contraseña se actualizó. Entrando…";
   inRecoveryMode=false;
   setTimeout(()=>{document.getElementById("resetCard").style.display="none";checkSession()},1200)
+}
+async function changeMyPassword(){
+  const p1=document.getElementById("myNewPass1").value,p2=document.getElementById("myNewPass2").value;
+  const msg=document.getElementById("myPassMsg");
+  if(!p1||p1.length<6){msg.style.color="#dc2f34";msg.textContent="La contraseña debe tener al menos 6 caracteres.";return}
+  if(p1!==p2){msg.style.color="#dc2f34";msg.textContent="Las contraseñas no coinciden.";return}
+  msg.style.color="#70809a";msg.textContent="Guardando…";
+  const{error}=await sb.auth.updateUser({password:p1});
+  if(error){msg.style.color="#dc2f34";msg.textContent="No se pudo guardar. Intenta de nuevo.";console.error(error);return}
+  msg.style.color="#1f9d55";msg.textContent="¡Listo! Tu contraseña se actualizó.";
+  document.getElementById("myNewPass1").value="";
+  document.getElementById("myNewPass2").value=""
 }
 async function doLogin(){
   const email = document.getElementById("loginEmail").value.trim();
