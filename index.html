@@ -193,6 +193,7 @@ textarea{min-height:76px;resize:vertical}
       <button class="active" data-view="dashboard"><span>▣</span>Dashboard</button>
       <button data-view="capture" id="navCapture"><span>▤</span>Nuevo inventario</button>
       <button data-view="history"><span>▦</span>Historial</button>
+      <button data-view="tomafisica"><span>📋</span>Toma física</button>
       <button data-view="cxc"><span>▧</span>CxC por inventarios</button>
       <button data-view="waste"><span>♲</span>Mermas</button>
       <button data-view="reports"><span>▥</span>Reportes</button>
@@ -302,6 +303,27 @@ textarea{min-height:76px;resize:vertical}
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
+      <section id="tomafisica" class="view">
+        <div id="tomaListView">
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn primary" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="card form-card"><div class="flex"><select id="tomaBusiness" onchange="bootTomaList()" style="max-width:260px"></select></div></div>
+          <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
+        </div>
+        <div id="tomaCaptureView" style="display:none">
+          <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
+          <div class="card form-card">
+            <div class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
+              <div><label>Negocio</label><select id="tomaCapBusiness" disabled></select></div>
+              <div><label>Fecha de la toma</label><input type="date" id="tomaCapDate"></div>
+              <div><label>Archivo del catálogo de esta toma (PDF, Excel o CSV)</label><input type="file" id="tomaCapFile" accept=".pdf,.xlsx,.xls,.csv"></div>
+              <button class="btn primary" onclick="uploadTomaCatalog()">Cargar catálogo de esta toma</button>
+            </div>
+            <div id="tomaCapMsg" style="margin-top:10px;font-size:13px;font-weight:600"></div>
+          </div>
+          <div id="tomaCapActions" class="card form-card" style="display:none"><div class="flex"><button class="btn" onclick="saveToma('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveToma('Terminado')">Terminar toma</button><span id="tomaCapCount" style="font-size:13px;color:var(--muted);align-self:center"></span></div></div>
+          <div id="tomaCapGroups"></div>
+        </div>
+      </section>
       <section id="businesses" class="view"><div class="page-title"><div><h2>Negocios</h2><p>Catálogo de sucursales y unidades operativas</p></div></div><div class="card form-card"><div class="flex"><input id="newBusinessName" placeholder="Nombre del nuevo negocio" style="max-width:320px"><button class="btn primary" onclick="addBusiness()">+ Agregar negocio</button></div></div><div id="businessCatalog" class="business-grid"></div></section>
       <section id="products" class="view"><div class="page-title"><div><h2>Productos</h2><p>Catálogo de productos por negocio — cada negocio maneja el suyo, independiente de los demás</p></div></div>
         <div class="card form-card">
@@ -551,6 +573,7 @@ async function openView(id){
   if(id==="cxc")await bootCxc();
   if(id==="waste")await bootWaste();
   if(id==="reports")await bootReports();
+  if(id==="tomafisica"){currentToma=null;document.getElementById("tomaCaptureView").style.display="none";document.getElementById("tomaListView").style.display="block";await bootTomaList()}
 }
 async function bootProducts(){
   const val=fillBusinessFilter("catBusiness",bootProducts);
@@ -564,6 +587,7 @@ async function manualRefresh(){
   try{
     await refreshFromCloud();
     recordsLoaded.clear();recordsByBusiness={};
+    tomasLoaded.clear();tomasByBusiness={};
     currentBusiness=keepBusiness;
     const active=document.querySelector(".view.active");
     const id=active?active.id:"dashboard";
@@ -574,8 +598,9 @@ async function manualRefresh(){
     else if(id==="waste")await bootWaste();
     else if(id==="reports")await bootReports();
     else if(id==="businesses")renderBusinessCatalog();
+    else if(id==="tomafisica")await bootTomaList();
     currentBusiness=keepBusiness;
-    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness"].forEach(sid=>{
+    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness","tomaBusiness"].forEach(sid=>{
       const el=document.getElementById(sid);
       if(el&&keepBusiness&&[...el.options].some(o=>o.value===keepBusiness))el.value=keepBusiness
     })
@@ -963,6 +988,195 @@ async function ensureCatalogsLoadedFor(business){
 async function pushCatalogsToCloud(business){
   const { error } = await sb.from("business_catalogs").upsert({ business, data: catalogs[business]||{}, updated_at: new Date().toISOString() });
   if (error) console.error("Error al guardar catálogo de "+business+":", error);
+}
+
+/* ==================== TOMA FÍSICA ==================== */
+let tomasByBusiness={};
+const tomasLoaded=new Set();
+async function ensureTomasLoadedFor(business){
+  if(!business||tomasLoaded.has(business))return;
+  const{data,error}=await sb.from("physical_takes").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar tomas de "+business+":",error);tomasByBusiness[business]=[];tomasLoaded.add(business);return}
+  tomasByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  tomasLoaded.add(business)
+}
+async function pushTomasToCloud(business){
+  const{error}=await sb.from("physical_takes").upsert({business,data:tomasByBusiness[business]||[],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar tomas de "+business+":",error)
+}
+function parsePhysicalCountCatalogPdf(text){
+  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML"]);
+  const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
+  const EXCLUDE=/CLAVE|DESCRIPCION|DESCRIPCIÓN|ALMACEN|ALMACÉN|EXISTENCIAS|REGISTROS|ENTREGO|ENTREGÓ|RECIBIO|RECIBIÓ|INVENTARIO|FORMATO|UNIDAD|INSUMOS|SoftRestaurant|COPYRIGHT|NATIONAL|^AV\s|^\d{1,2}\/\d{1,2}\/\d{4}|PAG\.|^\d{1,2}:\d{2}:\d{2}/i;
+  const splitCols=line=>line.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
+  const isLoneUnit=line=>{const p=splitCols(line);return p.length===1&&UNIT_SET.has(p[0])};
+  const validItem=(code,product)=>/^\d{4,7}$/.test(code)&&product&&product.trim().length>0;
+  function tryDirectRow(parts){
+    if(parts.length>=3&&/^\d/.test(parts[0])&&UNIT_SET.has(parts[parts.length-1])){
+      const p=[...parts],unit=p.pop(),code=p.shift();
+      return{code,product:p.join(" "),unit}
+    }
+    if(parts.length===2&&/^\d/.test(parts[0])){
+      const words=parts[1].split(/\s+/),last=words[words.length-1];
+      if(UNIT_SET.has(last)&&words.length>1)return{code:parts[0],product:words.slice(0,-1).join(" "),unit:last}
+    }
+    return null
+  }
+  const rawLines=text.split("\n").map(l=>l.trim()).filter(Boolean).filter(l=>!EXCLUDE.test(l));
+  const items=[];let currentGroup="(Sin categoría)";let i=0;
+  while(i<rawLines.length){
+    const parts=splitCols(rawLines[i]);
+    const direct=tryDirectRow(parts);
+    if(direct){if(validItem(direct.code,direct.product))items.push({group:currentGroup,...direct});i++;continue}
+    if(/^\d/.test(parts[0])){
+      let buf=[...parts],j=i+1;
+      while(j<rawLines.length){
+        if(isLoneUnit(rawLines[j])){
+          buf.push(splitCols(rawLines[j])[0]);j++;
+          if(isLoneUnit(rawLines[j]))continue;
+          break
+        }
+        if(UNIT_SET.has(buf[buf.length-1]))break;
+        buf.push(...splitCols(rawLines[j]));j++
+      }
+      const unit=buf.pop(),code=buf.shift(),product=buf.join(" ");
+      if(validItem(code,product))items.push({group:currentGroup,code,product,unit});
+      i=j;continue
+    }
+    if(parts.length===1&&headerRe.test(parts[0])&&parts[0].length<40){currentGroup=parts[0];i++;continue}
+    i++
+  }
+  return items
+}
+async function bootTomaList(){
+  const val=fillBusinessFilter("tomaBusiness",bootTomaList);
+  await ensureTomasLoadedFor(val);
+  renderTomaList()
+}
+function renderTomaList(){
+  const b=document.getElementById("tomaBusiness").value,body=document.getElementById("tomaListBody");
+  if(!b){body.innerHTML='<tr><td colspan="7" class="empty">Selecciona un negocio.</td></tr>';return}
+  const list=(tomasByBusiness[b]||[]).slice().sort((a,c)=>String(c.countDate).localeCompare(String(a.countDate)));
+  if(!list.length){body.innerHTML='<tr><td colspan="7" class="empty">Este negocio todavía no tiene tomas físicas guardadas.</td></tr>';return}
+  body.innerHTML=list.map(t=>{
+    const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
+    const actionBtn=currentUser.viewOnly?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Editar</button> <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`;
+    return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${t.status==="Terminado"?"green":"yellow"}">${esc(t.status)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}</td><td>${actionBtn}</td></tr>`
+  }).join("")
+}
+let currentToma=null;
+function startNewToma(){
+  const b=document.getElementById("tomaBusiness").value;
+  if(!b){alert("Selecciona un negocio primero.");return}
+  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede crear tomas.");return}
+  currentToma={id:Date.now(),business:b,countDate:new Date().toISOString().slice(0,10),catalog:[],quantities:{},status:"Borrador"};
+  document.getElementById("tomaCaptureTitle").textContent="Nueva toma física";
+  document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(b)}</option>`;
+  document.getElementById("tomaCapDate").value=currentToma.countDate;
+  document.getElementById("tomaCapFile").value="";
+  document.getElementById("tomaCapMsg").textContent="";
+  document.getElementById("tomaCapActions").style.display="none";
+  document.getElementById("tomaCapGroups").innerHTML="";
+  document.getElementById("tomaListView").style.display="none";
+  document.getElementById("tomaCaptureView").style.display="block"
+}
+function openToma(business,id){
+  const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
+  if(!t)return;
+  currentToma=JSON.parse(JSON.stringify(t));
+  document.getElementById("tomaCaptureTitle").textContent=(currentUser.viewOnly?"Viendo toma física — ":"Editando toma física — ")+business+" ("+t.countDate+")";
+  document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(business)}</option>`;
+  document.getElementById("tomaCapDate").value=t.countDate;
+  document.getElementById("tomaCapFile").value="";
+  document.getElementById("tomaCapMsg").textContent="";
+  document.getElementById("tomaCapActions").style.display=currentUser.viewOnly?"none":"flex";
+  renderTomaGroups();
+  document.getElementById("tomaListView").style.display="none";
+  document.getElementById("tomaCaptureView").style.display="block"
+}
+function closeTomaCapture(){
+  currentToma=null;
+  document.getElementById("tomaCaptureView").style.display="none";
+  document.getElementById("tomaListView").style.display="block";
+  renderTomaList()
+}
+async function uploadTomaCatalog(){
+  const fileInput=document.getElementById("tomaCapFile"),msg=document.getElementById("tomaCapMsg");
+  if(!currentToma)return;
+  if(currentUser.viewOnly){msg.style.color="#dc2f34";msg.textContent="Tu cuenta es de solo lectura.";return}
+  if(!fileInput.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo.";return}
+  const file=fileInput.files[0],name=file.name.toLowerCase();
+  try{
+    let items=[];
+    if(name.endsWith(".pdf")){
+      const text=await extractPdfText(file);
+      items=parsePhysicalCountCatalogPdf(text)
+    } else {
+      const raw=await parseRawTableFile(file);
+      items=raw.map(r=>{
+        const norm={};Object.keys(r).forEach(k=>norm[normalizeKey(k)]=r[k]);
+        return{group:norm["grupo"]||norm["categoria"]||norm["descripciongrupo"]||norm["area"]||"(Sin categoría)",code:String(norm["codigo"]||norm["clave"]||"").trim(),product:String(norm["producto"]||norm["descripcion"]||"").trim(),unit:String(norm["unidad"]||"").trim().toUpperCase()}
+      }).filter(it=>it.code&&it.product)
+    }
+    if(!items.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún producto en este archivo.";return}
+    if(currentToma.catalog.length&&!confirm(`Se detectaron ${items.length} productos. ¿Reemplazar el catálogo actual de esta toma? Las cantidades ya capturadas para productos que ya no estén en el nuevo catálogo se perderán.`))return;
+    currentToma.catalog=items;
+    const newQty={};items.forEach(it=>{if(currentToma.quantities[it.code]!==undefined)newQty[it.code]=currentToma.quantities[it.code]});
+    currentToma.quantities=newQty;
+    msg.style.color="#1f9d55";msg.textContent=`Se cargaron ${items.length} productos para esta toma.`;
+    fileInput.value="";
+    document.getElementById("tomaCapActions").style.display="flex";
+    renderTomaGroups()
+  }catch(e){
+    console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un PDF de texto, o un Excel/CSV con columnas de clave, descripción y unidad."
+  }
+}
+function renderTomaGroups(){
+  const box=document.getElementById("tomaCapGroups");
+  if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
+  const groups=[...new Set(currentToma.catalog.map(it=>it.group))];
+  const readOnly=currentUser.viewOnly;
+  box.innerHTML=groups.map(g=>{
+    const items=currentToma.catalog.filter(it=>it.group===g);
+    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Existencia física</th></tr></thead><tbody>${items.map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="number" step=".01" ${readOnly?"disabled":""} value="${currentToma.quantities[it.code]!==undefined?currentToma.quantities[it.code]:""}" onchange="setTomaQty('${escJs(it.code)}',this.value)" style="max-width:130px"></td></tr>`).join("")}</tbody></table></div></div>`
+  }).join("");
+  updateTomaCount()
+}
+function setTomaQty(code,value){
+  if(!currentToma)return;
+  if(value===""){delete currentToma.quantities[code]}
+  else{currentToma.quantities[code]=num(value)}
+  updateTomaCount()
+}
+function updateTomaCount(){
+  const el=document.getElementById("tomaCapCount");
+  if(!el||!currentToma)return;
+  el.textContent=`${Object.keys(currentToma.quantities).length} de ${currentToma.catalog.length} productos capturados`
+}
+async function saveToma(status){
+  if(!currentToma)return;
+  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede guardar.");return}
+  if(!currentToma.catalog.length){alert("Carga primero el catálogo de esta toma.");return}
+  currentToma.countDate=document.getElementById("tomaCapDate").value||currentToma.countDate;
+  currentToma.status=status;
+  currentToma.updatedAt=new Date().toISOString();
+  const business=currentToma.business;
+  await ensureTomasLoadedFor(business);
+  let list=tomasByBusiness[business]||[];
+  const idx=list.findIndex(t=>String(t.id)===String(currentToma.id));
+  if(idx>=0)list[idx]=currentToma;else list=[...list,currentToma];
+  tomasByBusiness[business]=list;
+  await pushTomasToCloud(business);
+  alert("Toma guardada como "+status+".");
+  closeTomaCapture()
+}
+async function deleteToma(business,id){
+  if(currentUser.viewOnly)return;
+  if(!confirm("¿Eliminar esta toma física? Esta acción no se puede deshacer."))return;
+  await ensureTomasLoadedFor(business);
+  tomasByBusiness[business]=(tomasByBusiness[business]||[]).filter(t=>String(t.id)!==String(id));
+  await pushTomasToCloud(business);
+  renderTomaList()
 }
 async function pushBusinessesToCloud(){
   const { error } = await sb.from("inventarios_data").upsert({ id: 2, data: businesses, updated_at: new Date().toISOString() });
