@@ -131,6 +131,22 @@ textarea{min-height:76px;resize:vertical}
   .app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.nav{grid-template-columns:repeat(2,1fr)}.userbox{display:none}
   .topbar{position:relative}.form-grid,.summary-grid{grid-template-columns:1fr}.business-grid,.kpis{grid-template-columns:1fr}.content{padding:16px}
 }
+@media print{
+  body{background:#fff}
+  .sidebar,.topbar,.period-control,.top-actions,#loginOverlay,.actions,#refreshBtn,#dashLoadingMsg,.no-print{display:none!important}
+  .app{display:block!important}
+  .main{padding:0}
+  .content{padding:0}
+  .page-title{display:block!important}
+  .page-title .actions{display:none!important}
+  .card{box-shadow:none!important;border:1px solid #ccc!important;break-inside:avoid}
+  .business-grid,.kpis,.summary-grid{grid-template-columns:1fr 1fr!important}
+  table{page-break-inside:auto}
+  tr{page-break-inside:avoid}
+  .btn{display:none!important}
+  h2{margin-top:0}
+  #printHeader{display:flex!important;justify-content:space-between;align-items:center;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
+}
 </style>
 </head>
 <body>
@@ -199,12 +215,13 @@ textarea{min-height:76px;resize:vertical}
     </div>
 
     <div class="content">
+      <div id="printHeader" style="display:none">Roma &amp; Associates — Control de Inventarios<span id="printDate"></span></div>
       <section id="dashboard" class="view active">
         <div class="page-title">
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
-          <div class="actions"><button class="btn primary" id="btnNewInventory" onclick="startNewInventory()">+ Nuevo inventario</button></div>
+          <div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewInventory" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
-        <div class="card form-card"><div class="flex"><select id="dashBusiness" onchange="onDashBusinessChange()" style="max-width:260px"></select><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
+        <div class="card form-card no-print"><div class="flex"><select id="dashBusiness" onchange="onDashBusinessChange()" style="max-width:260px"></select><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
         <div class="kpis">
           <div class="card kpi"><div><small>Inventario físico total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
           <div class="card kpi"><div><small>Faltantes totales</small><strong id="kShort" class="redtxt">$0</strong><small>Diferencias negativas</small></div><div class="ico">⌁</div></div>
@@ -280,8 +297,8 @@ textarea{min-height:76px;resize:vertical}
       </section>
 
       <section id="history" class="view">
-        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div></div>
-        <div class="card form-card"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
+        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div>
+        <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
@@ -300,9 +317,9 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
       </section>
-      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div></div><div class="card form-card"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
-      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div></div><div class="card form-card"><div class="flex"><select id="wasteBusiness" onchange="onWasteBusinessChange()" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div></div><div class="card form-card"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
+      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="wasteBusiness" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div></section>
     </div>
@@ -473,6 +490,10 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
+window.addEventListener("beforeprint",()=>{
+  const el=document.getElementById("printDate");
+  if(el)el.textContent=" — "+new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"})
+});
 checkSession();
 
 function seedRows(){
