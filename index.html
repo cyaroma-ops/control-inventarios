@@ -1139,14 +1139,22 @@ function renderTomaGroups(){
   const readOnly=!canEditTomaFisica();
   box.innerHTML=groups.map(g=>{
     const items=currentToma.catalog.filter(it=>it.group===g);
-    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Existencia física</th></tr></thead><tbody>${items.map(it=>`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="number" step=".01" ${readOnly?"disabled":""} value="${currentToma.quantities[it.code]!==undefined?currentToma.quantities[it.code]:""}" onchange="setTomaQty('${escJs(it.code)}',this.value)" style="max-width:130px"></td></tr>`).join("")}</tbody></table></div></div>`
+    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Enteros</th><th>Fracción / copas</th><th>Total</th></tr></thead><tbody>${items.map(it=>{
+      const q=currentToma.quantities[it.code]||{};
+      return`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="number" step="1" min="0" ${readOnly?"disabled":""} value="${q.enteros!==undefined?q.enteros:""}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" style="max-width:100px"></td><td><input type="number" step=".01" min="0" ${readOnly?"disabled":""} value="${q.fraccion!==undefined?q.fraccion:""}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" style="max-width:100px"></td><td id="tomaTotal-${escJs(it.code)}" style="font-weight:600">${(q.enteros!==undefined||q.fraccion!==undefined)?(num(q.enteros)+num(q.fraccion)).toFixed(2):"-"}</td></tr>`
+    }).join("")}</tbody></table></div></div>`
   }).join("");
   updateTomaCount()
 }
-function setTomaQty(code,value){
+function setTomaQty(code,field,value){
   if(!currentToma)return;
-  if(value===""){delete currentToma.quantities[code]}
-  else{currentToma.quantities[code]=num(value)}
+  const q=currentToma.quantities[code]||{};
+  if(value===""){delete q[field]}
+  else{q[field]=num(value)}
+  if(q.enteros===undefined&&q.fraccion===undefined){delete currentToma.quantities[code]}
+  else{currentToma.quantities[code]=q}
+  const totalEl=document.getElementById(`tomaTotal-${code}`);
+  if(totalEl)totalEl.textContent=(q.enteros!==undefined||q.fraccion!==undefined)?(num(q.enteros)+num(q.fraccion)).toFixed(2):"-";
   updateTomaCount()
 }
 function updateTomaCount(){
