@@ -1139,22 +1139,28 @@ function renderTomaGroups(){
   const readOnly=!canEditTomaFisica();
   box.innerHTML=groups.map(g=>{
     const items=currentToma.catalog.filter(it=>it.group===g);
-    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Enteros</th><th>Fracción / copas</th><th>Total</th></tr></thead><tbody>${items.map(it=>{
+    return`<div class="card table-card" style="margin-top:14px"><h3 style="margin:0 0 10px">${esc(g)} (${items.length})</h3><div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Enteros</th><th>Fracción / copas</th></tr></thead><tbody>${items.map(it=>{
       const q=currentToma.quantities[it.code]||{};
-      return`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="number" step="1" min="0" ${readOnly?"disabled":""} value="${q.enteros!==undefined?q.enteros:""}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" style="max-width:100px"></td><td><input type="number" step=".01" min="0" ${readOnly?"disabled":""} value="${q.fraccion!==undefined?q.fraccion:""}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" style="max-width:100px"></td><td id="tomaTotal-${escJs(it.code)}" style="font-weight:600">${(q.enteros!==undefined||q.fraccion!==undefined)?(num(q.enteros)+num(q.fraccion)).toFixed(2):"-"}</td></tr>`
+      return`<tr><td>${esc(it.code)}</td><td>${esc(it.product)}</td><td>${esc(it.unit)}</td><td><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)" style="max-width:100px"></td><td><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" style="max-width:100px" placeholder="ej. .700 o 110ML"></td></tr>`
     }).join("")}</tbody></table></div></div>`
   }).join("");
   updateTomaCount()
 }
+function tomaInputKeydown(event,el){
+  if(event.key!=="Enter")return;
+  event.preventDefault();
+  const inputs=[...document.querySelectorAll("#tomaCapGroups .toma-input")];
+  const idx=inputs.indexOf(el);
+  if(idx>=0&&idx<inputs.length-1)inputs[idx+1].focus()
+}
 function setTomaQty(code,field,value){
   if(!currentToma)return;
   const q=currentToma.quantities[code]||{};
-  if(value===""){delete q[field]}
-  else{q[field]=num(value)}
+  const v=value.trim();
+  if(v===""){delete q[field]}
+  else{q[field]=v}
   if(q.enteros===undefined&&q.fraccion===undefined){delete currentToma.quantities[code]}
   else{currentToma.quantities[code]=q}
-  const totalEl=document.getElementById(`tomaTotal-${code}`);
-  if(totalEl)totalEl.textContent=(q.enteros!==undefined||q.fraccion!==undefined)?(num(q.enteros)+num(q.fraccion)).toFixed(2):"-";
   updateTomaCount()
 }
 function updateTomaCount(){
