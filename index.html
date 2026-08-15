@@ -96,6 +96,7 @@ button{cursor:pointer}
 .business .btn{width:100%;margin-top:12px}
 .table-card{margin-top:20px;overflow:hidden}
 .toma-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.toma-row-header{display:none}
 .toma-row:last-child{border-bottom:none}
 .toma-row-filled{background:#f4faf6}
 .toma-row-info{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px}
@@ -181,7 +182,10 @@ textarea{min-height:76px;resize:vertical}
   #tomaPrintHeader div{color:var(--muted);font-size:13px;line-height:1.5}
   #tomaCapActions,#tomaCapGroups .card.form-card{position:static!important;box-shadow:none!important}
   #tomaCapGroups .toma-group-card{padding:6px 16px!important}
+  #tomaCapGroups .toma-group-card{break-inside:auto!important}
   .toma-row{break-inside:avoid;padding:4px 0!important;gap:10px!important}
+  .toma-row-header{display:flex!important;border-bottom:2px solid #0d1f66!important;padding:4px 0 6px!important}
+  .toma-row-header strong,.toma-row-header span,.toma-row-header label{font-weight:700!important;color:#0d1f66!important;text-transform:uppercase;font-size:10px!important}
   .toma-row-info strong{font-size:12.5px}
   .toma-row-info span{font-size:11px}
   .toma-row-inputs{gap:6px!important}
@@ -1274,6 +1278,10 @@ function renderTomaGroups(){
     <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" oninput="filterTomaItems(this.value)" style="font-size:16px">
   </div>`;
   html+=`<div class="card table-card toma-group-card" style="margin-top:14px">
+    <div class="toma-row toma-row-header">
+      <div class="toma-row-info"><strong>Código</strong><span>Producto · Unidad</span></div>
+      <div class="toma-row-inputs"><div><label>Enteros</label></div><div><label>Fracción / copas</label></div></div>
+    </div>
     ${currentToma.catalog.map(it=>{
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
