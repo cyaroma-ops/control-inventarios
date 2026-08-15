@@ -507,14 +507,18 @@ async function loadAllUserAccess(){
 }
 
 /* ==================== LOGIN / SESIÓN ==================== */
+const cameFromInviteLink=/type=invite/.test(window.location.hash)||/type=invite/.test(window.location.search);
 let inRecoveryMode=false;
 sb.auth.onAuthStateChange((event)=>{
-  if(event==="PASSWORD_RECOVERY"){
+  if(event==="PASSWORD_RECOVERY"||(event==="SIGNED_IN"&&cameFromInviteLink)){
     inRecoveryMode=true;
     document.getElementById("loginOverlay").style.display="flex";
+    document.getElementById("appRoot").style.display="none";
     document.getElementById("mainLoginCard").style.display="none";
     document.getElementById("forgotCard").style.display="none";
-    document.getElementById("resetCard").style.display="block"
+    document.getElementById("resetCard").style.display="block";
+    const h2=document.querySelector("#resetCard h2"),p=document.querySelector("#resetCard p");
+    if(h2&&p&&event==="SIGNED_IN"){h2.textContent="Bienvenido — crea tu contraseña";p.textContent="Antes de entrar, crea la contraseña con la que vas a iniciar sesión de ahora en adelante."}
   }
 });
 function toggleForgotPassword(){
