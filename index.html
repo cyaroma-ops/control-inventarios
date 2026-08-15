@@ -175,7 +175,7 @@ textarea{min-height:76px;resize:vertical}
   tr{page-break-inside:avoid}
   .btn{display:none!important}
   h2{margin-top:0}
-  #printHeader{display:flex!important;justify-content:space-between;align-items:center;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
+  #printHeader{display:block!important;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
   #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox{display:none!important}
   #tomaPrintHeader{display:block!important;margin-bottom:14px}
   #tomaPrintHeader h2{font-family:"Playfair Display",Georgia,serif;color:#0d1f66;margin:0 0 4px;font-size:22px}
@@ -183,14 +183,16 @@ textarea{min-height:76px;resize:vertical}
   #tomaCapActions,#tomaCapGroups .card.form-card{position:static!important;box-shadow:none!important}
   #tomaCapGroups .toma-group-card{padding:6px 16px!important}
   #tomaCapGroups .toma-group-card{break-inside:auto!important}
-  .toma-row{break-inside:avoid;padding:4px 0!important;gap:10px!important}
-  .toma-row-header{display:flex!important;border-bottom:2px solid #0d1f66!important;padding:4px 0 6px!important}
+  .toma-row{break-inside:avoid;padding:3px 0!important;gap:10px!important;flex-direction:row!important;align-items:center!important;flex-wrap:nowrap!important}
+  .toma-row-header{display:flex!important;border-bottom:2px solid #0d1f66!important;padding:4px 0 6px!important;flex-direction:row!important}
   .toma-row-header strong,.toma-row-header span,.toma-row-header label{font-weight:700!important;color:#0d1f66!important;text-transform:uppercase;font-size:10px!important}
-  .toma-row-info strong{font-size:12.5px}
-  .toma-row-info span{font-size:11px}
-  .toma-row-inputs{gap:6px!important}
-  .toma-row-inputs label{font-size:9.5px}
-  .toma-input{border:1px solid #999!important;background:#fff!important;height:26px!important;font-size:12px!important;width:72px!important}
+  .toma-row-info{min-width:0!important;flex:1!important}
+  .toma-row-info strong{font-size:11px}
+  .toma-row-info span{font-size:10px}
+  .toma-row-inputs{gap:6px!important;flex-shrink:0!important}
+  .toma-row-inputs div{flex:none!important}
+  .toma-row-inputs label{display:none!important}
+  .toma-input{border:1px solid #999!important;background:#fff!important;height:20px!important;font-size:10.5px!important;width:62px!important;padding:2px 4px!important}
 }
 </style>
 </head>
@@ -266,7 +268,10 @@ textarea{min-height:76px;resize:vertical}
     </div>
 
     <div class="content">
-      <div id="printHeader" style="display:none">Roma &amp; Associates — Control de Inventarios<span id="printDate"></span></div>
+      <div id="printHeader" style="display:none">
+        <div>Roma &amp; Associates — Control de Inventarios<span id="printDate"></span></div>
+        <div id="printContext" style="font-size:13px;font-weight:600;color:var(--muted);margin-top:4px"></div>
+      </div>
       <section id="dashboard" class="view active">
         <div class="page-title">
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
@@ -596,6 +601,7 @@ async function checkSession(){
   }
 }
 const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física"};
+const viewBusinessSelect={dashboard:"dashBusiness",history:"hBusiness",cxc:"cxcBusiness",waste:"wasteBusiness",reports:"repBusiness",tomafisica:"tomaBusiness"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
   const el=document.getElementById("printDate");
@@ -603,7 +609,16 @@ window.addEventListener("beforeprint",()=>{
   const active=document.querySelector(".view.active");
   const name=active&&viewTitles[active.id];
   titleBeforePrint=document.title;
-  if(name)document.title=`Inventarios - ${name} - Roma & Associates`
+  if(name)document.title=`Inventarios - ${name} - Roma & Associates`;
+  const ctx=document.getElementById("printContext");
+  if(ctx&&active){
+    const selId=viewBusinessSelect[active.id];
+    const bizEl=selId&&document.getElementById(selId);
+    const biz=bizEl&&bizEl.value?bizEl.value:"Todos los negocios";
+    const monthEl=document.getElementById("globalPeriod");
+    const month=monthEl&&monthEl.selectedOptions[0]?monthEl.selectedOptions[0].textContent:"";
+    ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
+  }
 });
 window.addEventListener("afterprint",()=>{
   if(titleBeforePrint)document.title=titleBeforePrint
