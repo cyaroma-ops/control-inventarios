@@ -1227,31 +1227,23 @@ async function uploadTomaCatalog(){
 function renderTomaGroups(){
   const box=document.getElementById("tomaCapGroups");
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
-  const groups=[...new Set(currentToma.catalog.map(it=>it.group))];
   const readOnly=!canCaptureTomas();
   let html=`<div class="card form-card" style="position:sticky;top:76px;z-index:3;margin-top:14px">
     <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" oninput="filterTomaItems(this.value)" style="font-size:16px">
-    <div class="flex" style="flex-wrap:wrap;gap:8px;margin-top:10px">
-      ${groups.map(g=>`<button type="button" class="btn" onclick="jumpToTomaGroup('${escJs(g)}')">${esc(g)}</button>`).join("")}
-    </div>
   </div>`;
-  html+=groups.map(g=>{
-    const items=currentToma.catalog.filter(it=>it.group===g);
-    return`<div class="card table-card toma-group-card" id="tomagrp-${esc(g).replace(/\s+/g,"_")}" style="margin-top:14px">
-      <h3 style="margin:0 0 12px">${esc(g)} <small style="color:var(--muted);font-weight:400">(${items.length})</small></h3>
-      ${items.map(it=>{
-        const q=currentToma.quantities[it.code]||{};
-        const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
-        return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
-          <div class="toma-row-info"><strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span></div>
-          <div class="toma-row-inputs">
-            <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
-            <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
-          </div>
-        </div>`
-      }).join("")}
-    </div>`
-  }).join("");
+  html+=`<div class="card table-card toma-group-card" style="margin-top:14px">
+    ${currentToma.catalog.map(it=>{
+      const q=currentToma.quantities[it.code]||{};
+      const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
+      return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
+        <div class="toma-row-info"><strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span></div>
+        <div class="toma-row-inputs">
+          <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
+          <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
+        </div>
+      </div>`
+    }).join("")}
+  </div>`;
   box.innerHTML=html;
   updateTomaCount()
 }
@@ -1265,10 +1257,7 @@ function filterTomaItems(q){
     card.style.display=anyVisible?"":"none"
   })
 }
-function jumpToTomaGroup(g){
-  const el=document.getElementById(`tomagrp-${g.replace(/\s+/g,"_")}`);
-  if(el)el.scrollIntoView({behavior:"smooth",block:"start"})
-}
+
 function tomaInputKeydown(event,el){
   if(event.key!=="Enter")return;
   event.preventDefault();
