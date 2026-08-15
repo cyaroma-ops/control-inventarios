@@ -1139,7 +1139,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?"Editar":"Capturar"}</button>${canMan?` <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`:""}`;
-    return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${esc(t.department||"—")}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${t.status==="Terminado"?"green":"yellow"}">${esc(t.status)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}</td><td>${actionBtn}</td></tr>`
+    return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${esc(t.department||"—")}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${t.status==="Terminado"?"green":"yellow"}">${esc(t.status)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}${t.updatedBy?`<br><small style="color:var(--muted)">por ${esc(t.updatedBy)}</small>`:""}</td><td>${actionBtn}</td></tr>`
   }).join("")
 }
 let currentToma=null;
@@ -1289,6 +1289,7 @@ async function saveToma(status){
   if(!canCaptureTomas()){alert("Tu cuenta no tiene permiso para capturar en Toma física.");return}
   if(!currentToma.catalog.length){alert("Carga primero el catálogo de esta toma.");return}
   currentToma.countDate=document.getElementById("tomaCapDate").value||currentToma.countDate;
+  currentToma.updatedBy=currentUser.name||currentUser.email;
   if(canManageTomas())currentToma.department=document.getElementById("tomaCapDept").value;
   currentToma.status=status;
   currentToma.updatedAt=new Date().toISOString();
