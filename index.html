@@ -175,10 +175,18 @@ textarea{min-height:76px;resize:vertical}
   .btn{display:none!important}
   h2{margin-top:0}
   #printHeader{display:flex!important;justify-content:space-between;align-items:center;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
-  #tomaSearch,#tomaListView .card.form-card{display:none!important}
+  #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox{display:none!important}
+  #tomaPrintHeader{display:block!important;margin-bottom:14px}
+  #tomaPrintHeader h2{font-family:"Playfair Display",Georgia,serif;color:#0d1f66;margin:0 0 4px;font-size:22px}
+  #tomaPrintHeader div{color:var(--muted);font-size:13px;line-height:1.5}
   #tomaCapActions,#tomaCapGroups .card.form-card{position:static!important;box-shadow:none!important}
-  .toma-row{break-inside:avoid}
-  .toma-input{border:1px solid #999!important;background:#fff!important}
+  #tomaCapGroups .toma-group-card{padding:6px 16px!important}
+  .toma-row{break-inside:avoid;padding:4px 0!important;gap:10px!important}
+  .toma-row-info strong{font-size:12.5px}
+  .toma-row-info span{font-size:11px}
+  .toma-row-inputs{gap:6px!important}
+  .toma-row-inputs label{font-size:9.5px}
+  .toma-input{border:1px solid #999!important;background:#fff!important;height:26px!important;font-size:12px!important;width:72px!important}
 }
 </style>
 </head>
@@ -349,8 +357,12 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div id="tomaCaptureView" style="display:none">
           <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn" onclick="toggleTomaHistory()" id="tomaHistoryBtn" style="display:none">Ver historial</button><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
+          <div id="tomaPrintHeader" style="display:none">
+            <h2 id="tomaPrintBusiness"></h2>
+            <div id="tomaPrintSubtitle"></div>
+          </div>
           <div id="tomaHistoryBox" class="card form-card" style="display:none"></div>
-          <div class="card form-card">
+          <div class="card form-card" id="tomaSetupCard">
             <div class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
               <div><label>Negocio</label><select id="tomaCapBusiness" disabled></select></div>
               <div><label>Fecha de la toma</label><input type="date" id="tomaCapDate"></div>
@@ -1177,6 +1189,13 @@ function startNewToma(){
   document.getElementById("tomaListView").style.display="none";
   document.getElementById("tomaCaptureView").style.display="block"
 }
+function updateTomaPrintHeader(){
+  if(!currentToma)return;
+  document.getElementById("tomaPrintBusiness").textContent=currentToma.business;
+  const dept=currentToma.department?" — "+currentToma.department:"";
+  const dateLabel=currentToma.countDate?new Date(currentToma.countDate+"T00:00:00").toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"}):"";
+  document.getElementById("tomaPrintSubtitle").innerHTML=`Catálogo de toma de inventario físico${dept}<br>Fecha de la toma: ${esc(dateLabel)}`
+}
 function openToma(business,id){
   const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
   if(!t)return;
@@ -1247,6 +1266,7 @@ async function uploadTomaCatalog(){
   }
 }
 function renderTomaGroups(){
+  updateTomaPrintHeader();
   const box=document.getElementById("tomaCapGroups");
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
   const readOnly=!canCaptureTomas();
