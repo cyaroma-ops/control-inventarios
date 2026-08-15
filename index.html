@@ -507,18 +507,23 @@ async function loadAllUserAccess(){
 }
 
 /* ==================== LOGIN / SESIÓN ==================== */
+const cameFromRecoveryLink=/type=recovery/.test(window.location.hash)||/type=recovery/.test(window.location.search);
 const cameFromInviteLink=/type=invite/.test(window.location.hash)||/type=invite/.test(window.location.search);
-let inRecoveryMode=false;
+let inRecoveryMode=cameFromRecoveryLink||cameFromInviteLink;
+function showSetPasswordGate(isInvite){
+  document.getElementById("loginOverlay").style.display="flex";
+  document.getElementById("appRoot").style.display="none";
+  document.getElementById("mainLoginCard").style.display="none";
+  document.getElementById("forgotCard").style.display="none";
+  document.getElementById("resetCard").style.display="block";
+  const h2=document.querySelector("#resetCard h2"),p=document.querySelector("#resetCard p");
+  if(h2&&p&&isInvite){h2.textContent="Bienvenido — crea tu contraseña";p.textContent="Antes de entrar, crea la contraseña con la que vas a iniciar sesión de ahora en adelante."}
+}
+if(inRecoveryMode)showSetPasswordGate(cameFromInviteLink);
 sb.auth.onAuthStateChange((event)=>{
   if(event==="PASSWORD_RECOVERY"||(event==="SIGNED_IN"&&cameFromInviteLink)){
     inRecoveryMode=true;
-    document.getElementById("loginOverlay").style.display="flex";
-    document.getElementById("appRoot").style.display="none";
-    document.getElementById("mainLoginCard").style.display="none";
-    document.getElementById("forgotCard").style.display="none";
-    document.getElementById("resetCard").style.display="block";
-    const h2=document.querySelector("#resetCard h2"),p=document.querySelector("#resetCard p");
-    if(h2&&p&&event==="SIGNED_IN"){h2.textContent="Bienvenido — crea tu contraseña";p.textContent="Antes de entrar, crea la contraseña con la que vas a iniciar sesión de ahora en adelante."}
+    showSetPasswordGate(event==="SIGNED_IN")
   }
 });
 function toggleForgotPassword(){
@@ -543,6 +548,9 @@ async function submitNewPassword(){
   if(!p1||p1.length<6){msg.style.color="#dc2f34";msg.textContent="La contraseña debe tener al menos 6 caracteres.";return}
   if(p1!==p2){msg.style.color="#dc2f34";msg.textContent="Las contraseñas no coinciden.";return}
   msg.style.color="#70809a";msg.textContent="Guardando…";
+  let session=(await sb.auth.getSession()).data.session;
+  for(let i=0;i<10&&!session;i++){await new Promise(r=>setTimeout(r,300));session=(await sb.auth.getSession()).data.session}
+  if(!session){msg.style.color="#dc2f34";msg.textContent="El enlace ya expiró o no es válido. Pide que te envíen uno nuevo.";return}
   const{error}=await sb.auth.updateUser({password:p1});
   if(error){msg.style.color="#dc2f34";msg.textContent="No se pudo guardar. Intenta de nuevo.";console.error(error);return}
   msg.style.color="#1f9d55";msg.textContent="¡Listo! Tu contraseña se actualizó. Entrando…";
