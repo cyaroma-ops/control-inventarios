@@ -1291,8 +1291,8 @@ function renderTomaGroups(){
   const box=document.getElementById("tomaCapGroups");
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
   const readOnly=!canCaptureTomas();
-  let html=`<div class="card form-card" style="position:sticky;top:76px;z-index:3;margin-top:14px">
-    <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" oninput="filterTomaItems(this.value)" style="font-size:16px">
+  let html=`<div class="card form-card" style="margin-top:14px">
+    <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" style="font-size:16px">
   </div>`;
   html+=`<div class="card table-card toma-group-card" style="margin-top:14px">
     <div class="toma-row toma-row-header">
@@ -1312,15 +1312,17 @@ function renderTomaGroups(){
     }).join("")}
   </div>`;
   box.innerHTML=html;
+  const searchInput=document.getElementById("tomaSearch");
+  if(searchInput)searchInput.addEventListener("input",()=>filterTomaItems(searchInput.value));
   updateTomaCount()
 }
 function filterTomaItems(q){
   const term=q.trim().toLowerCase();
-  document.querySelectorAll(".toma-row").forEach(row=>{
+  document.querySelectorAll(".toma-row:not(.toma-row-header)").forEach(row=>{
     row.style.display=(!term||row.dataset.search.includes(term))?"":"none"
   });
   document.querySelectorAll(".toma-group-card").forEach(card=>{
-    const anyVisible=[...card.querySelectorAll(".toma-row")].some(r=>r.style.display!=="none");
+    const anyVisible=[...card.querySelectorAll(".toma-row:not(.toma-row-header)")].some(r=>r.style.display!=="none");
     card.style.display=anyVisible?"":"none"
   })
 }
