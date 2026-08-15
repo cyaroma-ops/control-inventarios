@@ -175,6 +175,10 @@ textarea{min-height:76px;resize:vertical}
   .btn{display:none!important}
   h2{margin-top:0}
   #printHeader{display:flex!important;justify-content:space-between;align-items:center;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
+  #tomaSearch,#tomaListView .card.form-card{display:none!important}
+  #tomaCapActions,#tomaCapGroups .card.form-card{position:static!important;box-shadow:none!important}
+  .toma-row{break-inside:avoid}
+  .toma-input{border:1px solid #999!important;background:#fff!important}
 }
 </style>
 </head>
@@ -339,12 +343,12 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="tomafisica" class="view">
         <div id="tomaListView">
-          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
           <div class="card form-card"><div class="flex"><select id="tomaBusiness" onchange="bootTomaList()" style="max-width:260px"></select></div></div>
           <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Departamento</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
         </div>
         <div id="tomaCaptureView" style="display:none">
-          <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="toggleTomaHistory()" id="tomaHistoryBtn" style="display:none">Ver historial</button><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn" onclick="toggleTomaHistory()" id="tomaHistoryBtn" style="display:none">Ver historial</button><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
           <div id="tomaHistoryBox" class="card form-card" style="display:none"></div>
           <div class="card form-card">
             <div class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
@@ -358,7 +362,7 @@ textarea{min-height:76px;resize:vertical}
             </div>
             <div id="tomaCapMsg" style="margin-top:10px;font-size:13px;font-weight:600"></div>
           </div>
-          <div id="tomaCapActions" class="card form-card" style="display:none;position:sticky;top:8px;z-index:4"><div class="flex" style="flex-wrap:wrap"><button class="btn" onclick="saveToma('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveToma('Terminado')">Terminar toma</button><span id="tomaCapCount" style="font-size:13px;font-weight:600;color:var(--muted);align-self:center"></span></div></div>
+          <div id="tomaCapActions" class="card form-card" style="display:none;position:sticky;top:8px;z-index:4"><div class="flex" style="flex-wrap:wrap"><button class="btn" onclick="saveToma('Borrador')">Guardar</button><button class="btn green" id="btnTerminarToma" onclick="saveToma('Terminado')">Terminar toma</button><span id="tomaCapCount" style="font-size:13px;font-weight:600;color:var(--muted);align-self:center"></span></div></div>
           <div id="tomaCapGroups"></div>
         </div>
       </section>
@@ -575,7 +579,7 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
-const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes"};
+const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
   const el=document.getElementById("printDate");
@@ -1139,7 +1143,8 @@ function renderTomaList(){
   body.innerHTML=list.map(t=>{
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?"Editar":"Capturar"}</button>${canMan?` <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`:""}`;
+    const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`:""}`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${esc(t.department||"—")}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${statusCls}">${esc(statusLabel)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}${t.updatedBy?`<br><small style="color:var(--muted)">por ${esc(t.updatedBy)}</small>`:""}</td><td>${actionBtn}</td></tr>`
   }).join("")
@@ -1165,6 +1170,7 @@ function startNewToma(){
   document.getElementById("tomaCapMsg").textContent="";
   document.getElementById("tomaCapUploadBox").style.display="block";
   document.getElementById("tomaCapActions").style.display="none";
+  document.getElementById("btnTerminarToma").style.display="";
   document.getElementById("tomaHistoryBtn").style.display="none";
   document.getElementById("tomaHistoryBox").style.display="none";
   document.getElementById("tomaCapGroups").innerHTML="";
@@ -1188,6 +1194,7 @@ function openToma(business,id){
   document.getElementById("tomaCapMsg").textContent="";
   document.getElementById("tomaCapUploadBox").style.display=canMan?"block":"none";
   document.getElementById("tomaCapActions").style.display=canCap?"flex":"none";
+  document.getElementById("btnTerminarToma").style.display=canMan?"":"none";
   document.getElementById("tomaHistoryBtn").style.display=(t.history&&t.history.length)?"":"none";
   document.getElementById("tomaHistoryBox").style.display="none";
   renderTomaGroups();
@@ -1303,6 +1310,7 @@ let tomaHistoryBaseLen=0;
 async function saveToma(status){
   if(!currentToma)return;
   if(!canCaptureTomas()){alert("Tu cuenta no tiene permiso para capturar en Toma física.");return}
+  if(status==="Terminado"&&!canManageTomas()){alert("Solo un administrador de tomas (tu supervisor o encargado) puede marcar una toma como Terminada.");return}
   if(!currentToma.catalog.length){alert("Carga primero el catálogo de esta toma.");return}
   currentToma.countDate=document.getElementById("tomaCapDate").value||currentToma.countDate;
   currentToma.updatedBy=currentUser.name||currentUser.email;
