@@ -106,6 +106,7 @@ button{cursor:pointer}
 .toma-row-inputs div{display:flex;flex-direction:column;gap:3px}
 .toma-row-inputs label{font-size:11px;color:var(--muted)}
 .toma-input{width:104px;height:44px;font-size:16px;text-align:center;border-radius:9px}
+.toma-edit-field{padding:5px 8px;border-radius:6px;font-size:13px}
 @media(max-width:600px){
   .toma-row{flex-direction:column;align-items:stretch}
   .toma-row-inputs{justify-content:stretch}
@@ -377,7 +378,7 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
               <div><label>Negocio</label><select id="tomaCapBusiness" disabled></select></div>
               <div><label>Fecha de la toma</label><input type="date" id="tomaCapDate"></div>
-              <div><label>Departamento</label><select id="tomaCapDept"><option value="">Sin especificar</option><option>Cocina</option><option>Barra</option></select></div>
+              <div><label>Departamento</label><select id="tomaCapDept"><option value="">Sin especificar</option><option>Cocina</option><option>Barra</option><option>Vinos</option></select></div>
               <div id="tomaCapUploadBox" class="flex" style="flex-wrap:wrap;align-items:flex-end;gap:14px">
                 <div><label>Archivo del catálogo de esta toma (PDF, Excel o CSV)</label><input type="file" id="tomaCapFile" accept=".pdf,.xlsx,.xls,.csv"></div>
                 <button class="btn primary" onclick="uploadTomaCatalog()">Cargar catálogo de esta toma</button>
@@ -1303,19 +1304,24 @@ function renderTomaGroups(){
   const box=document.getElementById("tomaCapGroups");
   if(!currentToma||!currentToma.catalog.length){box.innerHTML="";updateTomaCount();return}
   const readOnly=!canCaptureTomas();
+  const canMan=canManageTomas();
   let html=`<div class="card form-card" style="margin-top:14px">
     <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" style="font-size:16px">
   </div>`;
-  html+=`<div class="card table-card toma-group-card" style="margin-top:14px">
-    <div class="toma-row toma-row-header">
+  html+=`<div class="card table-card toma-group-card" style="margin-top:14px">`;
+  if(canMan)html+=`<div class="flex" style="margin-bottom:10px"><button type="button" class="btn" onclick="addTomaProduct()">+ Agregar producto</button><span style="font-size:12.5px;color:var(--muted);align-self:center;margin-left:10px">Úsalo si el catálogo cargado no trae algún producto, o si algún renglón salió mal al leer el archivo.</span></div>`;
+  html+=`<div class="toma-row toma-row-header">
       <div class="toma-row-info"><strong>Código</strong><span>Producto · Unidad</span></div>
       <div class="toma-row-inputs"><div><label>Enteros</label></div><div><label>Fracción / copas</label></div></div>
     </div>
-    ${currentToma.catalog.map(it=>{
+    ${currentToma.catalog.map((it,idx)=>{
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
+      const infoHtml=canMan
+        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button></div>`
+        :`<strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span>`;
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
-        <div class="toma-row-info"><strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span></div>
+        <div class="toma-row-info">${infoHtml}</div>
         <div class="toma-row-inputs">
           <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
           <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
@@ -1327,6 +1333,34 @@ function renderTomaGroups(){
   const searchInput=document.getElementById("tomaSearch");
   if(searchInput)searchInput.addEventListener("input",()=>filterTomaItems(searchInput.value));
   updateTomaCount()
+}
+function editTomaProduct(idx,field,value){
+  if(!currentToma||!canManageTomas())return;
+  const item=currentToma.catalog[idx];
+  if(!item)return;
+  const oldCode=item.code;
+  item[field]=value.trim();
+  if(field==="code"&&oldCode!==item.code){
+    if(currentToma.quantities[oldCode]!==undefined){currentToma.quantities[item.code]=currentToma.quantities[oldCode];delete currentToma.quantities[oldCode]}
+    if(tomaDirtyCodes.has(oldCode)){tomaDirtyCodes.delete(oldCode);tomaDirtyCodes.add(item.code)}
+  }
+  renderTomaGroups()
+}
+function deleteTomaProduct(idx){
+  if(!currentToma||!canManageTomas())return;
+  const item=currentToma.catalog[idx];
+  if(!item)return;
+  if(!confirm(`¿Eliminar "${item.product||item.code}" de esta toma?`))return;
+  delete currentToma.quantities[item.code];
+  currentToma.catalog.splice(idx,1);
+  renderTomaGroups()
+}
+function addTomaProduct(){
+  if(!currentToma||!canManageTomas())return;
+  currentToma.catalog.push({group:"Agregado manualmente",code:"",product:"",unit:""});
+  renderTomaGroups();
+  const box=document.getElementById("tomaCapGroups");
+  if(box&&box.scrollTo)box.scrollTo({top:box.scrollHeight,behavior:"smooth"})
 }
 function filterTomaItems(q){
   const term=q.trim().toLowerCase();
@@ -1446,10 +1480,11 @@ async function renderUsersPanel(){
         </div>
         <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.).</div>
         <div style="margin-top:12px">
-          <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Departamentos de Toma física que puede ver y capturar (deja ambos sin marcar para que vea todos)</label>
+          <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Departamentos de Toma física que puede ver y capturar (deja todos sin marcar para que vea todos)</label>
           <div class="flex" style="gap:16px">
             <label style="font-size:13px"><input type="checkbox" class="tomadept-${u.id}" value="Cocina" ${u.toma_departments&&u.toma_departments.includes("Cocina")?"checked":""} style="width:auto;margin-right:6px">Cocina</label>
             <label style="font-size:13px"><input type="checkbox" class="tomadept-${u.id}" value="Barra" ${u.toma_departments&&u.toma_departments.includes("Barra")?"checked":""} style="width:auto;margin-right:6px">Barra</label>
+            <label style="font-size:13px"><input type="checkbox" class="tomadept-${u.id}" value="Vinos" ${u.toma_departments&&u.toma_departments.includes("Vinos")?"checked":""} style="width:auto;margin-right:6px">Vinos</label>
           </div>
         </div>
         <div class="flex" style="flex-wrap:wrap;gap:10px;margin:12px 0">
