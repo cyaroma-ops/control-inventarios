@@ -1190,10 +1190,28 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` <button class="btn red" onclick="deleteToma('${escJs(b)}','${t.id}')">Eliminar</button>`:""}`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` <button class="btn" title="Eliminar esta toma" onclick="deleteToma('${escJs(b)}','${t.id}')" style="color:#ae1d23;padding:6px 9px;font-size:15px;line-height:1">🗑</button>`:""}`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
-    return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${esc(t.department||"—")}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${statusCls}">${esc(statusLabel)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}${t.updatedBy?`<br><small style="color:var(--muted)">por ${esc(t.updatedBy)}</small>`:""}</td><td>${actionBtn}</td></tr>`
+    const deptCell=canMan
+      ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px"><option value="" ${!t.department?"selected":""}>Sin especificar</option><option ${t.department==="Cocina"?"selected":""}>Cocina</option><option ${t.department==="Barra"?"selected":""}>Barra</option><option ${t.department==="Vinos"?"selected":""}>Vinos</option></select>`
+      :esc(t.department||"—");
+    return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${deptCell}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${statusCls}">${esc(statusLabel)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}${t.updatedBy?`<br><small style="color:var(--muted)">por ${esc(t.updatedBy)}</small>`:""}</td><td>${actionBtn}</td></tr>`
   }).join("")
+}
+async function quickChangeTomaDepartment(business,id,newDept){
+  if(!canManageTomas())return;
+  await ensureTomasLoadedFor(business);
+  const list=tomasByBusiness[business]||[];
+  const t=list.find(x=>String(x.id)===String(id));
+  if(!t)return;
+  const oldDept=t.department||"sin especificar";
+  t.department=newDept;
+  t.updatedAt=new Date().toISOString();
+  t.updatedBy=currentUser.name||currentUser.email;
+  t.history=t.history||[];
+  t.history.push({at:t.updatedAt,by:t.updatedBy,action:`Cambió el departamento de "${oldDept}" a "${newDept||"sin especificar"}"`});
+  await pushTomasToCloud(business);
+  renderTomaList()
 }
 function tomaStatusDisplay(t,captured,total){
   if(t.status==="Terminado")return{label:"Terminado",cls:"green"};
