@@ -912,7 +912,9 @@ function validateInventory(){
 let editingRecordId=null;
 async function saveInventory(status){
   if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede guardar cambios.");return}
-  const issues=validateInventory();if(issues.length){alert("No se puede guardar. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
+  if(status==="Terminado"){
+    const issues=validateInventory();if(issues.length){alert("No se puede terminar el inventario. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
+  }
   const business=fBusiness.value;
   if(!business){alert("Selecciona un negocio antes de guardar.");return}
   await ensureBusinessRecordsLoaded(business);
