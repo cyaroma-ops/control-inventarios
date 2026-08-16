@@ -1131,7 +1131,7 @@ async function pushTomasToCloud(business){
   if(error)console.error("Error al guardar tomas de "+business+":",error)
 }
 function parsePhysicalCountCatalogPdf(text){
-  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML"]);
+  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"]);
   const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
   const EXCLUDE=/CLAVE|DESCRIPCION|DESCRIPCIÓN|ALMACEN|ALMACÉN|EXISTENCIAS|REGISTROS|ENTREGO|ENTREGÓ|RECIBIO|RECIBIÓ|INVENTARIO|FORMATO|UNIDAD|INSUMOS|SoftRestaurant|COPYRIGHT|NATIONAL|^AV\s|^\d{1,2}\/\d{1,2}\/\d{4}|PAG\.|^\d{1,2}:\d{2}:\d{2}/i;
   const splitCols=line=>line.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
