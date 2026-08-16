@@ -1317,7 +1317,7 @@ function renderTomaGroups(){
     ${currentToma.catalog.map((it,idx)=>{
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
-      const infoHtml=canMan
+      const infoHtml=it.manual
         ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button></div>`
         :`<strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span>`;
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
@@ -1357,7 +1357,7 @@ function deleteTomaProduct(idx){
 }
 function addTomaProduct(){
   if(!currentToma||!canManageTomas())return;
-  currentToma.catalog.push({group:"Agregado manualmente",code:"",product:"",unit:""});
+  currentToma.catalog.push({group:"Agregado manualmente",code:"",product:"",unit:"",manual:true});
   renderTomaGroups();
   const box=document.getElementById("tomaCapGroups");
   if(box&&box.scrollTo)box.scrollTo({top:box.scrollHeight,behavior:"smooth"})
