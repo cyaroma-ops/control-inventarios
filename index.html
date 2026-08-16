@@ -1648,7 +1648,7 @@ async function extractPdfText(file){
   return fullText
 }
 function parseInventoryPdfText(text){
-  const re=/^(\S+)\s+(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const re=/^(\S+)\s+(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+\$(-?[\d,]+\.\d{2})\s*$/;
   const items=[];
   text.split("\n").forEach(raw=>{
     const line=raw.trim();const m=line.match(re);
@@ -1659,13 +1659,39 @@ function parseInventoryPdfText(text){
   return items
 }
 function parseMermaPdfText(text){
-  const re=/^([^\s-]+)-(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const UNIT_LIST=["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"];
+  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const isNewRecord=l=>/^[^\s-]+-/.test(l);
+  const isSkip=l=>/^GRUPO:/i.test(l)||/^\$/.test(l);
+  const records=[];
+  let buf=null;
+  for(const l of lines){
+    if(isNewRecord(l)){if(buf)records.push(buf);buf=l;continue}
+    if(isSkip(l)){if(buf){records.push(buf);buf=null}continue}
+    if(buf!==null)buf+=" "+l
+  }
+  if(buf)records.push(buf);
   const items=[];
-  text.split("\n").forEach(raw=>{
-    const line=raw.trim();const m=line.match(re);
-    if(!m)return;
-    const[,code,product,unit,,salidaUStr,costStr]=m;
-    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,theo:parseFloat(salidaUStr.replace(/,/g,""))||0,phys:0})
+  records.forEach(rec=>{
+    const codeMatch=rec.match(/^([^\s-]+)-/);
+    if(!codeMatch)return;
+    const code=codeMatch[1];
+    const rest=rec.slice(codeMatch[0].length);
+    const dollars=[...rest.matchAll(/\$(-?[\d,]+\.\d{2})/g)].map(m=>m[1]);
+    const cleaned=rest.replace(/\$-?[\d,]+\.\d{2}/g," ");
+    const words=cleaned.split(/\s+/).filter(Boolean);
+    const numRe=/^-?[\d,]+\.\d{2,4}$/;
+    let unit=null,unitIdx=-1;
+    for(let i=0;i<words.length;i++){
+      if(UNIT_LIST.includes(words[i].toUpperCase())){unit=words[i].toUpperCase();unitIdx=i}
+    }
+    if(!unit||dollars.length<3)return;
+    const plainNums=words.filter(w=>numRe.test(w));
+    if(plainNums.length<2)return;
+    const productWords=words.filter((w,i)=>i!==unitIdx&&!numRe.test(w));
+    const product=productWords.join(" ").trim();
+    if(!product)return;
+    items.push({code:code.trim(),product,unit,cost:parseFloat(dollars[0].replace(/,/g,""))||0,theo:parseFloat(plainNums[1].replace(/,/g,""))||0,phys:0})
   });
   return items
 }
