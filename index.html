@@ -95,7 +95,7 @@ button{cursor:pointer}
 .progress span{display:block;height:100%;background:var(--blue)}
 .business .btn{width:100%;margin-top:12px}
 .table-card{margin-top:20px;overflow:hidden}
-.toma-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.toma-row{position:relative;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
 .toma-row-header{display:none}
 .toma-row:last-child{border-bottom:none}
 .toma-row-filled{background:#f4faf6}
@@ -107,11 +107,20 @@ button{cursor:pointer}
 .toma-row-inputs label{font-size:11px;color:var(--muted)}
 .toma-input{width:104px;height:44px;font-size:16px;text-align:center;border-radius:9px}
 .toma-edit-field{padding:5px 8px;border-radius:6px;font-size:13px}
+.toma-kebab-wrap{position:relative;display:flex;align-items:center}
+.toma-kebab-btn{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:4px 9px;border-radius:6px}
+.toma-kebab-btn:hover{background:#f1f5f9;color:#1a2b4c}
+.toma-kebab-dropdown{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #e5eaf2;border-radius:8px;box-shadow:0 6px 18px rgba(20,30,60,.14);z-index:20;min-width:160px;overflow:hidden}
+.toma-kebab-dropdown.open{display:block}
+.toma-kebab-dropdown button{display:block;width:100%;text-align:left;padding:9px 13px;border:none;background:none;font-size:13px;cursor:pointer;color:#1a2b4c}
+.toma-kebab-dropdown button:hover{background:#f4f6fb}
+.toma-kebab-dropdown button.danger{color:#ae1d23}
 @media(max-width:600px){
   .toma-row{flex-direction:column;align-items:stretch}
   .toma-row-inputs{justify-content:stretch}
   .toma-row-inputs div{flex:1}
   .toma-input{width:100%}
+  .toma-kebab-wrap{position:absolute;top:10px;right:4px}
 }
 .table-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:16px;border-bottom:1px solid var(--line)}
 .table-wrap{overflow:auto}
@@ -178,7 +187,7 @@ textarea{min-height:76px;resize:vertical}
   h2{margin-top:0}
   #printHeader{display:block!important;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
   #printFooter{display:block!important;position:fixed;bottom:6px;left:0;font-size:9px;color:#94a3b8;font-weight:400}
-  #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox{display:none!important}
+  #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox,.toma-kebab-wrap{display:none!important}
   #tomaPrintHeader{display:block!important;margin-bottom:14px}
   #tomaPrintHeader h2{font-family:"Playfair Display",Georgia,serif;color:#0d1f66;margin:0 0 4px;font-size:22px}
   #tomaPrintHeader div{color:var(--muted);font-size:13px;line-height:1.5}
@@ -1226,6 +1235,7 @@ function startNewToma(){
   currentToma={id:Date.now(),business:b,countDate:new Date().toISOString().slice(0,10),department:"",catalog:[],quantities:{},status:"Borrador",history:[]};
   tomaDirtyCodes=new Set();
   tomaHistoryBaseLen=0;
+  tomaEditingIdx=new Set();
   document.getElementById("tomaCaptureTitle").textContent="Nueva toma física";
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(b)}</option>`;
   document.getElementById("tomaCapDate").value=currentToma.countDate;
@@ -1255,6 +1265,7 @@ function openToma(business,id){
   currentToma=JSON.parse(JSON.stringify(t));
   tomaDirtyCodes=new Set();
   tomaHistoryBaseLen=(currentToma.history||[]).length;
+  tomaEditingIdx=new Set();
   const canCap=canCaptureTomas(),canMan=canManageTomas();
   document.getElementById("tomaCaptureTitle").textContent=(!canCap?"Viendo toma física — ":canMan?"Editando toma física — ":"Capturando cantidades — ")+business+" ("+t.countDate+")"+(t.department?" — "+t.department:"");
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(business)}</option>`;
@@ -1335,11 +1346,20 @@ function renderTomaGroups(){
     ${currentToma.catalog.map((it,idx)=>{
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
-      const infoHtml=it.manual
-        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button></div>`
+      const editing=it.manual||tomaEditingIdx.has(idx);
+      const infoHtml=editing
+        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button>${it.manual?"":`<button type="button" class="btn" onclick="stopEditTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Listo</button>`}</div>`
         :`<strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span>`;
+      const kebabHtml=(canMan&&!editing)?`<div class="toma-kebab-wrap">
+          <button type="button" class="toma-kebab-btn" onclick="toggleTomaRowMenu(event,${idx})" title="Más opciones">⋮</button>
+          <div class="toma-kebab-dropdown" id="tomaMenu-${idx}">
+            <button type="button" onclick="startEditTomaProduct(${idx})">✏️ Editar producto</button>
+            <button type="button" class="danger" onclick="toggleTomaRowMenu(event,${idx});deleteTomaProduct(${idx})">🗑 Eliminar</button>
+          </div>
+        </div>`:"";
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
         <div class="toma-row-info">${infoHtml}</div>
+        ${kebabHtml}
         <div class="toma-row-inputs">
           <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
           <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
@@ -1351,6 +1371,24 @@ function renderTomaGroups(){
   const searchInput=document.getElementById("tomaSearch");
   if(searchInput)searchInput.addEventListener("input",()=>filterTomaItems(searchInput.value));
   updateTomaCount()
+}
+let tomaEditingIdx=new Set();
+function toggleTomaRowMenu(e,idx){
+  e.stopPropagation();
+  const id="tomaMenu-"+idx;
+  document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle("open")
+}
+document.addEventListener("click",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")));
+function startEditTomaProduct(idx){
+  if(!canManageTomas())return;
+  tomaEditingIdx.add(idx);
+  renderTomaGroups()
+}
+function stopEditTomaProduct(idx){
+  tomaEditingIdx.delete(idx);
+  renderTomaGroups()
 }
 function editTomaProduct(idx,field,value){
   if(!currentToma||!canManageTomas())return;
@@ -1371,6 +1409,7 @@ function deleteTomaProduct(idx){
   if(!confirm(`¿Eliminar "${item.product||item.code}" de esta toma?`))return;
   delete currentToma.quantities[item.code];
   currentToma.catalog.splice(idx,1);
+  tomaEditingIdx.clear();
   renderTomaGroups()
 }
 function addTomaProduct(){
