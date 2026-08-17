@@ -261,6 +261,7 @@ textarea{min-height:76px;resize:vertical}
       <button data-view="reports"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/></svg></span>Reportes</button>
       <button data-view="businesses"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6M4 21h16"/></svg></span>Negocios</button>
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
+      <button data-view="recipes"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetas</button>
       <button data-view="users"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.7 14.3c2.6.3 4.6 2.5 4.8 5.2"/></svg></span>Usuarios</button>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
@@ -414,6 +415,53 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
       </section>
+      <section id="recipes" class="view">
+        <div id="recipeListView">
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
+            <select id="recipeBusinessFilter" style="max-width:240px"></select>
+            <select id="recipeTypeFilter" style="max-width:200px"><option value="">Todos los tipos</option><option value="menu">Menú</option><option value="produccion">Producción</option></select>
+            <input type="text" id="recipeSearch" placeholder="Buscar receta..." style="max-width:220px">
+          </div></div>
+          <div id="recipeCards" class="business-grid"></div>
+        </div>
+        <div id="recipeEditorView" style="display:none">
+          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
+          <div class="card form-card">
+            <div class="form-grid">
+              <div><label>Negocio</label><select id="recBusiness"></select></div>
+              <div><label>Tipo de receta</label><select id="recType" onchange="onRecipeTypeChange()"><option value="menu">Menú (se vende al cliente)</option><option value="produccion">Producción (sub-receta / prep)</option></select></div>
+              <div><label>Nombre de la receta</label><input id="recName" placeholder="Ej. Tacos al pastor"></div>
+            </div>
+            <div class="form-grid" style="margin-top:10px">
+              <div><label>Rendimiento (cantidad)</label><input type="number" step="any" id="recYieldQty" oninput="renderRecipeTotals()" placeholder="Ej. 4"></div>
+              <div><label>Unidad de rendimiento</label><input id="recYieldUnit" oninput="renderRecipeTotals()" placeholder="Ej. porciones, kg, lt"></div>
+              <div id="recSalePriceBox"><label>Precio de venta</label><input type="number" step="any" id="recSalePrice" oninput="renderRecipeTotals()" placeholder="$"></div>
+            </div>
+            <div style="margin-top:10px"><label>Foto del platillo (opcional)</label><input type="file" id="recPhotoFile" accept="image/*" onchange="onRecipePhotoChange(event)"><div id="recPhotoPreview" style="margin-top:8px"></div></div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Ingredientes</h3><button class="btn" id="btnAddIngredient" onclick="addIngredientRow()">+ Agregar ingrediente</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Ingrediente</th><th>Cantidad</th><th>Unidad</th><th>Costo unitario</th><th>Subtotal</th><th></th></tr></thead><tbody id="recIngredientsBody"></tbody></table></div>
+          </div>
+          <div class="card form-card">
+            <div id="recTotalsBox" class="kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+          </div>
+          <div class="card form-card">
+            <label>Procedimiento</label>
+            <textarea id="recSteps" rows="6" placeholder="Pasos de preparación..."></textarea>
+            <label style="margin-top:10px;display:block">Notas (opcional)</label>
+            <textarea id="recNotes" rows="3" placeholder="Alérgenos, variaciones, tips..."></textarea>
+          </div>
+          <div class="card form-card" style="position:sticky;bottom:8px">
+            <div class="flex" style="flex-wrap:wrap;gap:10px">
+              <button class="btn" id="btnSaveDraftRecipe" onclick="saveRecipe('Borrador')">Guardar borrador</button>
+              <button class="btn green" id="btnPublishRecipe" onclick="saveRecipe('Publicada')">Publicar receta</button>
+              <button class="btn red" id="btnDeleteRecipe" style="display:none" onclick="deleteCurrentRecipe()">Eliminar receta</button>
+            </div>
+          </div>
+        </div>
+      </section>
       <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="wasteBusiness" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
       <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="repBusiness" onchange="bootReports()" style="max-width:240px"></select></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
@@ -502,14 +550,15 @@ async function ensureUserProfile(user){
   if (!data){
     const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false, can_capture_tomas:false, toma_departments:[] });
     if (insErr) console.error("Error al crear perfil de acceso:", insErr);
-    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], name:"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], canManageRecipes:false, name:"" };
   } else {
-    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], name:data.display_name||"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], canManageRecipes:!!data.can_manage_recipes, name:data.display_name||"" };
   }
 }
 function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.includes(name); }
 function canManageTomas(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
 function canCaptureTomas(){ return canManageTomas() || currentUser.canCaptureTomas; }
+function canManageRecipes(){ return currentUser.isAdmin || currentUser.canManageRecipes; }
 async function loadAllUserAccess(){
   const { data, error } = await sb.from("user_access").select("*").order("email");
   if (error){ console.error("Error al leer usuarios:", error); return []; }
@@ -624,7 +673,7 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
-const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física"};
+const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recipes:"Recetas"};
 const viewBusinessSelect={dashboard:"dashBusiness",history:"hBusiness",cxc:"cxcBusiness",waste:"wasteBusiness",reports:"repBusiness",tomafisica:"tomaBusiness"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
@@ -709,6 +758,7 @@ async function openView(id){
   if(id==="waste")await bootWaste();
   if(id==="reports")await bootReports();
   if(id==="tomafisica"){currentToma=null;document.getElementById("tomaCaptureView").style.display="none";document.getElementById("tomaListView").style.display="block";await bootTomaList()}
+  if(id==="recipes")await bootRecipes();
 }
 async function bootProducts(){
   const val=fillBusinessFilter("catBusiness",bootProducts);
@@ -1127,6 +1177,234 @@ async function pushCatalogsToCloud(business){
   if (error) console.error("Error al guardar catálogo de "+business+":", error);
 }
 
+/* ==================== RECETAS ==================== */
+let recipesByBusiness={};
+const recipesLoaded=new Set();
+let currentRecipe=null,editingRecipeId=null;
+async function ensureRecipesLoadedFor(business){
+  if(!business||recipesLoaded.has(business))return;
+  const{data,error}=await sb.from("business_recipes").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar recetas de "+business+":",error);recipesByBusiness[business]=[];recipesLoaded.add(business);return}
+  recipesByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  recipesLoaded.add(business)
+}
+async function ensureAllRecipesLoaded(){
+  await Promise.all(visibleBusinessNames().map(ensureRecipesLoadedFor))
+}
+async function pushRecipesToCloud(business){
+  const{error}=await sb.from("business_recipes").upsert({business,data:recipesByBusiness[business]||[],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar recetas de "+business+":",error)
+}
+function recipeTotals(r){
+  const totalCost=(r.ingredients||[]).reduce((s,i)=>s+(num(i.qty)*num(i.cost)),0);
+  const costPerYield=num(r.yieldQty)>0?totalCost/num(r.yieldQty):totalCost;
+  const salePrice=num(r.salePrice);
+  const costPct=salePrice>0?(costPerYield/salePrice*100):0;
+  const marginAmt=salePrice>0?(salePrice-costPerYield):0;
+  const marginPct=salePrice>0?(marginAmt/salePrice*100):0;
+  return{totalCost,costPerYield,costPct,marginAmt,marginPct}
+}
+async function bootRecipes(){
+  document.getElementById("recipeEditorView").style.display="none";
+  document.getElementById("recipeListView").style.display="block";
+  const sel=document.getElementById("recipeBusinessFilter");
+  const names=visibleBusinessNames();
+  sel.innerHTML='<option value="">Todos los negocios</option>'+names.map(b=>`<option>${esc(b)}</option>`).join("");
+  sel.onchange=renderRecipeList;
+  document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
+  document.getElementById("recipeSearch").oninput=renderRecipeList;
+  document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
+  await ensureAllRecipesLoaded();
+  renderRecipeList()
+}
+function allRecipesFlat(){
+  return visibleBusinessNames().flatMap(b=>(recipesByBusiness[b]||[]).map(r=>({...r,business:r.business||b})))
+}
+function renderRecipeList(){
+  const bizFilter=document.getElementById("recipeBusinessFilter").value;
+  const typeFilter=document.getElementById("recipeTypeFilter").value;
+  const q=(document.getElementById("recipeSearch").value||"").toLowerCase().trim();
+  let list=allRecipesFlat();
+  if(bizFilter)list=list.filter(r=>r.business===bizFilter);
+  if(typeFilter)list=list.filter(r=>r.type===typeFilter);
+  if(q)list=list.filter(r=>(r.name||"").toLowerCase().includes(q));
+  list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+  const box=document.getElementById("recipeCards");
+  if(!list.length){box.innerHTML='<div class="empty">No hay recetas todavía'+(canManageRecipes()?' — usa "+ Nueva receta" para agregar la primera.':'.')+'</div>';return}
+  box.innerHTML=list.map(r=>{
+    const t=recipeTotals(r);
+    const badge=r.type==="menu"?'<span class="badge green">Menú</span>':'<span class="badge">Producción</span>';
+    const statusBadge=r.status==="Publicada"?'<span class="badge green">Publicada</span>':'<span class="badge yellow">Borrador</span>';
+    const costPctHtml=num(r.salePrice)>0?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
+    return `<div class="card business">
+      ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
+      <div class="business-head"><h4>${esc(r.name||"Sin nombre")}</h4></div>
+      <div class="line"><span>Negocio</span><strong>${esc(r.business)}</strong></div>
+      <div class="line"><span>Tipo</span><span>${badge} ${statusBadge}</span></div>
+      <div class="line"><span>Costo por ${esc(r.yieldUnit||"unidad")}</span><strong>${money(t.costPerYield)}</strong></div>
+      ${costPctHtml}
+      <button class="btn" onclick="openRecipeEditor('${escJs(r.business)}',${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
+    </div>`
+  }).join("")
+}
+function startNewRecipe(){
+  if(!canManageRecipes())return;
+  currentRecipe={id:Date.now(),business:visibleBusinessNames()[0]||"",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
+  editingRecipeId=null;
+  openRecipeEditorForm()
+}
+async function openRecipeEditor(business,id){
+  await ensureRecipesLoadedFor(business);
+  const r=(recipesByBusiness[business]||[]).find(x=>x.id===id);
+  if(!r)return;
+  currentRecipe=JSON.parse(JSON.stringify(r));
+  currentRecipe.business=business;
+  editingRecipeId=id;
+  openRecipeEditorForm()
+}
+function openRecipeEditorForm(){
+  document.getElementById("recipeListView").style.display="none";
+  document.getElementById("recipeEditorView").style.display="block";
+  document.getElementById("recipeEditorTitle").textContent=editingRecipeId?"Editar receta":"Nueva receta";
+  const bizSel=document.getElementById("recBusiness");
+  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
+  bizSel.value=currentRecipe.business;
+  document.getElementById("recType").value=currentRecipe.type;
+  document.getElementById("recName").value=currentRecipe.name||"";
+  document.getElementById("recYieldQty").value=currentRecipe.yieldQty??"";
+  document.getElementById("recYieldUnit").value=currentRecipe.yieldUnit||"";
+  document.getElementById("recSalePrice").value=currentRecipe.salePrice??"";
+  document.getElementById("recSteps").value=currentRecipe.steps||"";
+  document.getElementById("recNotes").value=currentRecipe.notes||"";
+  document.getElementById("recPhotoPreview").innerHTML=currentRecipe.photo?`<img src="${currentRecipe.photo}" style="max-width:220px;border-radius:8px">`:"";
+  renderIngredientRows();
+  onRecipeTypeChange();
+  renderRecipeTotals();
+  const readOnly=!canManageRecipes();
+  ["recBusiness","recType","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
+  document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
+  document.getElementById("btnPublishRecipe").style.display=readOnly?"none":"";
+  document.getElementById("btnDeleteRecipe").style.display=(editingRecipeId&&!readOnly)?"":"none"
+}
+function onRecipeTypeChange(){
+  const type=document.getElementById("recType").value;
+  document.getElementById("recSalePriceBox").style.display=type==="menu"?"":"none";
+  renderRecipeTotals()
+}
+function closeRecipeEditor(){
+  currentRecipe=null;editingRecipeId=null;
+  document.getElementById("recipeEditorView").style.display="none";
+  document.getElementById("recipeListView").style.display="block";
+  renderRecipeList()
+}
+function renderIngredientRows(){
+  const readOnly=!canManageRecipes();
+  const body=document.getElementById("recIngredientsBody");
+  const list=currentRecipe.ingredients||[];
+  if(!list.length){body.innerHTML='<tr><td colspan="6" class="empty">Sin ingredientes todavía</td></tr>';return}
+  body.innerHTML=list.map((ing,idx)=>{
+    const subtotal=num(ing.qty)*num(ing.cost);
+    return `<tr>
+      <td><input value="${esc(ing.name||"")}" oninput="updateIngredient(${idx},'name',this.value)" placeholder="Nombre" ${readOnly?"disabled":""}></td>
+      <td><input type="number" step="any" value="${ing.qty??""}" oninput="updateIngredient(${idx},'qty',this.value)" style="max-width:90px" ${readOnly?"disabled":""}></td>
+      <td><input value="${esc(ing.unit||"")}" oninput="updateIngredient(${idx},'unit',this.value)" style="max-width:90px" placeholder="kg, lt..." ${readOnly?"disabled":""}></td>
+      <td><input type="number" step="any" value="${ing.cost??""}" oninput="updateIngredient(${idx},'cost',this.value)" style="max-width:110px" placeholder="$" ${readOnly?"disabled":""}></td>
+      <td id="recIngSubtotal-${idx}">${money(subtotal)}</td>
+      <td>${readOnly?"":`<button class="btn red" onclick="removeIngredientRow(${idx})" style="padding:4px 8px;font-size:12px">✕</button>`}</td>
+    </tr>`
+  }).join("")
+}
+function addIngredientRow(){
+  if(!canManageRecipes())return;
+  currentRecipe.ingredients=currentRecipe.ingredients||[];
+  currentRecipe.ingredients.push({name:"",qty:"",unit:"",cost:""});
+  renderIngredientRows();renderRecipeTotals()
+}
+function removeIngredientRow(idx){
+  if(!canManageRecipes())return;
+  currentRecipe.ingredients.splice(idx,1);
+  renderIngredientRows();renderRecipeTotals()
+}
+function updateIngredient(idx,field,value){
+  currentRecipe.ingredients[idx][field]=value;
+  const subtotal=num(currentRecipe.ingredients[idx].qty)*num(currentRecipe.ingredients[idx].cost);
+  const cell=document.getElementById(`recIngSubtotal-${idx}`);
+  if(cell)cell.textContent=money(subtotal);
+  renderRecipeTotals()
+}
+function renderRecipeTotals(){
+  if(!currentRecipe)return;
+  currentRecipe.yieldQty=document.getElementById("recYieldQty").value;
+  currentRecipe.yieldUnit=document.getElementById("recYieldUnit").value;
+  currentRecipe.salePrice=document.getElementById("recSalePrice").value;
+  const t=recipeTotals(currentRecipe);
+  const yieldUnit=currentRecipe.yieldUnit||"unidad";
+  const hasPrice=num(currentRecipe.salePrice)>0;
+  document.getElementById("recTotalsBox").innerHTML=
+    `<div class="card kpi"><div><small>Costo total</small><strong>${money(t.totalCost)}</strong></div></div>`+
+    `<div class="card kpi"><div><small>Costo por ${esc(yieldUnit)}</small><strong>${money(t.costPerYield)}</strong></div></div>`+
+    `<div class="card kpi"><div><small>% costo vs. venta</small><strong>${hasPrice?t.costPct.toFixed(1)+"%":"—"}</strong></div></div>`+
+    `<div class="card kpi"><div><small>Margen de ganancia</small><strong>${hasPrice?money(t.marginAmt)+" ("+t.marginPct.toFixed(1)+"%)":"—"}</strong></div></div>`
+}
+function onRecipePhotoChange(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxW=800;
+      const scale=Math.min(1,maxW/img.width);
+      const canvas=document.createElement("canvas");
+      canvas.width=img.width*scale;canvas.height=img.height*scale;
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      currentRecipe.photo=canvas.toDataURL("image/jpeg",0.75);
+      document.getElementById("recPhotoPreview").innerHTML=`<img src="${currentRecipe.photo}" style="max-width:220px;border-radius:8px">`
+    };
+    img.src=ev.target.result
+  };
+  reader.readAsDataURL(file)
+}
+async function saveRecipe(status){
+  if(!canManageRecipes()){alert("No tienes permiso para gestionar recetas.");return}
+  const business=document.getElementById("recBusiness").value;
+  if(!business){alert("Selecciona un negocio.");return}
+  const name=document.getElementById("recName").value.trim();
+  if(!name){alert("Ponle un nombre a la receta.");return}
+  currentRecipe.business=business;
+  currentRecipe.type=document.getElementById("recType").value;
+  currentRecipe.name=name;
+  currentRecipe.yieldQty=document.getElementById("recYieldQty").value;
+  currentRecipe.yieldUnit=document.getElementById("recYieldUnit").value;
+  currentRecipe.salePrice=document.getElementById("recSalePrice").value;
+  currentRecipe.steps=document.getElementById("recSteps").value;
+  currentRecipe.notes=document.getElementById("recNotes").value;
+  currentRecipe.status=status;
+  currentRecipe.updatedBy=currentUser.name||currentUser.email;
+  currentRecipe.updatedAt=new Date().toISOString();
+  currentRecipe.history=currentRecipe.history||[];
+  currentRecipe.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:editingRecipeId?`Editó la receta (${status})`:`Creó la receta (${status})`});
+  if(!editingRecipeId){currentRecipe.createdBy=currentUser.name||currentUser.email;currentRecipe.createdAt=new Date().toISOString()}
+  await ensureRecipesLoadedFor(business);
+  let list=recipesByBusiness[business]||[];
+  if(editingRecipeId){list=list.map(r=>r.id===editingRecipeId?currentRecipe:r)} else {list=[...list,currentRecipe]}
+  recipesByBusiness[business]=list;
+  await pushRecipesToCloud(business);
+  alert("Receta guardada como "+status+".");
+  closeRecipeEditor()
+}
+async function deleteCurrentRecipe(){
+  if(!canManageRecipes()||!editingRecipeId)return;
+  if(!confirm(`¿Eliminar la receta "${currentRecipe.name}"? Esta acción no se puede deshacer.`))return;
+  const business=currentRecipe.business;
+  await ensureRecipesLoadedFor(business);
+  recipesByBusiness[business]=(recipesByBusiness[business]||[]).filter(r=>r.id!==editingRecipeId);
+  await pushRecipesToCloud(business);
+  closeRecipeEditor()
+}
+
 /* ==================== TOMA FÍSICA ==================== */
 let tomasByBusiness={};
 const tomasLoaded=new Set();
@@ -1524,6 +1802,7 @@ async function renderUsersPanel(){
       u.view_only?'<span class="badge yellow">Solo lectura</span>':"",
       u.can_edit_tomas?'<span class="badge">Administra Tomas</span>':"",
       u.can_capture_tomas?'<span class="badge">Captura Tomas</span>':"",
+      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':"",
       !u.is_admin&&(!u.businesses||!u.businesses.length)?'<span class="badge red">Sin negocio asignado</span>':""
     ].filter(Boolean).join(" ");
     return`<div class="card form-card" style="margin-bottom:10px">
@@ -1537,9 +1816,10 @@ async function renderUsersPanel(){
           <label style="font-weight:600;font-size:13px"><input type="checkbox" class="viewonly-${u.id}" id="viewonly-${u.id}" ${u.view_only?"checked":""} style="width:auto;margin-right:6px">Solo lectura</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomaedit-${u.id}" ${u.can_edit_tomas?"checked":""} style="width:auto;margin-right:6px">Administrar Tomas físicas</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomacapture-${u.id}" ${u.can_capture_tomas?"checked":""} style="width:auto;margin-right:6px">Capturar cantidades en Tomas físicas</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="recipes-${u.id}" ${u.can_manage_recipes?"checked":""} style="width:auto;margin-right:6px">Gestionar recetas (chef)</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="admin-${u.id}" ${u.is_admin?"checked":""} style="width:auto;margin-right:6px">Administrador</label>
         </div>
-        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.).</div>
+        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.). <b>"Gestionar recetas"</b> permite crear, editar y eliminar recetas de menú y producción en los negocios asignados (pensado para chefs), sin darle el resto de los permisos de administrador.</div>
         <div style="margin-top:12px">
           <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Departamentos de Toma física que puede ver y capturar (deja todos sin marcar para que vea todos)</label>
           <div class="flex" style="gap:16px">
@@ -1575,13 +1855,14 @@ async function saveUserAccess(userId){
   const viewOnly = document.getElementById(`viewonly-${userId}`).checked;
   const canEditTomas = document.getElementById(`tomaedit-${userId}`).checked;
   const canCaptureTomas = document.getElementById(`tomacapture-${userId}`).checked;
+  const canManageRecipesFlag = document.getElementById(`recipes-${userId}`).checked;
   const name = document.getElementById(`name-${userId}`).value.trim();
   const checked = Array.from(document.querySelectorAll(`.biz-${userId}:checked`)).map(el=>el.value);
   const tomaDepartments = Array.from(document.querySelectorAll(`.tomadept-${userId}:checked`)).map(el=>el.value);
-  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
+  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, can_manage_recipes:canManageRecipesFlag, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
   if (error){ alert("No se pudo guardar el acceso."); console.error(error); return; }
   if (userId === currentUser.id){
-    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
+    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.canManageRecipes = canManageRecipesFlag; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
     applyViewOnlyUI();
     const label=document.getElementById("userLabel"),avatar=document.getElementById("userAvatar");
     const shownName=name||currentUser.email.split("@")[0];
