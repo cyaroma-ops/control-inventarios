@@ -2231,17 +2231,24 @@ async function renderUsersPanel(){
   if (!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Todavía no hay otros usuarios registrados. En cuanto alguien más entre por primera vez, aparecerá aquí. Tu propia cuenta no se muestra en esta lista.</div></div>`; return; }
   panel.innerHTML = `<div class="empty" style="margin-bottom:10px">Tu propia cuenta no aparece aquí — ya tienes acceso completo como administrador. Da clic en "Editar" para cambiar el acceso de alguien.</div>` + users.map(u=>{
     const name = u.display_name || u.email.split("@")[0];
-    const badges = [
-      u.is_admin?'<span class="badge green">Administrador</span>':"",
-      u.view_only?'<span class="badge yellow">Solo lectura</span>':"",
+    const roleBadge = u.is_admin?'<span class="badge green">Administrador</span>':(u.view_only?'<span class="badge yellow">Solo lectura</span>':'<span class="badge">Estándar</span>');
+    const extraBadges = [
       u.can_edit_tomas?'<span class="badge">Administra Tomas</span>':"",
       u.can_capture_tomas?'<span class="badge">Captura Tomas</span>':"",
-      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':"",
-      !u.is_admin&&(!u.businesses||!u.businesses.length)?'<span class="badge red">Sin negocio asignado</span>':""
+      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':""
     ].filter(Boolean).join(" ");
+    const bizHtml = u.is_admin
+      ? '<span class="badge green">Todos los negocios</span>'
+      : (u.businesses&&u.businesses.length ? u.businesses.map(b=>`<span class="badge">${esc(b)}</span>`).join(" ") : '<span class="badge red">Sin negocio asignado</span>');
     return`<div class="card form-card" style="margin-bottom:10px">
-      <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div><strong>${esc(name)}</strong> <span style="color:var(--muted);font-size:13px">${esc(u.email)}</span><div style="margin-top:4px">${badges||'<span class="badge">Sin permisos asignados</span>'}</div></div>
+      <div class="flex" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div style="min-width:220px">
+          <strong>${esc(name)}</strong> <span style="color:var(--muted);font-size:13px">${esc(u.email)}</span>
+          <div style="margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;font-size:12px">
+            <span style="color:var(--muted);white-space:nowrap;padding-top:2px">Perfil</span><div>${roleBadge} ${extraBadges}</div>
+            <span style="color:var(--muted);white-space:nowrap;padding-top:2px">Negocios</span><div>${bizHtml}</div>
+          </div>
+        </div>
         <button class="btn" onclick="toggleUserEdit('${u.id}')" id="toggleBtn-${u.id}">Editar</button>
       </div>
       <div id="userEdit-${u.id}" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
