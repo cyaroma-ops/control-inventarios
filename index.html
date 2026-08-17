@@ -444,6 +444,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="recipeBusinessFilter" style="max-width:240px"></select>
+            <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select>
             <select id="recipeTypeFilter" style="max-width:200px"><option value="">Todos los tipos</option><option value="menu">Menú</option><option value="produccion">Producción</option></select>
             <input type="text" id="recipeSearch" placeholder="Buscar receta..." style="max-width:220px">
           </div></div>
@@ -454,10 +455,11 @@ textarea{min-height:76px;resize:vertical}
           <div class="card form-card">
             <div class="form-grid">
               <div><label>Negocio</label><select id="recBusiness"></select></div>
+              <div><label>Área</label><select id="recArea"><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select></div>
               <div><label>Tipo de receta</label><select id="recType" onchange="onRecipeTypeChange()"><option value="menu">Menú (se vende al cliente)</option><option value="produccion">Producción (sub-receta / prep)</option></select></div>
-              <div><label>Nombre de la receta</label><input id="recName" placeholder="Ej. Tacos al pastor"></div>
             </div>
             <div class="form-grid" style="margin-top:10px">
+              <div><label>Nombre de la receta</label><input id="recName" placeholder="Ej. Tacos al pastor"></div>
               <div><label>Rendimiento (cantidad)</label><input type="number" step="any" id="recYieldQty" oninput="renderRecipeTotals()" placeholder="Ej. 4"></div>
               <div><label>Unidad de rendimiento</label><input id="recYieldUnit" oninput="renderRecipeTotals()" placeholder="Ej. porciones, kg, lt"></div>
               <div id="recSalePriceBox"><label>Precio de venta</label><input type="number" step="any" id="recSalePrice" oninput="renderRecipeTotals()" placeholder="$"></div>
@@ -1098,23 +1100,39 @@ function showDiffGroup(uid,group){
   document.querySelectorAll(`[id^="grp-${uid}-"]`).forEach(el=>el.classList.remove("primary"));
   const box=document.getElementById(`grpbox-${uid}-${group}`),btn=document.getElementById(`grp-${uid}-${group}`);
   if(box)box.style.display="";
-  if(btn)btn.classList.add("primary")
+  if(btn)btn.classList.add("primary");
+  reapplyDiffSearch(uid.toString().split("-")[0])
 }
 function productDiffTableHtml(data=rows,recordId=0){
   const list=productDiffRows(data);
   if(!list.length)return '<div class="empty" style="margin-top:10px">No hay diferencias en productos en este inventario.</div>';
   const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
   let html='<div style="font-weight:700;margin-top:14px;margin-bottom:8px">Productos con diferencia</div>';
+  html+=`<div class="no-print" style="margin-bottom:10px"><input type="text" id="diffSearch-${recordId}" placeholder="Buscar producto o código..." oninput="filterDiffProducts(${recordId},this.value)" style="max-width:280px"></div>`;
   html+=`<div class="flex no-print" style="gap:8px;margin-bottom:10px"><button type="button" class="btn primary" id="tabF-${recordId}" onclick="showDiffTab(${recordId},'f')">Faltantes (${faltantes.length})</button><button type="button" class="btn" id="tabS-${recordId}" onclick="showDiffTab(${recordId},'s')">Sobrantes (${sobrantes.length})</button></div>`;
   html+=`<div id="tabFbox-${recordId}"><div class="diff-print-label">Faltantes</div>${productDiffSubTableHtml(faltantes,recordId+"-f")}</div>`;
   html+=`<div id="tabSbox-${recordId}" style="display:none"><div class="diff-print-label">Sobrantes</div>${productDiffSubTableHtml(sobrantes,recordId+"-s")}</div>`;
   return html
+}
+function filterDiffProducts(recordId,query){
+  const q=(query||"").toLowerCase().trim();
+  const scope=document.getElementById(`diffrow-${recordId}`);
+  if(!scope)return;
+  scope.querySelectorAll("table tbody tr").forEach(tr=>{
+    const text=tr.textContent.toLowerCase();
+    tr.style.display=(!q||text.includes(q))?"":"none"
+  })
+}
+function reapplyDiffSearch(recordId){
+  const input=document.getElementById(`diffSearch-${recordId}`);
+  if(input&&input.value)filterDiffProducts(recordId,input.value)
 }
 function showDiffTab(recordId,which){
   const fbox=document.getElementById(`tabFbox-${recordId}`),sbox=document.getElementById(`tabSbox-${recordId}`);
   const tf=document.getElementById(`tabF-${recordId}`),ts=document.getElementById(`tabS-${recordId}`);
   if(which==="f"){fbox.style.display="";sbox.style.display="none";tf.classList.add("primary");ts.classList.remove("primary")}
   else{fbox.style.display="none";sbox.style.display="";ts.classList.add("primary");tf.classList.remove("primary")}
+  reapplyDiffSearch(recordId)
 }
 function categoryDiffLinesHtml(data=rows){
   let html="";
@@ -1398,6 +1416,7 @@ async function bootRecipes(){
   document.getElementById("recipeEditorView").style.display="none";
   document.getElementById("recipeListView").style.display="block";
   fillBusinessFilter("recipeBusinessFilter",bootRecipes);
+  document.getElementById("recipeAreaFilter").onchange=renderRecipeList;
   document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
   document.getElementById("recipeSearch").oninput=renderRecipeList;
   document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
@@ -1409,10 +1428,12 @@ function allRecipesFlat(){
 }
 function renderRecipeList(){
   const bizFilter=document.getElementById("recipeBusinessFilter").value;
+  const areaFilter=document.getElementById("recipeAreaFilter").value;
   const typeFilter=document.getElementById("recipeTypeFilter").value;
   const q=(document.getElementById("recipeSearch").value||"").toLowerCase().trim();
   let list=allRecipesFlat();
   if(bizFilter)list=list.filter(r=>r.business===bizFilter);
+  if(areaFilter)list=list.filter(r=>(r.area||"Cocina")===areaFilter);
   if(typeFilter)list=list.filter(r=>r.type===typeFilter);
   if(q)list=list.filter(r=>(r.name||"").toLowerCase().includes(q));
   list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
@@ -1421,12 +1442,14 @@ function renderRecipeList(){
   box.innerHTML=list.map(r=>{
     const t=recipeTotals(r);
     const badge=r.type==="menu"?'<span class="badge green">Menú</span>':'<span class="badge">Producción</span>';
+    const areaBadge=`<span class="badge">${esc(r.area||"Cocina")}</span>`;
     const statusBadge=r.status==="Publicada"?'<span class="badge green">Publicada</span>':'<span class="badge yellow">Borrador</span>';
     const costPctHtml=num(r.salePrice)>0?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
     return `<div class="card business">
       ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
       <div class="business-head"><h4>${esc(r.name||"Sin nombre")}</h4></div>
       <div class="line"><span>Negocio</span><strong>${esc(r.business)}</strong></div>
+      <div class="line"><span>Área</span><span>${areaBadge}</span></div>
       <div class="line"><span>Tipo</span><span>${badge} ${statusBadge}</span></div>
       <div class="line"><span>Costo por ${esc(r.yieldUnit||"unidad")}</span><strong>${money(t.costPerYield)}</strong></div>
       ${costPctHtml}
@@ -1436,7 +1459,7 @@ function renderRecipeList(){
 }
 function startNewRecipe(){
   if(!canManageRecipes())return;
-  currentRecipe={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
+  currentRecipe={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),area:"Cocina",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
   editingRecipeId=null;
   Promise.all([ensureSuppliersLoadedFor(currentRecipe.business),ensureRecipesLoadedFor(currentRecipe.business)]).then(openRecipeEditorForm)
 }
@@ -1462,6 +1485,7 @@ function openRecipeEditorForm(){
     renderIngredientRows();renderRecipeTotals()
   };
   document.getElementById("recType").value=currentRecipe.type;
+  document.getElementById("recArea").value=currentRecipe.area||"Cocina";
   document.getElementById("recName").value=currentRecipe.name||"";
   document.getElementById("recYieldQty").value=currentRecipe.yieldQty??"";
   document.getElementById("recYieldUnit").value=currentRecipe.yieldUnit||"";
@@ -1473,7 +1497,7 @@ function openRecipeEditorForm(){
   onRecipeTypeChange();
   renderRecipeTotals();
   const readOnly=!canManageRecipes();
-  ["recBusiness","recType","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  ["recBusiness","recType","recArea","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
   document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
   document.getElementById("btnPublishRecipe").style.display=readOnly?"none":"";
@@ -1607,6 +1631,7 @@ async function saveRecipe(status){
   if(!name){alert("Ponle un nombre a la receta.");return}
   currentRecipe.business=business;
   currentRecipe.type=document.getElementById("recType").value;
+  currentRecipe.area=document.getElementById("recArea").value;
   currentRecipe.name=name;
   currentRecipe.yieldQty=document.getElementById("recYieldQty").value;
   currentRecipe.yieldUnit=document.getElementById("recYieldUnit").value;
