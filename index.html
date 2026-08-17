@@ -816,8 +816,10 @@ async function manualRefresh(){
     else if(id==="reports")await bootReports();
     else if(id==="businesses")renderBusinessCatalog();
     else if(id==="tomafisica")await bootTomaList();
+    else if(id==="recipes")await bootRecipes();
+    else if(id==="suppliers")await bootSuppliers();
     currentBusiness=keepBusiness;
-    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness","tomaBusiness"].forEach(sid=>{
+    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness","tomaBusiness","recipeBusinessFilter","supplierBusinessFilter"].forEach(sid=>{
       const el=document.getElementById(sid);
       if(el&&keepBusiness&&[...el.options].some(o=>o.value===keepBusiness))el.value=keepBusiness
     })
@@ -1239,10 +1241,7 @@ function recipeTotals(r){
 async function bootRecipes(){
   document.getElementById("recipeEditorView").style.display="none";
   document.getElementById("recipeListView").style.display="block";
-  const sel=document.getElementById("recipeBusinessFilter");
-  const names=visibleBusinessNames();
-  sel.innerHTML='<option value="">Todos los negocios</option>'+names.map(b=>`<option>${esc(b)}</option>`).join("");
-  sel.onchange=renderRecipeList;
+  fillBusinessFilter("recipeBusinessFilter",bootRecipes);
   document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
   document.getElementById("recipeSearch").oninput=renderRecipeList;
   document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
@@ -1281,7 +1280,7 @@ function renderRecipeList(){
 }
 function startNewRecipe(){
   if(!canManageRecipes())return;
-  currentRecipe={id:Date.now(),business:visibleBusinessNames()[0]||"",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
+  currentRecipe={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
   editingRecipeId=null;
   Promise.all([ensureSuppliersLoadedFor(currentRecipe.business),ensureRecipesLoadedFor(currentRecipe.business)]).then(openRecipeEditorForm)
 }
@@ -1510,17 +1509,19 @@ async function pushSuppliersToCloud(business){
 async function bootSuppliers(){
   document.getElementById("supplierEditorView").style.display="none";
   document.getElementById("supplierListView").style.display="block";
-  const sel=document.getElementById("supplierBusinessFilter");
-  const names=visibleBusinessNames();
-  sel.innerHTML='<option value="">Todos los negocios</option>'+names.map(b=>`<option>${esc(b)}</option>`).join("");
-  sel.onchange=renderSupplierList;
+  fillBusinessFilter("supplierBusinessFilter",bootSuppliers);
   document.getElementById("supplierSearch").oninput=renderSupplierList;
   document.getElementById("btnNewSupplier").style.display=canManageRecipes()?"":"none";
-  await Promise.all(names.map(ensureSuppliersLoadedFor));
+  await Promise.all(visibleBusinessNames().map(ensureSuppliersLoadedFor));
   renderSupplierList()
 }
 function allSuppliersFlat(){
   return visibleBusinessNames().flatMap(b=>(suppliersByBusiness[b]||[]).map(s=>({...s,business:s.business||b})))
+}
+function toggleSupplierPreview(business,id){
+  const box=document.getElementById(`supPreview-${id}`);
+  if(!box)return;
+  box.style.display=box.style.display==="none"?"block":"none"
 }
 function renderSupplierList(){
   const bizFilter=document.getElementById("supplierBusinessFilter").value;
@@ -1532,19 +1533,28 @@ function renderSupplierList(){
   const box=document.getElementById("supplierCards");
   if(!list.length){box.innerHTML='<div class="empty">No hay proveedores todavía'+(canManageRecipes()?' — usa "+ Nuevo proveedor" para agregar el primero.':'.')+'</div>';return}
   box.innerHTML=list.map(s=>{
-    const n=(s.products||[]).length;
+    const products=s.products||[];
+    const n=products.length;
+    const productsHtml=n?`<div id="supPreview-${s.id}" style="display:none;margin:8px 0;border-top:1px solid var(--line);padding-top:8px">${products.map(p=>{
+      const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
+      return `<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}</span></div>`
+    }).join("")}</div>`:"";
     return `<div class="card business">
       <div class="business-head"><h4>${esc(s.name||"Sin nombre")}</h4></div>
       <div class="line"><span>Negocio</span><strong>${esc(s.business)}</strong></div>
       <div class="line"><span>Insumos</span><strong>${n}</strong></div>
       ${s.contact?`<div class="line"><span>Contacto</span><span>${esc(s.contact)}</span></div>`:""}
-      <button class="btn" onclick="openSupplierEditor('${escJs(s.business)}',${s.id})">${canManageRecipes()?"Editar":"Ver"}</button>
+      ${productsHtml}
+      <div class="flex" style="gap:8px">
+        ${n?`<button class="btn" onclick="toggleSupplierPreview('${escJs(s.business)}',${s.id})">Ver insumos</button>`:""}
+        <button class="btn" onclick="openSupplierEditor('${escJs(s.business)}',${s.id})">${canManageRecipes()?"Editar":"Ver detalle"}</button>
+      </div>
     </div>`
   }).join("")
 }
 function startNewSupplier(){
   if(!canManageRecipes())return;
-  currentSupplier={id:Date.now(),business:visibleBusinessNames()[0]||"",name:"",contact:"",products:[]};
+  currentSupplier={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),name:"",contact:"",products:[]};
   editingSupplierId=null;
   openSupplierEditorForm()
 }
