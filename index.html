@@ -223,7 +223,6 @@ textarea{min-height:76px;resize:vertical}
   #reportText td,#reportText th{padding:3px 4px!important}
   #reportText div{margin-bottom:4px!important}
   .diff-print-label{display:none}
-  #historyBody [id^="tabFbox-"],#historyBody [id^="tabSbox-"],#historyBody [id^="grpbox-"]{display:block!important}
   #historyBody .diff-print-label{display:block!important;font-weight:700;font-size:10.5px;margin:8px 0 3px;color:#0d1f66}
   #history table{font-size:8.5px!important}
   #history td,#history th{padding:2px 3px!important}
@@ -758,13 +757,11 @@ window.addEventListener("afterprint",()=>{
 function compactHistoryForPrint(){
   document.querySelectorAll("#history table").forEach(t=>t.style.setProperty("font-size","8.5px","important"));
   document.querySelectorAll("#history td,#history th").forEach(c=>c.style.setProperty("padding","2px 3px","important"));
-  document.querySelectorAll('#historyBody [id^="tabFbox-"],#historyBody [id^="tabSbox-"],#historyBody [id^="grpbox-"]').forEach(el=>el.style.setProperty("display","block","important"));
   document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.setProperty("display","block","important"))
 }
 function restoreHistoryAfterPrint(){
   document.querySelectorAll("#history table").forEach(t=>t.style.removeProperty("font-size"));
   document.querySelectorAll("#history td,#history th").forEach(c=>c.style.removeProperty("padding"));
-  document.querySelectorAll('#historyBody [id^="tabFbox-"],#historyBody [id^="tabSbox-"],#historyBody [id^="grpbox-"]').forEach(el=>el.style.removeProperty("display"));
   document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.removeProperty("display"))
 }
 (function(){
