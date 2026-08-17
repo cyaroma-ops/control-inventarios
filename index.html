@@ -748,11 +748,25 @@ window.addEventListener("beforeprint",()=>{
     const month=monthEl&&monthEl.selectedOptions[0]?monthEl.selectedOptions[0].textContent:"";
     ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
   }
-  if(active&&active.id==="capture")buildCapturePrintView()
+  if(active&&active.id==="capture")buildCapturePrintView();
+  if(active&&active.id==="history")compactHistoryForPrint()
 });
 window.addEventListener("afterprint",()=>{
-  if(titleBeforePrint)document.title=titleBeforePrint
+  if(titleBeforePrint)document.title=titleBeforePrint;
+  restoreHistoryAfterPrint()
 });
+function compactHistoryForPrint(){
+  document.querySelectorAll("#history table").forEach(t=>t.style.setProperty("font-size","8.5px","important"));
+  document.querySelectorAll("#history td,#history th").forEach(c=>c.style.setProperty("padding","2px 3px","important"));
+  document.querySelectorAll('#historyBody [id^="tabFbox-"],#historyBody [id^="tabSbox-"],#historyBody [id^="grpbox-"]').forEach(el=>el.style.setProperty("display","block","important"));
+  document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.setProperty("display","block","important"))
+}
+function restoreHistoryAfterPrint(){
+  document.querySelectorAll("#history table").forEach(t=>t.style.removeProperty("font-size"));
+  document.querySelectorAll("#history td,#history th").forEach(c=>c.style.removeProperty("padding"));
+  document.querySelectorAll('#historyBody [id^="tabFbox-"],#historyBody [id^="tabSbox-"],#historyBody [id^="grpbox-"]').forEach(el=>el.style.removeProperty("display"));
+  document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.removeProperty("display"))
+}
 (function(){
   const y=new Date().getFullYear();
   ["footerYear","footerYearLogin"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=y})
