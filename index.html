@@ -204,6 +204,26 @@ textarea{min-height:76px;resize:vertical}
   .toma-row-inputs div{flex:none!important}
   .toma-row-inputs label{display:none!important}
   .toma-input{border:1px solid #999!important;background:#fff!important;height:20px!important;font-size:10.5px!important;width:62px!important;padding:2px 4px!important}
+  .kpis{gap:6px!important;margin-bottom:8px!important}
+  .kpi{padding:8px 10px!important}
+  .kpi small{font-size:9px!important}
+  .kpi strong{font-size:14px!important}
+  .form-card{padding:8px 10px!important;margin-bottom:8px!important}
+  .stagebar,.notice{display:none!important}
+  .summary-grid{gap:8px!important;margin-top:8px!important}
+  .summary{padding:8px 10px!important}
+  .summary h4{margin:0 0 4px!important;font-size:12px!important}
+  .summary .line{font-size:10.5px!important;padding:1px 0!important}
+  .table-card{margin-top:8px!important}
+  .table-head{padding:6px 10px!important}
+  #capture .content,#history .content{padding:0!important}
+  .inventory-table{min-width:0!important;width:100%!important;font-size:9px!important;table-layout:fixed}
+  .inventory-table th,.inventory-table td{padding:2px 3px!important;white-space:normal!important;word-break:break-word}
+  .inventory-table input,.inventory-table select{padding:1px 2px!important;font-size:8.5px!important;min-width:0!important;width:100%!important;border:1px solid #ccc!important;background:#fff!important}
+  .inventory-table .wide{min-width:0!important}
+  #reportText table{margin-bottom:8px!important}
+  #reportText td,#reportText th{padding:3px 4px!important}
+  #reportText div{margin-bottom:4px!important}
 }
 </style>
 </head>
@@ -723,6 +743,9 @@ window.addEventListener("beforeprint",()=>{
     const month=monthEl&&monthEl.selectedOptions[0]?monthEl.selectedOptions[0].textContent:"";
     ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
   }
+  let pageStyle=document.getElementById("printPageStyle");
+  if(!pageStyle){pageStyle=document.createElement("style");pageStyle.id="printPageStyle";document.head.appendChild(pageStyle)}
+  pageStyle.textContent=(active&&active.id==="capture")?"@page{size:landscape}":"";
 });
 window.addEventListener("afterprint",()=>{
   if(titleBeforePrint)document.title=titleBeforePrint
