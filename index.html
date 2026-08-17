@@ -223,10 +223,8 @@ textarea{min-height:76px;resize:vertical}
   #reportText td,#reportText th{padding:3px 4px!important}
   #reportText div{margin-bottom:4px!important}
   .diff-print-label{display:none}
-  #historyBody .diff-print-label{display:block!important;font-weight:700;font-size:10.5px;margin:8px 0 3px;color:#0d1f66}
-  #history table{font-size:8.5px!important}
-  #history td,#history th{padding:2px 3px!important}
-  #history .badge{font-size:8px!important;padding:1px 4px!important}
+  #history .card.table-card{display:none!important}
+  #historyPrintView{display:block!important}
 }
 </style>
 </head>
@@ -391,9 +389,10 @@ textarea{min-height:76px;resize:vertical}
       </section>
 
       <section id="history" class="view">
-        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div>
+        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="printHistory()">🖨️ Imprimir</button></div></div>
         <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
+        <div id="historyPrintView" style="display:none"></div>
       </section>
 
       <section id="tomafisica" class="view">
@@ -748,21 +747,100 @@ window.addEventListener("beforeprint",()=>{
     ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
   }
   if(active&&active.id==="capture")buildCapturePrintView();
-  if(active&&active.id==="history")compactHistoryForPrint()
+  if(active&&active.id==="history")buildHistoryPrintView()
 });
 window.addEventListener("afterprint",()=>{
-  if(titleBeforePrint)document.title=titleBeforePrint;
-  restoreHistoryAfterPrint()
+  if(titleBeforePrint)document.title=titleBeforePrint
 });
-function compactHistoryForPrint(){
-  document.querySelectorAll("#history table").forEach(t=>t.style.setProperty("font-size","8.5px","important"));
-  document.querySelectorAll("#history td,#history th").forEach(c=>c.style.setProperty("padding","2px 3px","important"));
-  document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.setProperty("display","block","important"))
+function printHistory(){
+  buildHistoryPrintView();
+  window.print()
 }
-function restoreHistoryAfterPrint(){
-  document.querySelectorAll("#history table").forEach(t=>t.style.removeProperty("font-size"));
-  document.querySelectorAll("#history td,#history th").forEach(c=>c.style.removeProperty("padding"));
-  document.querySelectorAll("#historyBody .diff-print-label").forEach(el=>el.style.removeProperty("display"))
+function buildHistoryPrintView(){
+  const box=document.getElementById("historyPrintView");
+  if(!box)return;
+  const bEl=document.getElementById("hBusiness"),sEl=document.getElementById("hStatus");
+  const b=bEl?bEl.value:"",s=sEl?sEl.value:"";
+  const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
+  if(!list.length){box.innerHTML='<div class="empty">No hay inventarios guardados para este filtro.</div>';return}
+  let html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="border-bottom:1px solid #999;text-align:left"><th style="padding:2px 3px">Fecha</th><th style="padding:2px 3px">Negocio</th><th style="padding:2px 3px">Inventario</th><th style="padding:2px 3px">Faltantes</th><th style="padding:2px 3px">Sobrantes</th><th style="padding:2px 3px">Mermas</th><th style="padding:2px 3px">CxC aplicado</th><th style="padding:2px 3px">Estatus</th></tr></thead><tbody>';
+  list.forEach(r=>{
+    const t=calcRecord(r);
+    html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:2px 3px">${esc(r.countDate)}</td><td style="padding:2px 3px">${esc(r.business)}</td><td style="padding:2px 3px">${money(t.phys)}</td><td style="padding:2px 3px" class="redtxt">${money(t.short)}</td><td style="padding:2px 3px" class="greentxt">${money(t.over)}</td><td style="padding:2px 3px" class="orangetxt">${money(t.mermas)}</td><td style="padding:2px 3px">${money(t.cxc)}</td><td style="padding:2px 3px">${esc(r.status)}</td></tr>`;
+    const diffrow=document.getElementById(`diffrow-${r.id}`);
+    if(diffrow&&diffrow.style.display!=="none"){
+      html+=`<tr><td colspan="8" style="padding:4px 3px 12px 12px">${categoryDiffPrintTableHtml(r.data)}${productDiffPrintHtml(r.data,r.id)}</td></tr>`
+    }
+    const fullrow=document.getElementById(`fullrow-${r.id}`);
+    if(fullrow&&fullrow.style.display!=="none"){
+      html+=`<tr><td colspan="8" style="padding:4px 3px 12px 12px">${fullInventoryPrintHtml(r.data)}</td></tr>`
+    }
+  });
+  html+="</tbody></table>";
+  box.innerHTML=html
+}
+function categoryDiffPrintTableHtml(data=rows){
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    const nonWaste=list.filter(s=>!s.waste);
+    if(!nonWaste.length)return;
+    html+=`<div style="font-weight:700;margin-top:8px;font-size:9.5px">${esc(group)}</div>`;
+    html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:2px 2px">Departamento</th><th style="padding:2px 2px">Faltantes</th><th style="padding:2px 2px">Sobrantes</th></tr></thead><tbody>';
+    nonWaste.forEach(s=>{
+      let short=0,over=0;
+      (data[s.id]||[]).forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)short+=Math.abs(d);else over+=d});
+      html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:2px 2px">${esc(s.name)}</td><td style="padding:2px 2px" class="redtxt">${money(short)}</td><td style="padding:2px 2px" class="greentxt">${money(over)}</td></tr>`
+    });
+    html+="</tbody></table>"
+  });
+  return html
+}
+function productDiffPrintHtml(data,recordId){
+  const list=productDiffRows(data);
+  if(!list.length)return '';
+  const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
+  const tabS=document.getElementById(`tabSbox-${recordId}`);
+  const useSobrantes=!!(tabS&&tabS.style.display!=="none");
+  const activeList=useSobrantes?sobrantes:faltantes;
+  const label=useSobrantes?"Sobrantes":"Faltantes";
+  const uid=recordId+(useSobrantes?"-s":"-f");
+  const groups=Object.keys(sections).filter(g=>activeList.some(r=>r.group===g));
+  let activeGroup=groups[0];
+  groups.forEach(g=>{
+    const gb=document.getElementById(`grpbox-${uid}-${g}`);
+    if(gb&&gb.style.display!=="none")activeGroup=g
+  });
+  let html=`<div style="font-weight:700;margin-top:10px;margin-bottom:4px;font-size:9.5px">Productos con diferencia — ${esc(label)}${activeGroup?" — "+esc(activeGroup):""}</div>`;
+  if(!activeGroup)return html+'<div style="font-size:8.5px;color:#888">Sin productos en esta categoría.</div>';
+  const groupList=activeList.filter(r=>r.group===activeGroup);
+  if(!groupList.length)return html+'<div style="font-size:8.5px;color:#888">Sin productos en esta categoría.</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:2px 2px">Departamento</th><th style="padding:2px 2px">Código</th><th style="padding:2px 2px">Producto</th><th style="padding:2px 2px">Unidad</th><th style="padding:2px 2px">Costo</th><th style="padding:2px 2px">Teórico</th><th style="padding:2px 2px">Físico</th><th style="padding:2px 2px">Diferencia</th><th style="padding:2px 2px">Importe</th></tr></thead><tbody>';
+  groupList.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.dept)}</td><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${r.theo}</td><td style="padding:2px 2px">${r.phys}</td><td style="padding:2px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:2px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
+  html+="</tbody></table>";
+  return html
+}
+function fullInventoryPrintHtml(data=rows){
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    list.forEach(s=>{
+      const items=data[s.id]||[];
+      if(!items.length)return;
+      html+=`<div style="font-weight:700;margin-top:8px;font-size:9.5px">${esc(group)} — ${esc(s.name)}</div>`;
+      const cols=s.waste?["Código","Producto","Unidad","Costo","Cantidad","Importe","Motivo"]:["Código","Producto","Unidad","Costo","Teórico","Físico","Diferencia","Importe"];
+      html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0">'+cols.map(c=>`<th style="padding:2px 2px">${c}</th>`).join("")+'</tr></thead><tbody>';
+      items.forEach(r=>{
+        if(s.waste){
+          html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${num(r.theo)}</td><td style="padding:2px 2px" class="orangetxt">${money(num(r.theo)*num(r.cost))}</td><td style="padding:2px 2px">${esc(r.reason||"-")}</td></tr>`
+        } else {
+          const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost),cls=amount<0?"redtxt":amount>0?"greentxt":"";
+          html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${num(r.theo)}</td><td style="padding:2px 2px">${num(r.phys)}</td><td style="padding:2px 2px" class="${cls}">${diff.toFixed(2)}</td><td style="padding:2px 2px" class="${cls}">${money(amount)}</td></tr>`
+        }
+      });
+      html+="</tbody></table>"
+    })
+  });
+  if(!html)return '<div style="font-size:8.5px;color:#888">Este inventario no tiene productos capturados.</div>';
+  return html
 }
 (function(){
   const y=new Date().getFullYear();
