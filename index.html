@@ -120,7 +120,7 @@ button{cursor:pointer}
   .toma-row-inputs{justify-content:stretch}
   .toma-row-inputs div{flex:1}
   .toma-input{width:100%}
-  .toma-kebab-wrap{position:absolute;top:10px;right:4px}
+  .toma-row .toma-kebab-wrap{position:absolute;top:10px;right:4px}
 }
 .table-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:16px;border-bottom:1px solid var(--line)}
 .table-wrap{overflow:auto}
@@ -1328,7 +1328,7 @@ async function bootHistory(){
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
-  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> ${currentUser.isAdmin?`<button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`:""}`;
+  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="editRecord(${r.id})">Editar</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}"><button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">🗑 Eliminar</button></div></div>`:""}</div>`;
     body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
     body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
@@ -2062,7 +2062,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?` <button class="btn" title="Eliminar esta toma" onclick="deleteToma('${escJs(b)}','${t.id}')" style="color:#ae1d23;padding:6px 9px;font-size:15px;line-height:1">🗑</button>`:""}`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="tomaListMenu-${t.id}"><button type="button" class="danger" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event);deleteToma('${escJs(b)}','${t.id}')">🗑 Eliminar</button></div></div>`:""}</div>`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
       ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px"><option value="" ${!t.department?"selected":""}>Sin especificar</option><option ${t.department==="Cocina"?"selected":""}>Cocina</option><option ${t.department==="Barra"?"selected":""}>Barra</option><option ${t.department==="Vinos"?"selected":""}>Vinos</option></select>`
@@ -2240,6 +2240,12 @@ let tomaEditingIdx=new Set();
 function toggleTomaRowMenu(e,idx){
   e.stopPropagation();
   const id="tomaMenu-"+idx;
+  document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle("open")
+}
+function toggleKebabMenu(id,e){
+  if(e)e.stopPropagation();
   document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
   const el=document.getElementById(id);
   if(el)el.classList.toggle("open")
