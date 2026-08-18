@@ -397,7 +397,8 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="tomafisica" class="view">
         <div id="tomaListView">
-          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="toggleTomaAuditPanel()" id="tomaAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div id="tomaAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex"><select id="tomaBusiness" onchange="bootTomaList()" style="max-width:260px"></select></div></div>
           <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Departamento</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
         </div>
@@ -1853,6 +1854,35 @@ async function pushTomasToCloud(business){
   const{error}=await sb.from("physical_takes").upsert({business,data:tomasByBusiness[business]||[],updated_at:new Date().toISOString()});
   if(error)console.error("Error al guardar tomas de "+business+":",error)
 }
+/* ==================== AUDITORÍA DE TOMAS FÍSICAS ==================== */
+let tomaAuditByBusiness={};
+const tomaAuditLoaded=new Set();
+async function ensureTomaAuditLoadedFor(business){
+  if(!business||tomaAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("toma_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de "+business+":",error);tomaAuditByBusiness[business]=[];tomaAuditLoaded.add(business);return}
+  tomaAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  tomaAuditLoaded.add(business)
+}
+async function logTomaAudit(business,action,details){
+  if(!business)return;
+  await ensureTomaAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  tomaAuditByBusiness[business]=[...(tomaAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("toma_audit_log").upsert({business,data:tomaAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de "+business+":",error)
+}
+async function toggleTomaAuditPanel(){
+  const box=document.getElementById("tomaAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("tomaBusiness").value;
+  if(!business){alert("Selecciona un negocio primero.");return}
+  await ensureTomaAuditLoadedFor(business);
+  const log=(tomaAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Tomas físicas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
+}
 function parsePhysicalCountCatalogPdf(text){
   const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"]);
   const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
@@ -1900,6 +1930,8 @@ function parsePhysicalCountCatalogPdf(text){
 async function bootTomaList(){
   const val=fillBusinessFilter("tomaBusiness",bootTomaList);
   document.getElementById("btnNewToma").style.display=canManageTomas()?"":"none";
+  document.getElementById("tomaAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("tomaAuditBox").style.display="none";
   await ensureTomasLoadedFor(val);
   renderTomaList()
 }
@@ -2034,6 +2066,7 @@ async function uploadTomaCatalog(){
     currentToma.quantities=newQty;
     currentToma.history=currentToma.history||[];
     currentToma.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:`Cargó el catálogo (${items.length} productos)`});
+    logTomaAudit(currentToma.business,"Cargó/reemplazó catálogo",`Toma del ${currentToma.countDate} — ${items.length} productos, depto: ${currentToma.department||"sin especificar"}`);
     msg.style.color="#1f9d55";msg.textContent=`Se cargaron ${items.length} productos para esta toma.`;
     fileInput.value="";
     document.getElementById("tomaCapActions").style.display="flex";
@@ -2207,6 +2240,7 @@ async function saveToma(status){
   tomasByBusiness[business]=freshList;
   tomasLoaded.add(business);
   await pushTomasToCloud(business);
+  logTomaAudit(business,idx>=0?`Guardó avance (${status})`:`Creó la toma (${status})`,`Toma del ${currentToma.countDate} — depto: ${currentToma.department||"sin especificar"}, ${currentToma.catalog.length} productos`);
   tomaDirtyCodes=new Set();
   alert("Toma guardada como "+status+".");
   closeTomaCapture()
@@ -2215,8 +2249,10 @@ async function deleteToma(business,id){
   if(!canManageTomas())return;
   if(!confirm("¿Eliminar esta toma física? Esta acción no se puede deshacer."))return;
   await ensureTomasLoadedFor(business);
+  const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
   tomasByBusiness[business]=(tomasByBusiness[business]||[]).filter(t=>String(t.id)!==String(id));
   await pushTomasToCloud(business);
+  await logTomaAudit(business,"ELIMINÓ la toma",t?`Toma del ${t.countDate} — depto: ${t.department||"sin especificar"}, ${t.catalog.length} productos, estatus: ${t.status}`:`ID ${id}`);
   renderTomaList()
 }
 async function pushBusinessesToCloud(){
