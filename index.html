@@ -442,7 +442,8 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="recipes" class="view">
         <div id="recipeListView">
-          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="recipeBusinessFilter" style="max-width:240px"></select>
             <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select>
@@ -452,7 +453,8 @@ textarea{min-height:76px;resize:vertical}
           <div id="recipeCards" class="business-grid"></div>
         </div>
         <div id="recipeEditorView" style="display:none">
-          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" id="btnRecipeHistory" onclick="toggleRecipeHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
+          <div id="recipeHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
               <div><label>Negocio</label><select id="recBusiness"></select></div>
@@ -491,7 +493,8 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="suppliers" class="view">
         <div id="supplierListView">
-          <div class="page-title"><div><h2>Proveedores</h2><p>Insumos, precios de compra y equivalencias para costear recetas</p></div><div class="actions"><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
+          <div class="page-title"><div><h2>Proveedores</h2><p>Insumos, precios de compra y equivalencias para costear recetas</p></div><div class="actions"><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
+          <div id="supplierAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="supplierBusinessFilter" style="max-width:240px"></select>
             <input type="text" id="supplierSearch" placeholder="Buscar proveedor o insumo..." style="max-width:240px">
@@ -499,7 +502,8 @@ textarea{min-height:76px;resize:vertical}
           <div id="supplierCards" class="business-grid"></div>
         </div>
         <div id="supplierEditorView" style="display:none">
-          <div class="page-title"><div><h2 id="supplierEditorTitle">Nuevo proveedor</h2><p>Los insumos que agregues aquí quedan disponibles para elegir directo en las recetas de este negocio.</p></div><div class="actions"><button class="btn" onclick="closeSupplierEditor()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="supplierEditorTitle">Nuevo proveedor</h2><p>Los insumos que agregues aquí quedan disponibles para elegir directo en las recetas de este negocio.</p></div><div class="actions"><button class="btn" id="btnSupplierHistory" onclick="toggleSupplierHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeSupplierEditor()">← Volver al listado</button></div></div>
+          <div id="supplierHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
               <div><label>Negocio</label><select id="supBusiness"></select></div>
@@ -713,6 +717,7 @@ async function onLoginSuccess(user){
   init();
   document.querySelector('[data-view="users"]').style.display = currentUser.isAdmin ? "" : "none";
   applyViewOnlyUI();
+  applyNavVisibility();
   renderUsersPanel();
 }
 function applyViewOnlyUI(){
@@ -720,6 +725,28 @@ function applyViewOnlyUI(){
   const navCapture=document.getElementById("navCapture");if(navCapture)navCapture.style.display=hide;
   const btnNew=document.getElementById("btnNewInventory");if(btnNew)btnNew.style.display=hide;
   const btnClear=document.getElementById("btnClearHistory");if(btnClear)btnClear.style.display=hide;
+}
+function applyNavVisibility(){
+  const isAdmin=currentUser.isAdmin,viewOnly=currentUser.viewOnly;
+  const restricted=!isAdmin&&!viewOnly;
+  const fullAccessOnly=["dashboard","capture","history","cxc","waste","reports","businesses","products","settings"];
+  fullAccessOnly.forEach(id=>{
+    const btn=document.querySelector(`[data-view="${id}"]`);
+    if(btn)btn.style.display=restricted?"none":""
+  });
+  const tomaBtn=document.querySelector('[data-view="tomafisica"]');
+  const showToma=isAdmin||viewOnly||currentUser.canCaptureTomas||currentUser.canEditTomas;
+  if(tomaBtn)tomaBtn.style.display=showToma?"":"none";
+  const recBtn=document.querySelector('[data-view="recipes"]');
+  const showRecipes=isAdmin||viewOnly||currentUser.canManageRecipes;
+  if(recBtn)recBtn.style.display=showRecipes?"":"none";
+  const supBtn=document.querySelector('[data-view="suppliers"]');
+  if(supBtn)supBtn.style.display=showRecipes?"":"none";
+  document.querySelector('[data-view="users"]').style.display=isAdmin?"":"none";
+  if(restricted){
+    if(showToma)openView("tomafisica");
+    else if(showRecipes)openView("recipes")
+  }
 }
 async function checkSession(){
   if(inRecoveryMode)return;
@@ -1301,7 +1328,7 @@ async function bootHistory(){
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
-  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`;
+  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> ${currentUser.isAdmin?`<button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`:""}`;
     body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
     body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
@@ -1341,7 +1368,7 @@ function toggleDiffRow(id){
   if(row)row.style.display=row.style.display==="none"?"table-row":"none"
 }
 async function deleteRecord(id){
-  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede eliminar inventarios.");return}
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar inventarios.");return}
   if(!confirm("¿Eliminar este inventario?"))return;
   await ensureAllBusinessRecordsLoaded();
   const rec=getRecords().find(r=>r.id===id);
@@ -1351,7 +1378,7 @@ async function deleteRecord(id){
   renderHistory();renderDashboard()
 }
 async function clearHistory(){
-  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede eliminar historial.");return}
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar historial.");return}
   const b=hBusiness.value;
   const label=b||"TODOS los negocios";
   if(!confirm(`¿Eliminar el historial de ${label}? Esta acción no se puede deshacer.`))return;
@@ -1421,6 +1448,8 @@ async function bootRecipes(){
   document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
   document.getElementById("recipeSearch").oninput=renderRecipeList;
   document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
+  document.getElementById("recipeAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("recipeAuditBox").style.display="none";
   await ensureAllRecipesLoaded();
   renderRecipeList()
 }
@@ -1502,7 +1531,9 @@ function openRecipeEditorForm(){
   document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
   document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
   document.getElementById("btnPublishRecipe").style.display=readOnly?"none":"";
-  document.getElementById("btnDeleteRecipe").style.display=(editingRecipeId&&!readOnly)?"":"none"
+  document.getElementById("btnDeleteRecipe").style.display=(editingRecipeId&&!readOnly)?"":"none";
+  document.getElementById("btnRecipeHistory").style.display=editingRecipeId?"":"none";
+  document.getElementById("recipeHistoryBox").style.display="none"
 }
 function onRecipeTypeChange(){
   const type=document.getElementById("recType").value;
@@ -1643,13 +1674,15 @@ async function saveRecipe(status){
   currentRecipe.updatedBy=currentUser.name||currentUser.email;
   currentRecipe.updatedAt=new Date().toISOString();
   currentRecipe.history=currentRecipe.history||[];
-  currentRecipe.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:editingRecipeId?`Editó la receta (${status})`:`Creó la receta (${status})`});
-  if(!editingRecipeId){currentRecipe.createdBy=currentUser.name||currentUser.email;currentRecipe.createdAt=new Date().toISOString()}
+  const isNew=!editingRecipeId;
+  currentRecipe.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?`Creó la receta (${status})`:`Editó la receta (${status})`});
+  if(isNew){currentRecipe.createdBy=currentUser.name||currentUser.email;currentRecipe.createdAt=new Date().toISOString()}
   await ensureRecipesLoadedFor(business);
   let list=recipesByBusiness[business]||[];
   if(editingRecipeId){list=list.map(r=>r.id===editingRecipeId?currentRecipe:r)} else {list=[...list,currentRecipe]}
   recipesByBusiness[business]=list;
   await pushRecipesToCloud(business);
+  await logRecipeAudit(business,isNew?"Creó la receta":"Editó la receta",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"}) — ${status}`);
   alert("Receta guardada como "+status+".");
   closeRecipeEditor()
 }
@@ -1660,7 +1693,45 @@ async function deleteCurrentRecipe(){
   await ensureRecipesLoadedFor(business);
   recipesByBusiness[business]=(recipesByBusiness[business]||[]).filter(r=>r.id!==editingRecipeId);
   await pushRecipesToCloud(business);
+  await logRecipeAudit(business,"ELIMINÓ la receta",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"})`);
   closeRecipeEditor()
+}
+function toggleRecipeHistory(){
+  const box=document.getElementById("recipeHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(currentRecipe.history||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de esta receta</h3>`+(history.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th></tr></thead><tbody>${history.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay historial para esta receta.</div>');
+  box.style.display="block"
+}
+/* ---- Auditoría de recetas (persiste aunque se elimine la receta) ---- */
+let recipeAuditByBusiness={};
+const recipeAuditLoaded=new Set();
+async function ensureRecipeAuditLoadedFor(business){
+  if(!business||recipeAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("recipe_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de recetas de "+business+":",error);recipeAuditByBusiness[business]=[];recipeAuditLoaded.add(business);return}
+  recipeAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  recipeAuditLoaded.add(business)
+}
+async function logRecipeAudit(business,action,details){
+  if(!business)return;
+  await ensureRecipeAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  recipeAuditByBusiness[business]=[...(recipeAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("recipe_audit_log").upsert({business,data:recipeAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de recetas de "+business+":",error)
+}
+async function toggleRecipeAuditPanel(){
+  const box=document.getElementById("recipeAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("recipeBusinessFilter").value;
+  if(!business){alert("Selecciona un negocio en el filtro primero.");return}
+  await ensureRecipeAuditLoadedFor(business);
+  const log=(recipeAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Recetas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
 }
 
 /* ==================== PROVEEDORES / INSUMOS ==================== */
@@ -1694,6 +1765,8 @@ async function bootSuppliers(){
   fillBusinessFilter("supplierBusinessFilter",bootSuppliers);
   document.getElementById("supplierSearch").oninput=renderSupplierList;
   document.getElementById("btnNewSupplier").style.display=canManageRecipes()?"":"none";
+  document.getElementById("supplierAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("supplierAuditBox").style.display="none";
   await Promise.all(visibleBusinessNames().map(ensureSuppliersLoadedFor));
   renderSupplierList()
 }
@@ -1763,7 +1836,9 @@ function openSupplierEditorForm(){
   ["supBusiness","supName","supContact"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnAddSupplierProduct").style.display=readOnly?"none":"";
   document.getElementById("btnSaveSupplier").style.display=readOnly?"none":"";
-  document.getElementById("btnDeleteSupplier").style.display=(editingSupplierId&&!readOnly)?"":"none"
+  document.getElementById("btnDeleteSupplier").style.display=(editingSupplierId&&!readOnly)?"":"none";
+  document.getElementById("btnSupplierHistory").style.display=editingSupplierId?"":"none";
+  document.getElementById("supplierHistoryBox").style.display="none"
 }
 function closeSupplierEditor(){
   currentSupplier=null;editingSupplierId=null;
@@ -1822,11 +1897,15 @@ async function saveSupplier(){
   currentSupplier.business=business;
   currentSupplier.name=name;
   currentSupplier.contact=document.getElementById("supContact").value.trim();
+  currentSupplier.history=currentSupplier.history||[];
+  const isNew=!editingSupplierId;
+  currentSupplier.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?"Creó el proveedor":"Editó el proveedor"});
   await ensureSuppliersLoadedFor(business);
   let list=suppliersByBusiness[business]||[];
   if(editingSupplierId){list=list.map(s=>s.id===editingSupplierId?currentSupplier:s)} else {list=[...list,currentSupplier]}
   suppliersByBusiness[business]=list;
   await pushSuppliersToCloud(business);
+  await logSupplierAudit(business,isNew?"Creó el proveedor":"Editó el proveedor",`"${currentSupplier.name}" — ${(currentSupplier.products||[]).length} insumos`);
   alert("Proveedor guardado.");
   closeSupplierEditor()
 }
@@ -1837,7 +1916,45 @@ async function deleteCurrentSupplier(){
   await ensureSuppliersLoadedFor(business);
   suppliersByBusiness[business]=(suppliersByBusiness[business]||[]).filter(s=>s.id!==editingSupplierId);
   await pushSuppliersToCloud(business);
+  await logSupplierAudit(business,"ELIMINÓ el proveedor",`"${currentSupplier.name}" — ${(currentSupplier.products||[]).length} insumos`);
   closeSupplierEditor()
+}
+function toggleSupplierHistory(){
+  const box=document.getElementById("supplierHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(currentSupplier.history||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de este proveedor</h3>`+(history.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th></tr></thead><tbody>${history.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay historial para este proveedor.</div>');
+  box.style.display="block"
+}
+/* ---- Auditoría de proveedores (persiste aunque se elimine el proveedor) ---- */
+let supplierAuditByBusiness={};
+const supplierAuditLoaded=new Set();
+async function ensureSupplierAuditLoadedFor(business){
+  if(!business||supplierAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("supplier_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de proveedores de "+business+":",error);supplierAuditByBusiness[business]=[];supplierAuditLoaded.add(business);return}
+  supplierAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  supplierAuditLoaded.add(business)
+}
+async function logSupplierAudit(business,action,details){
+  if(!business)return;
+  await ensureSupplierAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  supplierAuditByBusiness[business]=[...(supplierAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("supplier_audit_log").upsert({business,data:supplierAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de proveedores de "+business+":",error)
+}
+async function toggleSupplierAuditPanel(){
+  const box=document.getElementById("supplierAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("supplierBusinessFilter").value;
+  if(!business){alert("Selecciona un negocio en el filtro primero.");return}
+  await ensureSupplierAuditLoadedFor(business);
+  const log=(supplierAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Proveedores — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
 }
 
 /* ==================== TOMA FÍSICA ==================== */
@@ -1945,7 +2062,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` <button class="btn" title="Eliminar esta toma" onclick="deleteToma('${escJs(b)}','${t.id}')" style="color:#ae1d23;padding:6px 9px;font-size:15px;line-height:1">🗑</button>`:""}`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?` <button class="btn" title="Eliminar esta toma" onclick="deleteToma('${escJs(b)}','${t.id}')" style="color:#ae1d23;padding:6px 9px;font-size:15px;line-height:1">🗑</button>`:""}`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
       ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px"><option value="" ${!t.department?"selected":""}>Sin especificar</option><option ${t.department==="Cocina"?"selected":""}>Cocina</option><option ${t.department==="Barra"?"selected":""}>Barra</option><option ${t.department==="Vinos"?"selected":""}>Vinos</option></select>`
@@ -2246,7 +2363,7 @@ async function saveToma(status){
   closeTomaCapture()
 }
 async function deleteToma(business,id){
-  if(!canManageTomas())return;
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar tomas físicas.");return}
   if(!confirm("¿Eliminar esta toma física? Esta acción no se puede deshacer."))return;
   await ensureTomasLoadedFor(business);
   const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
