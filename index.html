@@ -110,7 +110,7 @@ button{cursor:pointer}
 .toma-kebab-wrap{position:relative;display:flex;align-items:center}
 .toma-kebab-btn{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:4px 9px;border-radius:6px}
 .toma-kebab-btn:hover{background:#f1f5f9;color:#1a2b4c}
-.toma-kebab-dropdown{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #e5eaf2;border-radius:8px;box-shadow:0 6px 18px rgba(20,30,60,.14);z-index:20;min-width:160px;overflow:hidden}
+.toma-kebab-dropdown{display:none;position:fixed;background:#fff;border:1px solid #e5eaf2;border-radius:8px;box-shadow:0 6px 18px rgba(20,30,60,.14);z-index:200;min-width:160px;overflow:hidden}
 .toma-kebab-dropdown.open{display:block}
 .toma-kebab-dropdown button{display:block;width:100%;text-align:left;padding:9px 13px;border:none;background:none;font-size:13px;cursor:pointer;color:#1a2b4c}
 .toma-kebab-dropdown button:hover{background:#f4f6fb}
@@ -1328,8 +1328,14 @@ async function bootHistory(){
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
-  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="editRecord(${r.id})">Editar</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}"><button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">🗑 Eliminar</button></div></div>`:""}</div>`;
-    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
+  list.forEach(r=>{const t=calcRecord(r);
+    const menuItems=[
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);toggleFullRow(${r.id})">📋 Ver inventario completo</button>`,
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);editRecord(${r.id})">${currentUser.viewOnly?"👁️ Ver detalle":"✏️ Editar"}</button>`,
+      currentUser.isAdmin?`<button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">🗑 Eliminar</button>`:""
+    ].filter(Boolean).join("");
+    const actions=`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button><div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}">${menuItems}</div></div></div>`;
+    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`;
     body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
   });
@@ -2237,20 +2243,29 @@ function renderTomaGroups(){
   updateTomaCount()
 }
 let tomaEditingIdx=new Set();
+function positionKebabDropdown(btn,el){
+  const r=btn.getBoundingClientRect();
+  el.style.top=(r.bottom+4)+"px";
+  const width=el.offsetWidth||170;
+  let left=r.right-width;
+  if(left<4)left=4;
+  el.style.left=left+"px"
+}
 function toggleTomaRowMenu(e,idx){
   e.stopPropagation();
   const id="tomaMenu-"+idx;
   document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
   const el=document.getElementById(id);
-  if(el)el.classList.toggle("open")
+  if(el){const willOpen=!el.classList.contains("open");if(willOpen)positionKebabDropdown(e.currentTarget,el);el.classList.toggle("open")}
 }
 function toggleKebabMenu(id,e){
   if(e)e.stopPropagation();
   document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
   const el=document.getElementById(id);
-  if(el)el.classList.toggle("open")
+  if(el){const willOpen=!el.classList.contains("open");if(willOpen&&e)positionKebabDropdown(e.currentTarget,el);el.classList.toggle("open")}
 }
 document.addEventListener("click",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")));
+document.addEventListener("scroll",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")),true);
 function startEditTomaProduct(idx){
   if(!canManageTomas())return;
   tomaEditingIdx.add(idx);
