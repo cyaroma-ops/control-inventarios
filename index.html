@@ -91,6 +91,10 @@ button{cursor:pointer}
 .line.total{border-top:1px solid var(--line);padding-top:11px;font-weight:800}
 .badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}
 .badge.green{background:#dff7e9;color:#167347}.badge.yellow{background:#fff0cf;color:#9a5c00}.badge.red{background:#fde4e5;color:#ae1d23}.badge.blue{background:#e3ecff;color:#1d3fae}
+.mini-menu-wrap{position:relative;display:inline-block}
+.mini-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:6px;z-index:20;white-space:nowrap}
+.mini-menu.open{display:block}
+.mini-menu .btn{width:100%;text-align:left;padding:7px 12px}
 .progress{height:7px;background:#edf1f6;border-radius:999px;overflow:hidden;margin:10px 0 5px}
 .progress span{display:block;height:100%;background:var(--blue)}
 .business .btn{width:100%;margin-top:12px}
@@ -357,7 +361,7 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="history" class="view">
         <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div>
-        <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
+        <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><span class="mini-menu-wrap" id="btnClearHistory"><button type="button" class="btn" onclick="toggleMiniMenu(this)" title="Más opciones">⋯</button><div class="mini-menu"><button type="button" class="btn red" onclick="clearHistory()">Eliminar historial</button></div></span></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
       </section>
 
@@ -509,7 +513,7 @@ function renderCustomAlmacenesList(){
   const box=document.getElementById("customAlmacenesList");
   if(!box)return;
   if(!customAlmacenes.length){box.innerHTML='<div class="empty">Todavía no has agregado ningún almacén adicional.</div>';return}
-  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<button class="btn red" onclick="removeCustomAlmacen('${escJs(a.id)}')" style="padding:3px 8px;font-size:11px">Quitar</button>`:""}</div>`).join("")
+  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?miniDeleteMenu(`removeCustomAlmacen('${escJs(a.id)}')`,"Quitar"):""}</div>`).join("")
 }
 let tomaDepartmentsList=["Cocina","Barra","Vinos"];
 async function loadTomaDepartmentsFromCloud(){
@@ -542,7 +546,7 @@ function renderTomaDepartmentsList(){
   const box=document.getElementById("tomaDepartmentsList");
   if(!box)return;
   if(!tomaDepartmentsList.length){box.innerHTML='<div class="empty">Todavía no hay departamentos.</div>';return}
-  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?`<button class="btn red" onclick="removeTomaDepartment('${escJs(d)}')" style="padding:3px 8px;font-size:11px">Quitar</button>`:""}</div>`).join("")
+  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?miniDeleteMenu(`removeTomaDepartment('${escJs(d)}')`,"Quitar"):""}</div>`).join("")
 }
 function tomaDepartmentOptionsHtml(selected){
   return'<option value="">Sin especificar</option>'+tomaDepartmentsList.map(d=>`<option ${d===selected?"selected":""}>${esc(d)}</option>`).join("")
@@ -865,6 +869,18 @@ function renderInventory(){
   if(currentUser&&currentUser.viewOnly)applyCaptureReadOnly(true)
 }
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;")}
+function miniDeleteMenu(onclickAction,label){
+  return`<span class="mini-menu-wrap"><button type="button" class="btn" onclick="toggleMiniMenu(this)" title="Más opciones" style="padding:6px 10px">⋯</button><div class="mini-menu"><button type="button" class="btn red" onclick="${onclickAction}">${esc(label||"Eliminar")}</button></div></span>`
+}
+function toggleMiniMenu(btn){
+  const menu=btn.nextElementSibling;
+  const wasOpen=menu&&menu.classList.contains("open");
+  document.querySelectorAll(".mini-menu.open").forEach(m=>m.classList.remove("open"));
+  if(menu&&!wasOpen)menu.classList.add("open")
+}
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".mini-menu-wrap"))document.querySelectorAll(".mini-menu.open").forEach(m=>m.classList.remove("open"))
+});
 function escJs(v){return String(v??"").replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll("\n"," ").replaceAll("<","&lt;")}
 function edit(id,i,field,value){
   const numeric=["theo","phys","cost"].includes(field);
@@ -1145,7 +1161,7 @@ async function bootHistory(){
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
-  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> <button class="btn red" onclick="deleteRecord(${r.id})">Eliminar</button>`;
+  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> ${miniDeleteMenu(`deleteRecord(${r.id})`)}`;
     body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
     body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
@@ -1304,7 +1320,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` <button class="btn" title="Eliminar esta toma" onclick="deleteToma('${escJs(b)}','${t.id}')" style="color:#ae1d23;padding:6px 9px;font-size:15px;line-height:1">🗑</button>`:""}`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` ${miniDeleteMenu(`deleteToma('${escJs(b)}','${t.id}')`)}`:""}`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
       ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px">${tomaDepartmentOptionsHtml(t.department||"")}</select>`
@@ -1450,7 +1466,7 @@ function renderTomaGroups(){
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
       const infoHtml=it.manual
-        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button></div>`
+        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap;align-items:center"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px">${miniDeleteMenu(`deleteTomaProduct(${idx})`)}</div>`
         :`<strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span>`;
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
         <div class="toma-row-info">${infoHtml}</div>
