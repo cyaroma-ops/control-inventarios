@@ -40,7 +40,7 @@ button{cursor:pointer}
 .app{min-height:100vh;display:grid;grid-template-columns:244px 1fr}
 .sidebar{
   background:linear-gradient(180deg,var(--nav),#081338);color:#fff;position:sticky;top:0;
-  height:100vh;padding:24px 18px;display:flex;flex-direction:column
+  height:100vh;overflow-y:auto;padding:24px 18px;display:flex;flex-direction:column
 }
 .brand{margin-bottom:28px}
 .brand-logo{width:100%;max-width:172px;height:auto;display:block;margin:0 auto 12px}
@@ -91,15 +91,11 @@ button{cursor:pointer}
 .line.total{border-top:1px solid var(--line);padding-top:11px;font-weight:800}
 .badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}
 .badge.green{background:#dff7e9;color:#167347}.badge.yellow{background:#fff0cf;color:#9a5c00}.badge.red{background:#fde4e5;color:#ae1d23}.badge.blue{background:#e3ecff;color:#1d3fae}
-.mini-menu-wrap{position:relative;display:inline-block}
-.mini-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:6px;z-index:20;white-space:nowrap}
-.mini-menu.open{display:block}
-.mini-menu .btn{width:100%;text-align:left;padding:7px 12px}
 .progress{height:7px;background:#edf1f6;border-radius:999px;overflow:hidden;margin:10px 0 5px}
 .progress span{display:block;height:100%;background:var(--blue)}
 .business .btn{width:100%;margin-top:12px}
 .table-card{margin-top:20px;overflow:hidden}
-.toma-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.toma-row{position:relative;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
 .toma-row-header{display:none}
 .toma-row:last-child{border-bottom:none}
 .toma-row-filled{background:#f4faf6}
@@ -111,11 +107,20 @@ button{cursor:pointer}
 .toma-row-inputs label{font-size:11px;color:var(--muted)}
 .toma-input{width:104px;height:44px;font-size:16px;text-align:center;border-radius:9px}
 .toma-edit-field{padding:5px 8px;border-radius:6px;font-size:13px}
+.toma-kebab-wrap{position:relative;display:flex;align-items:center}
+.toma-kebab-btn{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:4px 9px;border-radius:6px}
+.toma-kebab-btn:hover{background:#f1f5f9;color:#1a2b4c}
+.toma-kebab-dropdown{display:none;position:fixed;background:#fff;border:1px solid #e5eaf2;border-radius:8px;box-shadow:0 6px 18px rgba(20,30,60,.14);z-index:200;min-width:160px;overflow:hidden}
+.toma-kebab-dropdown.open{display:block}
+.toma-kebab-dropdown button{display:block;width:100%;text-align:left;padding:9px 13px;border:none;background:none;font-size:13px;cursor:pointer;color:#1a2b4c}
+.toma-kebab-dropdown button:hover{background:#f4f6fb}
+.toma-kebab-dropdown button.danger{color:#ae1d23}
 @media(max-width:600px){
   .toma-row{flex-direction:column;align-items:stretch}
   .toma-row-inputs{justify-content:stretch}
   .toma-row-inputs div{flex:1}
   .toma-input{width:100%}
+  .toma-row .toma-kebab-wrap{position:absolute;top:10px;right:4px}
 }
 .table-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:16px;border-bottom:1px solid var(--line)}
 .table-wrap{overflow:auto}
@@ -182,7 +187,7 @@ textarea{min-height:76px;resize:vertical}
   h2{margin-top:0}
   #printHeader{display:block!important;border-bottom:2px solid #0d1f66;padding-bottom:10px;margin-bottom:16px;font-weight:700;color:#0d1f66}
   #printFooter{display:block!important;position:fixed;bottom:6px;left:0;font-size:9px;color:#94a3b8;font-weight:400}
-  #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox{display:none!important}
+  #tomaCaptureView .page-title,#tomaSetupCard,#tomaSearch,#tomaListView .card.form-card,#tomaHistoryBox,.toma-kebab-wrap{display:none!important}
   #tomaPrintHeader{display:block!important;margin-bottom:14px}
   #tomaPrintHeader h2{font-family:"Playfair Display",Georgia,serif;color:#0d1f66;margin:0 0 4px;font-size:22px}
   #tomaPrintHeader div{color:var(--muted);font-size:13px;line-height:1.5}
@@ -199,6 +204,27 @@ textarea{min-height:76px;resize:vertical}
   .toma-row-inputs div{flex:none!important}
   .toma-row-inputs label{display:none!important}
   .toma-input{border:1px solid #999!important;background:#fff!important;height:20px!important;font-size:10.5px!important;width:62px!important;padding:2px 4px!important}
+  .kpis{gap:6px!important;margin-bottom:8px!important}
+  .kpi{padding:8px 10px!important}
+  .kpi small{font-size:9px!important}
+  .kpi strong{font-size:14px!important}
+  .form-card{padding:8px 10px!important;margin-bottom:8px!important}
+  .stagebar,#capture .notice{display:none!important}
+  .summary-grid{gap:8px!important;margin-top:8px!important}
+  .summary{padding:8px 10px!important}
+  .summary h4{margin:0 0 4px!important;font-size:12px!important}
+  .summary .line{font-size:10.5px!important;padding:1px 0!important}
+  .table-card{margin-top:8px!important}
+  .table-head{padding:6px 10px!important}
+  #capture .content,#history .content{padding:0!important}
+  #capture .tabs,#capture .subtabs,#capture .card.table-card{display:none!important}
+  #capturePrintView{display:block!important}
+  #reportText table{margin-bottom:8px!important}
+  #reportText td,#reportText th{padding:3px 4px!important}
+  #reportText div{margin-bottom:4px!important}
+  .diff-print-label{display:none}
+  #history .card.table-card{display:none!important}
+  #historyPrintView{display:block!important}
 }
 </style>
 </head>
@@ -256,6 +282,8 @@ textarea{min-height:76px;resize:vertical}
       <button data-view="reports"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/></svg></span>Reportes</button>
       <button data-view="businesses"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6M4 21h16"/></svg></span>Negocios</button>
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
+      <button data-view="recipes"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetas</button>
+      <button data-view="suppliers"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16V6a1 1 0 0 1 1-1h9v11"/><path d="M13 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></svg></span>Proveedores</button>
       <button data-view="users"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.7 14.3c2.6.3 4.6 2.5 4.8 5.2"/></svg></span>Usuarios</button>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
@@ -350,24 +378,27 @@ textarea{min-height:76px;resize:vertical}
             </table>
           </div>
         </div>
+        <div id="capturePrintView" style="display:none"></div>
 
         <div class="summary-grid">
-          <div class="card summary"><h4>Cocina</h4><div class="line"><span>Almacén general</span><strong id="sKg">$0</strong></div><div class="line"><span>Producción</span><strong id="sKp">$0</strong></div><div id="sKgCustom"></div><div class="line total"><span>Inventario cocina</span><strong id="sK">$0</strong></div><div class="line"><span>Alimento de personal</span><strong id="sKf" class="orangetxt">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sKw" class="orangetxt">$0</strong></div></div>
-          <div class="card summary"><h4>Barra</h4><div class="line"><span>Almacén general</span><strong id="sBg">$0</strong></div><div class="line"><span>Producción</span><strong id="sBp">$0</strong></div><div class="line"><span>Almacén de vinos</span><strong id="sBw">$0</strong></div><div id="sBgCustom"></div><div class="line total"><span>Inventario barra</span><strong id="sB">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sBmw" class="orangetxt">$0</strong></div></div>
+          <div class="card summary"><h4>Cocina</h4><div class="line"><span>Almacén general</span><strong id="sKg">$0</strong></div><div class="line"><span>Producción</span><strong id="sKp">$0</strong></div><div class="line total"><span>Inventario cocina</span><strong id="sK">$0</strong></div><div class="line"><span>Alimento de personal</span><strong id="sKf" class="orangetxt">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sKw" class="orangetxt">$0</strong></div></div>
+          <div class="card summary"><h4>Barra</h4><div class="line"><span>Almacén general</span><strong id="sBg">$0</strong></div><div class="line"><span>Producción</span><strong id="sBp">$0</strong></div><div class="line"><span>Almacén de vinos</span><strong id="sBw">$0</strong></div><div class="line total"><span>Inventario barra</span><strong id="sB">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sBmw" class="orangetxt">$0</strong></div></div>
           <div class="card summary"><h4>Diferencias</h4><div class="line"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div><div class="line"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div><div class="line"><span>Diferencia neta</span><strong id="sNet">$0</strong></div><div class="line total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div><div id="sByCategory"></div></div>
           <div class="card summary"><h4>CxC por faltantes</h4><div class="line"><span>Aplicar a CxC</span><strong id="sCxc" class="redtxt">$0</strong></div><div class="line"><span>No aplicar</span><strong id="sNoCxc">$0</strong></div><div class="line"><span>Pendiente</span><strong id="sPending" class="orangetxt">$0</strong></div><div class="line total"><span>Faltantes evaluados</span><strong id="sEvaluated">$0</strong></div></div>
         </div>
       </section>
 
       <section id="history" class="view">
-        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div>
-        <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><span class="mini-menu-wrap" id="btnClearHistory"><button type="button" class="btn" onclick="toggleMiniMenu(this)" title="Más opciones">⋯</button><div class="mini-menu"><button type="button" class="btn red" onclick="clearHistory()">Eliminar historial</button></div></span></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
+        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="printHistory()">🖨️ Imprimir</button></div></div>
+        <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
+        <div id="historyPrintView" style="display:none"></div>
       </section>
 
       <section id="tomafisica" class="view">
         <div id="tomaListView">
-          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="toggleTomaAuditPanel()" id="tomaAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div id="tomaAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex"><select id="tomaBusiness" onchange="bootTomaList()" style="max-width:260px"></select></div></div>
           <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Departamento</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
         </div>
@@ -426,6 +457,89 @@ textarea{min-height:76px;resize:vertical}
           <div class="empty" style="margin-top:10px">Sube tu catálogo tal cual lo exportas de tu sistema (columnas típicas: Clave/Código, Descripción/Producto, Unidad, Costo, y alguna columna de categoría o grupo como "descripciongrupo"). No necesita traer los nombres exactos de nuestras secciones — después de subirlo te vamos a preguntar a qué sección de captura corresponde cada categoría que traiga tu archivo. Al confirmar, se reemplaza por completo el catálogo guardado de ese negocio.</div>
         </div>
         <div class="card table-card"><div class="table-head"><h3 style="margin:0">Catálogo guardado</h3><button class="btn" onclick="exportBusinessCatalog()">Exportar CSV</button></div><div class="table-wrap"><table><thead><tr><th>Área</th><th>Código</th><th>Producto</th><th>Unidad</th><th>Costo</th></tr></thead><tbody id="productBody"></tbody></table></div></div>
+      </section>
+      <section id="recipes" class="view">
+        <div id="recipeListView">
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
+            <select id="recipeBusinessFilter" style="max-width:240px"></select>
+            <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select>
+            <select id="recipeTypeFilter" style="max-width:200px"><option value="">Todos los tipos</option><option value="menu">Menú</option><option value="produccion">Producción</option></select>
+            <input type="text" id="recipeSearch" placeholder="Buscar receta..." style="max-width:220px">
+          </div></div>
+          <div id="recipeCards" class="business-grid"></div>
+        </div>
+        <div id="recipeEditorView" style="display:none">
+          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" id="btnRecipeHistory" onclick="toggleRecipeHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
+          <div id="recipeHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div class="card form-card">
+            <div class="form-grid">
+              <div><label>Negocio</label><select id="recBusiness"></select></div>
+              <div><label>Área</label><select id="recArea"><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select></div>
+              <div><label>Tipo de receta</label><select id="recType" onchange="onRecipeTypeChange()"><option value="menu">Menú (se vende al cliente)</option><option value="produccion">Producción (sub-receta / prep)</option></select></div>
+            </div>
+            <div class="form-grid" style="margin-top:10px">
+              <div><label>Nombre de la receta</label><input id="recName" placeholder="Ej. Tacos al pastor"></div>
+              <div><label>Rendimiento (cantidad)</label><input type="number" step="any" id="recYieldQty" oninput="renderRecipeTotals()" placeholder="Ej. 4"></div>
+              <div><label>Unidad de rendimiento</label><input id="recYieldUnit" oninput="renderRecipeTotals()" placeholder="Ej. porciones, kg, lt"></div>
+              <div id="recSalePriceBox"><label>Precio de venta</label><input type="number" step="any" id="recSalePrice" oninput="renderRecipeTotals()" placeholder="$"></div>
+            </div>
+            <div style="margin-top:10px"><label>Foto del platillo (opcional)</label><input type="file" id="recPhotoFile" accept="image/*" onchange="onRecipePhotoChange(event)"><div id="recPhotoPreview" style="margin-top:8px"></div></div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Ingredientes</h3><button class="btn" id="btnAddIngredient" onclick="addIngredientRow()">+ Agregar ingrediente</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Ingrediente</th><th>Cantidad</th><th>Unidad</th><th>Costo unitario</th><th>Subtotal</th><th></th></tr></thead><tbody id="recIngredientsBody"></tbody></table></div>
+          </div>
+          <div class="card form-card">
+            <div id="recTotalsBox" class="kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+          </div>
+          <div class="card form-card">
+            <label>Procedimiento</label>
+            <textarea id="recSteps" rows="6" placeholder="Pasos de preparación..."></textarea>
+            <label style="margin-top:10px;display:block">Notas (opcional)</label>
+            <textarea id="recNotes" rows="3" placeholder="Alérgenos, variaciones, tips..."></textarea>
+          </div>
+          <div class="card form-card" style="position:sticky;bottom:8px">
+            <div class="flex" style="flex-wrap:wrap;gap:10px">
+              <button class="btn" id="btnSaveDraftRecipe" onclick="saveRecipe('Borrador')">Guardar borrador</button>
+              <button class="btn green" id="btnPublishRecipe" onclick="saveRecipe('Publicada')">Publicar receta</button>
+              <button class="btn red" id="btnDeleteRecipe" style="display:none" onclick="deleteCurrentRecipe()">Eliminar receta</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="suppliers" class="view">
+        <div id="supplierListView">
+          <div class="page-title"><div><h2>Proveedores</h2><p>Insumos, precios de compra y equivalencias para costear recetas</p></div><div class="actions"><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
+          <div id="supplierAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
+            <select id="supplierBusinessFilter" style="max-width:240px"></select>
+            <input type="text" id="supplierSearch" placeholder="Buscar proveedor o insumo..." style="max-width:240px">
+          </div></div>
+          <div id="supplierCards" class="business-grid"></div>
+        </div>
+        <div id="supplierEditorView" style="display:none">
+          <div class="page-title"><div><h2 id="supplierEditorTitle">Nuevo proveedor</h2><p>Los insumos que agregues aquí quedan disponibles para elegir directo en las recetas de este negocio.</p></div><div class="actions"><button class="btn" id="btnSupplierHistory" onclick="toggleSupplierHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeSupplierEditor()">← Volver al listado</button></div></div>
+          <div id="supplierHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div class="card form-card">
+            <div class="form-grid">
+              <div><label>Negocio</label><select id="supBusiness"></select></div>
+              <div><label>Nombre del proveedor</label><input id="supName" placeholder="Ej. Distribuidora XYZ"></div>
+              <div><label>Contacto (opcional)</label><input id="supContact" placeholder="Teléfono, correo..."></div>
+            </div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Insumos que vende</h3><button class="btn" id="btnAddSupplierProduct" onclick="addSupplierProductRow()">+ Agregar insumo</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Insumo</th><th>Se compra por</th><th>Precio de compra</th><th>Equivalencia</th><th>Costo por unidad</th><th></th></tr></thead><tbody id="supProductsBody"></tbody></table></div>
+          </div>
+          <div class="card form-card" style="position:sticky;bottom:8px">
+            <div class="flex" style="flex-wrap:wrap;gap:10px">
+              <button class="btn primary" id="btnSaveSupplier" onclick="saveSupplier()">Guardar proveedor</button>
+              <button class="btn red" id="btnDeleteSupplier" style="display:none" onclick="deleteCurrentSupplier()">Eliminar proveedor</button>
+            </div>
+          </div>
+        </div>
       </section>
       <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="cxcBusiness" onchange="bootCxc()" style="max-width:240px"></select></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card no-print"><div class="flex"><select id="wasteBusiness" style="max-width:260px"></select></div></div><div id="wasteCards" class="business-grid"></div></section>
@@ -513,7 +627,7 @@ function renderCustomAlmacenesList(){
   const box=document.getElementById("customAlmacenesList");
   if(!box)return;
   if(!customAlmacenes.length){box.innerHTML='<div class="empty">Todavía no has agregado ningún almacén adicional.</div>';return}
-  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?miniDeleteMenu(`removeCustomAlmacen('${escJs(a.id)}')`,"Quitar"):""}</div>`).join("")
+  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('almMenu-${a.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="almMenu-${a.id}"><button type="button" class="danger" onclick="toggleKebabMenu('almMenu-${a.id}',event);removeCustomAlmacen('${escJs(a.id)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
 }
 let tomaDepartmentsList=["Cocina","Barra","Vinos"];
 async function loadTomaDepartmentsFromCloud(){
@@ -546,7 +660,7 @@ function renderTomaDepartmentsList(){
   const box=document.getElementById("tomaDepartmentsList");
   if(!box)return;
   if(!tomaDepartmentsList.length){box.innerHTML='<div class="empty">Todavía no hay departamentos.</div>';return}
-  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?miniDeleteMenu(`removeTomaDepartment('${escJs(d)}')`,"Quitar"):""}</div>`).join("")
+  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="deptMenu-${escJs(d)}"><button type="button" class="danger" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event);removeTomaDepartment('${escJs(d)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
 }
 function tomaDepartmentOptionsHtml(selected){
   return'<option value="">Sin especificar</option>'+tomaDepartmentsList.map(d=>`<option ${d===selected?"selected":""}>${esc(d)}</option>`).join("")
@@ -601,14 +715,15 @@ async function ensureUserProfile(user){
   if (!data){
     const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false, can_capture_tomas:false, toma_departments:[] });
     if (insErr) console.error("Error al crear perfil de acceso:", insErr);
-    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], name:"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], canManageRecipes:false, name:"" };
   } else {
-    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], name:data.display_name||"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], canManageRecipes:!!data.can_manage_recipes, name:data.display_name||"" };
   }
 }
 function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.includes(name); }
 function canManageTomas(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
 function canCaptureTomas(){ return canManageTomas() || currentUser.canCaptureTomas; }
+function canManageRecipes(){ return currentUser.isAdmin || currentUser.canManageRecipes; }
 async function loadAllUserAccess(){
   const { data, error } = await sb.from("user_access").select("*").order("email");
   if (error){ console.error("Error al leer usuarios:", error); return []; }
@@ -708,6 +823,7 @@ async function onLoginSuccess(user){
   init();
   document.querySelector('[data-view="users"]').style.display = currentUser.isAdmin ? "" : "none";
   applyViewOnlyUI();
+  applyNavVisibility();
   renderUsersPanel();
 }
 function applyViewOnlyUI(){
@@ -715,6 +831,28 @@ function applyViewOnlyUI(){
   const navCapture=document.getElementById("navCapture");if(navCapture)navCapture.style.display=hide;
   const btnNew=document.getElementById("btnNewInventory");if(btnNew)btnNew.style.display=hide;
   const btnClear=document.getElementById("btnClearHistory");if(btnClear)btnClear.style.display=hide;
+}
+function applyNavVisibility(){
+  const isAdmin=currentUser.isAdmin,viewOnly=currentUser.viewOnly;
+  const restricted=!isAdmin&&!viewOnly;
+  const fullAccessOnly=["dashboard","capture","history","cxc","waste","reports","businesses","products","settings"];
+  fullAccessOnly.forEach(id=>{
+    const btn=document.querySelector(`[data-view="${id}"]`);
+    if(btn)btn.style.display=restricted?"none":""
+  });
+  const tomaBtn=document.querySelector('[data-view="tomafisica"]');
+  const showToma=isAdmin||viewOnly||currentUser.canCaptureTomas||currentUser.canEditTomas;
+  if(tomaBtn)tomaBtn.style.display=showToma?"":"none";
+  const recBtn=document.querySelector('[data-view="recipes"]');
+  const showRecipes=isAdmin||viewOnly||currentUser.canManageRecipes;
+  if(recBtn)recBtn.style.display=showRecipes?"":"none";
+  const supBtn=document.querySelector('[data-view="suppliers"]');
+  if(supBtn)supBtn.style.display=showRecipes?"":"none";
+  document.querySelector('[data-view="users"]').style.display=isAdmin?"":"none";
+  if(restricted){
+    if(showToma)openView("tomafisica");
+    else if(showRecipes)openView("recipes")
+  }
 }
 async function checkSession(){
   if(inRecoveryMode)return;
@@ -725,7 +863,7 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
-const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física"};
+const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recipes:"Recetas",suppliers:"Proveedores"};
 const viewBusinessSelect={dashboard:"dashBusiness",history:"hBusiness",cxc:"cxcBusiness",waste:"wasteBusiness",reports:"repBusiness",tomafisica:"tomaBusiness"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
@@ -744,10 +882,102 @@ window.addEventListener("beforeprint",()=>{
     const month=monthEl&&monthEl.selectedOptions[0]?monthEl.selectedOptions[0].textContent:"";
     ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
   }
+  if(active&&active.id==="capture")buildCapturePrintView();
+  if(active&&active.id==="history")buildHistoryPrintView()
 });
 window.addEventListener("afterprint",()=>{
   if(titleBeforePrint)document.title=titleBeforePrint
 });
+function printHistory(){
+  buildHistoryPrintView();
+  window.print()
+}
+function buildHistoryPrintView(){
+  const box=document.getElementById("historyPrintView");
+  if(!box)return;
+  const bEl=document.getElementById("hBusiness"),sEl=document.getElementById("hStatus");
+  const b=bEl?bEl.value:"",s=sEl?sEl.value:"";
+  const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
+  if(!list.length){box.innerHTML='<div class="empty">No hay inventarios guardados para este filtro.</div>';return}
+  let html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="border-bottom:1px solid #999;text-align:left"><th style="padding:2px 3px">Fecha</th><th style="padding:2px 3px">Negocio</th><th style="padding:2px 3px">Inventario</th><th style="padding:2px 3px">Faltantes</th><th style="padding:2px 3px">Sobrantes</th><th style="padding:2px 3px">Mermas</th><th style="padding:2px 3px">CxC aplicado</th><th style="padding:2px 3px">Estatus</th></tr></thead><tbody>';
+  list.forEach(r=>{
+    const t=calcRecord(r);
+    html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:2px 3px">${esc(r.countDate)}</td><td style="padding:2px 3px">${esc(r.business)}</td><td style="padding:2px 3px">${money(t.phys)}</td><td style="padding:2px 3px" class="redtxt">${money(t.short)}</td><td style="padding:2px 3px" class="greentxt">${money(t.over)}</td><td style="padding:2px 3px" class="orangetxt">${money(t.mermas)}</td><td style="padding:2px 3px">${money(t.cxc)}</td><td style="padding:2px 3px">${esc(r.status)}</td></tr>`;
+    const diffrow=document.getElementById(`diffrow-${r.id}`);
+    if(diffrow&&diffrow.style.display!=="none"){
+      html+=`<tr><td colspan="8" style="padding:4px 3px 12px 12px">${categoryDiffPrintTableHtml(r.data)}${productDiffPrintHtml(r.data,r.id)}</td></tr>`
+    }
+    const fullrow=document.getElementById(`fullrow-${r.id}`);
+    if(fullrow&&fullrow.style.display!=="none"){
+      html+=`<tr><td colspan="8" style="padding:4px 3px 12px 12px">${fullInventoryPrintHtml(r.data)}</td></tr>`
+    }
+  });
+  html+="</tbody></table>";
+  box.innerHTML=html
+}
+function categoryDiffPrintTableHtml(data=rows){
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    const nonWaste=list.filter(s=>!s.waste);
+    if(!nonWaste.length)return;
+    html+=`<div style="font-weight:700;margin-top:8px;font-size:9.5px">${esc(group)}</div>`;
+    html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:2px 2px">Departamento</th><th style="padding:2px 2px">Faltantes</th><th style="padding:2px 2px">Sobrantes</th></tr></thead><tbody>';
+    nonWaste.forEach(s=>{
+      let short=0,over=0;
+      (data[s.id]||[]).forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)short+=Math.abs(d);else over+=d});
+      html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:2px 2px">${esc(s.name)}</td><td style="padding:2px 2px" class="redtxt">${money(short)}</td><td style="padding:2px 2px" class="greentxt">${money(over)}</td></tr>`
+    });
+    html+="</tbody></table>"
+  });
+  return html
+}
+function productDiffPrintHtml(data,recordId){
+  const list=productDiffRows(data);
+  if(!list.length)return '';
+  const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
+  const tabS=document.getElementById(`tabSbox-${recordId}`);
+  const useSobrantes=!!(tabS&&tabS.style.display!=="none");
+  const activeList=useSobrantes?sobrantes:faltantes;
+  const label=useSobrantes?"Sobrantes":"Faltantes";
+  const uid=recordId+(useSobrantes?"-s":"-f");
+  const groups=Object.keys(sections).filter(g=>activeList.some(r=>r.group===g));
+  let activeGroup=groups[0];
+  groups.forEach(g=>{
+    const gb=document.getElementById(`grpbox-${uid}-${g}`);
+    if(gb&&gb.style.display!=="none")activeGroup=g
+  });
+  let html=`<div style="font-weight:700;margin-top:10px;margin-bottom:4px;font-size:9.5px">Productos con diferencia — ${esc(label)}${activeGroup?" — "+esc(activeGroup):""}</div>`;
+  if(!activeGroup)return html+'<div style="font-size:8.5px;color:#888">Sin productos en esta categoría.</div>';
+  const groupList=activeList.filter(r=>r.group===activeGroup);
+  if(!groupList.length)return html+'<div style="font-size:8.5px;color:#888">Sin productos en esta categoría.</div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:2px 2px">Departamento</th><th style="padding:2px 2px">Código</th><th style="padding:2px 2px">Producto</th><th style="padding:2px 2px">Unidad</th><th style="padding:2px 2px">Costo</th><th style="padding:2px 2px">Teórico</th><th style="padding:2px 2px">Físico</th><th style="padding:2px 2px">Diferencia</th><th style="padding:2px 2px">Importe</th></tr></thead><tbody>';
+  groupList.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.dept)}</td><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${r.theo}</td><td style="padding:2px 2px">${r.phys}</td><td style="padding:2px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:2px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
+  html+="</tbody></table>";
+  return html
+}
+function fullInventoryPrintHtml(data=rows){
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    list.forEach(s=>{
+      const items=data[s.id]||[];
+      if(!items.length)return;
+      html+=`<div style="font-weight:700;margin-top:8px;font-size:9.5px">${esc(group)} — ${esc(s.name)}</div>`;
+      const cols=s.waste?["Código","Producto","Unidad","Costo","Cantidad","Importe","Motivo"]:["Código","Producto","Unidad","Costo","Teórico","Físico","Diferencia","Importe"];
+      html+='<table style="width:100%;border-collapse:collapse;font-size:8.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0">'+cols.map(c=>`<th style="padding:2px 2px">${c}</th>`).join("")+'</tr></thead><tbody>';
+      items.forEach(r=>{
+        if(s.waste){
+          html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${num(r.theo)}</td><td style="padding:2px 2px" class="orangetxt">${money(num(r.theo)*num(r.cost))}</td><td style="padding:2px 2px">${esc(r.reason||"-")}</td></tr>`
+        } else {
+          const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost),cls=amount<0?"redtxt":amount>0?"greentxt":"";
+          html+=`<tr style="border-bottom:1px solid #f8f8f8"><td style="padding:2px 2px">${esc(r.code)}</td><td style="padding:2px 2px">${esc(r.product)}</td><td style="padding:2px 2px">${esc(r.unit)}</td><td style="padding:2px 2px">${money(r.cost)}</td><td style="padding:2px 2px">${num(r.theo)}</td><td style="padding:2px 2px">${num(r.phys)}</td><td style="padding:2px 2px" class="${cls}">${diff.toFixed(2)}</td><td style="padding:2px 2px" class="${cls}">${money(amount)}</td></tr>`
+        }
+      });
+      html+="</tbody></table>"
+    })
+  });
+  if(!html)return '<div style="font-size:8.5px;color:#888">Este inventario no tiene productos capturados.</div>';
+  return html
+}
 (function(){
   const y=new Date().getFullYear();
   ["footerYear","footerYearLogin"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=y})
@@ -810,6 +1040,20 @@ async function openView(id){
   if(id==="waste")await bootWaste();
   if(id==="reports")await bootReports();
   if(id==="tomafisica"){currentToma=null;document.getElementById("tomaCaptureView").style.display="none";document.getElementById("tomaListView").style.display="block";await bootTomaList()}
+  if(id==="recipes")await bootRecipes();
+  if(id==="suppliers")await bootSuppliers();
+  if(id==="capture")bootCapture();
+  if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
+}
+function bootCapture(){
+  const el=document.getElementById("fBusiness");
+  if(!el||el.value===currentBusiness)return;
+  const names=visibleBusinessNames(true);
+  if(!currentBusiness||!names.includes(currentBusiness))return;
+  const hasData=Object.values(rows).some(list=>list.some(r=>num(r.theo)||num(r.phys)||r.product));
+  if(hasData)return;
+  el.value=currentBusiness;
+  onBusinessChangeInCapture()
 }
 async function bootProducts(){
   const val=fillBusinessFilter("catBusiness",bootProducts);
@@ -837,8 +1081,10 @@ async function manualRefresh(){
     else if(id==="reports")await bootReports();
     else if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
     else if(id==="tomafisica")await bootTomaList();
+    else if(id==="recipes")await bootRecipes();
+    else if(id==="suppliers")await bootSuppliers();
     currentBusiness=keepBusiness;
-    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness","tomaBusiness"].forEach(sid=>{
+    ["dashBusiness","hBusiness","cxcBusiness","wasteBusiness","repBusiness","tomaBusiness","recipeBusinessFilter","supplierBusinessFilter"].forEach(sid=>{
       const el=document.getElementById(sid);
       if(el&&keepBusiness&&[...el.options].some(o=>o.value===keepBusiness))el.value=keepBusiness
     })
@@ -869,18 +1115,6 @@ function renderInventory(){
   if(currentUser&&currentUser.viewOnly)applyCaptureReadOnly(true)
 }
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;")}
-function miniDeleteMenu(onclickAction,label){
-  return`<span class="mini-menu-wrap"><button type="button" class="btn" onclick="toggleMiniMenu(this)" title="Más opciones" style="padding:6px 10px">⋯</button><div class="mini-menu"><button type="button" class="btn red" onclick="${onclickAction}">${esc(label||"Eliminar")}</button></div></span>`
-}
-function toggleMiniMenu(btn){
-  const menu=btn.nextElementSibling;
-  const wasOpen=menu&&menu.classList.contains("open");
-  document.querySelectorAll(".mini-menu.open").forEach(m=>m.classList.remove("open"));
-  if(menu&&!wasOpen)menu.classList.add("open")
-}
-document.addEventListener("click",e=>{
-  if(!e.target.closest(".mini-menu-wrap"))document.querySelectorAll(".mini-menu.open").forEach(m=>m.classList.remove("open"))
-});
 function escJs(v){return String(v??"").replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll("\n"," ").replaceAll("<","&lt;")}
 function edit(id,i,field,value){
   const numeric=["theo","phys","cost"].includes(field);
@@ -904,6 +1138,35 @@ function edit(id,i,field,value){
 }
 function addProduct(){rows[activeSection].push({code:"",product:"",unit:"pieza",theo:0,phys:0,cost:0,reason:"",comment:"",cxc:"",justification:"",responsible:""});renderInventory()}
 function delRow(i){rows[activeSection].splice(i,1);renderInventory()}
+function buildCapturePrintView(){
+  const box=document.getElementById("capturePrintView");
+  if(!box)return;
+  let html="";
+  Object.entries(sections).forEach(([group,list])=>{
+    list.forEach(meta=>{
+      const list2=rows[meta.id]||[];
+      if(!list2.length)return;
+      html+=`<div style="font-weight:700;font-size:12px;margin:10px 0 4px">${esc(group)} — ${esc(meta.name)}</div>`;
+      if(meta.waste){
+        html+='<table style="width:100%;border-collapse:collapse;font-size:9.5px"><thead><tr style="border-bottom:1px solid #999;text-align:left"><th style="padding:2px 3px">Código</th><th style="padding:2px 3px">Producto</th><th style="padding:2px 3px">Unidad</th><th style="padding:2px 3px">Cantidad</th><th style="padding:2px 3px">Costo</th><th style="padding:2px 3px">Importe</th></tr></thead><tbody>';
+        list2.forEach(r=>{
+          const amount=num(r.theo)*num(r.cost);
+          html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:2px 3px">${esc(r.code)}</td><td style="padding:2px 3px">${esc(r.product)}</td><td style="padding:2px 3px">${esc(r.unit)}</td><td style="padding:2px 3px">${num(r.theo).toFixed(2)}</td><td style="padding:2px 3px">${money(r.cost)}</td><td style="padding:2px 3px">${money(amount)}</td></tr>`
+        });
+        html+="</tbody></table>"
+      } else {
+        html+='<table style="width:100%;border-collapse:collapse;font-size:9.5px"><thead><tr style="border-bottom:1px solid #999;text-align:left"><th style="padding:2px 3px">Código</th><th style="padding:2px 3px">Producto</th><th style="padding:2px 3px">Unidad</th><th style="padding:2px 3px">Teórico</th><th style="padding:2px 3px">Físico</th><th style="padding:2px 3px">Diferencia</th><th style="padding:2px 3px">Importe</th></tr></thead><tbody>';
+        list2.forEach(r=>{
+          const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost);
+          const diffColor=diff<0?"color:#c0392b":diff>0?"color:#1e8449":"";
+          html+=`<tr style="border-bottom:1px solid #eee"><td style="padding:2px 3px">${esc(r.code)}</td><td style="padding:2px 3px">${esc(r.product)}</td><td style="padding:2px 3px">${esc(r.unit)}</td><td style="padding:2px 3px">${num(r.theo).toFixed(2)}</td><td style="padding:2px 3px">${num(r.phys).toFixed(2)}</td><td style="padding:2px 3px;${diffColor}">${diff.toFixed(2)}</td><td style="padding:2px 3px;${diffColor}">${money(amount)}</td></tr>`
+        });
+        html+="</tbody></table>"
+      }
+    })
+  });
+  box.innerHTML=html||'<div style="font-size:11px;color:#888">Sin productos capturados.</div>'
+}
 function categoryDiffFor(data=rows){
   const cats=[];
   Object.values(sections).flat().filter(s=>!s.waste).forEach(s=>{
@@ -953,7 +1216,7 @@ function productDiffSubTableHtml(list,uid){
   if(!list.length)return '<div class="empty" style="margin-top:6px">No hay productos en esta categoría.</div>';
   const groups=Object.keys(sections).filter(g=>list.some(r=>r.group===g));
   if(!groups.length)return '<div class="empty" style="margin-top:6px">No hay productos en esta categoría.</div>';
-  let html=`<div class="flex" style="gap:6px;margin-top:6px;margin-bottom:8px">`;
+  let html=`<div class="flex no-print" style="gap:6px;margin-top:6px;margin-bottom:8px">`;
   groups.forEach((g,i)=>{
     const count=list.filter(r=>r.group===g).length;
     html+=`<button type="button" class="btn ${i===0?"primary":""}" id="grp-${uid}-${g}" onclick="showDiffGroup('${uid}','${g}')">${esc(g)} (${count})</button>`
@@ -962,6 +1225,7 @@ function productDiffSubTableHtml(list,uid){
   groups.forEach((g,i)=>{
     const groupList=list.filter(r=>r.group===g);
     html+=`<div id="grpbox-${uid}-${g}" style="${i===0?"":"display:none"}">`;
+    html+=`<div class="diff-print-label">${esc(g)}</div>`;
     html+='<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:4px 2px">Departamento</th><th style="padding:4px 2px">Código</th><th style="padding:4px 2px">Producto</th><th style="padding:4px 2px">Unidad</th><th style="padding:4px 2px">Costo</th><th style="padding:4px 2px">Teórico</th><th style="padding:4px 2px">Físico</th><th style="padding:4px 2px">Diferencia</th><th style="padding:4px 2px">Importe</th></tr></thead><tbody>';
     groupList.forEach(r=>{const cls=r.amount<0?"redtxt":"greentxt";html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.dept)}</td><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${money(r.cost)}</td><td style="padding:4px 2px">${r.theo}</td><td style="padding:4px 2px">${r.phys}</td><td style="padding:4px 2px" class="${cls}">${r.diff.toFixed(2)}</td><td style="padding:4px 2px" class="${cls}">${money(r.amount)}</td></tr>`});
     html+="</tbody></table></div>"
@@ -973,23 +1237,39 @@ function showDiffGroup(uid,group){
   document.querySelectorAll(`[id^="grp-${uid}-"]`).forEach(el=>el.classList.remove("primary"));
   const box=document.getElementById(`grpbox-${uid}-${group}`),btn=document.getElementById(`grp-${uid}-${group}`);
   if(box)box.style.display="";
-  if(btn)btn.classList.add("primary")
+  if(btn)btn.classList.add("primary");
+  reapplyDiffSearch(uid.toString().split("-")[0])
 }
 function productDiffTableHtml(data=rows,recordId=0){
   const list=productDiffRows(data);
   if(!list.length)return '<div class="empty" style="margin-top:10px">No hay diferencias en productos en este inventario.</div>';
   const faltantes=list.filter(r=>r.amount<0),sobrantes=list.filter(r=>r.amount>0);
   let html='<div style="font-weight:700;margin-top:14px;margin-bottom:8px">Productos con diferencia</div>';
-  html+=`<div class="flex" style="gap:8px;margin-bottom:10px"><button type="button" class="btn primary" id="tabF-${recordId}" onclick="showDiffTab(${recordId},'f')">Faltantes (${faltantes.length})</button><button type="button" class="btn" id="tabS-${recordId}" onclick="showDiffTab(${recordId},'s')">Sobrantes (${sobrantes.length})</button></div>`;
-  html+=`<div id="tabFbox-${recordId}">${productDiffSubTableHtml(faltantes,recordId+"-f")}</div>`;
-  html+=`<div id="tabSbox-${recordId}" style="display:none">${productDiffSubTableHtml(sobrantes,recordId+"-s")}</div>`;
+  html+=`<div class="no-print" style="margin-bottom:10px"><input type="text" id="diffSearch-${recordId}" placeholder="Buscar producto o código..." oninput="filterDiffProducts(${recordId},this.value)" style="max-width:280px"></div>`;
+  html+=`<div class="flex no-print" style="gap:8px;margin-bottom:10px"><button type="button" class="btn primary" id="tabF-${recordId}" onclick="showDiffTab(${recordId},'f')">Faltantes (${faltantes.length})</button><button type="button" class="btn" id="tabS-${recordId}" onclick="showDiffTab(${recordId},'s')">Sobrantes (${sobrantes.length})</button></div>`;
+  html+=`<div id="tabFbox-${recordId}"><div class="diff-print-label">Faltantes</div>${productDiffSubTableHtml(faltantes,recordId+"-f")}</div>`;
+  html+=`<div id="tabSbox-${recordId}" style="display:none"><div class="diff-print-label">Sobrantes</div>${productDiffSubTableHtml(sobrantes,recordId+"-s")}</div>`;
   return html
+}
+function filterDiffProducts(recordId,query){
+  const q=(query||"").toLowerCase().trim();
+  const scope=document.getElementById(`diffrow-${recordId}`);
+  if(!scope)return;
+  scope.querySelectorAll("table tbody tr").forEach(tr=>{
+    const text=tr.textContent.toLowerCase();
+    tr.style.display=(!q||text.includes(q))?"":"none"
+  })
+}
+function reapplyDiffSearch(recordId){
+  const input=document.getElementById(`diffSearch-${recordId}`);
+  if(input&&input.value)filterDiffProducts(recordId,input.value)
 }
 function showDiffTab(recordId,which){
   const fbox=document.getElementById(`tabFbox-${recordId}`),sbox=document.getElementById(`tabSbox-${recordId}`);
   const tf=document.getElementById(`tabF-${recordId}`),ts=document.getElementById(`tabS-${recordId}`);
   if(which==="f"){fbox.style.display="";sbox.style.display="none";tf.classList.add("primary");ts.classList.remove("primary")}
   else{fbox.style.display="none";sbox.style.display="";ts.classList.add("primary");tf.classList.remove("primary")}
+  reapplyDiffSearch(recordId)
 }
 function categoryDiffLinesHtml(data=rows){
   let html="";
@@ -1013,14 +1293,8 @@ function categoryDiffLinesHtml(data=rows){
 function updateCaptureSummary(){
   const t=totalsFor();
   ["capTheo","capPhys","capShort","capOver"].forEach((id,i)=>document.getElementById(id).textContent=money([t.theo,t.phys,t.short,t.over][i]));
-  const BASE_COCINA=["kg","kp","kf","kw"],BASE_BARRA=["bg","bp","bw","bm"];
-  const extraCocina=sections["Cocina"].filter(s=>!BASE_COCINA.includes(s.id));
-  const extraBarra=sections["Barra"].filter(s=>!BASE_BARRA.includes(s.id));
-  let kExtra=0,kwExtra=0,bExtra=0,bmExtra=0;
-  document.getElementById("sKgCustom").innerHTML=extraCocina.map(s=>{const v=sectionInventory(s.id);if(s.waste)kwExtra+=v;else kExtra+=v;return`<div class="line"><span>${esc(s.name)}</span><strong class="${s.waste?"orangetxt":""}">${money(v)}</strong></div>`}).join("");
-  document.getElementById("sBgCustom").innerHTML=extraBarra.map(s=>{const v=sectionInventory(s.id);if(s.waste)bmExtra+=v;else bExtra+=v;return`<div class="line"><span>${esc(s.name)}</span><strong class="${s.waste?"orangetxt":""}">${money(v)}</strong></div>`}).join("");
-  document.getElementById("sKg").textContent=money(sectionInventory("kg"));document.getElementById("sKp").textContent=money(sectionInventory("kp"));document.getElementById("sK").textContent=money(sectionInventory("kg")+sectionInventory("kp")+kExtra);document.getElementById("sKf").textContent=money(sectionInventory("kf"));document.getElementById("sKw").textContent=money(sectionInventory("kw")+kwExtra);
-  document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw")+bExtra);document.getElementById("sBmw").textContent=money(sectionInventory("bm")+bmExtra);
+  document.getElementById("sKg").textContent=money(sectionInventory("kg"));document.getElementById("sKp").textContent=money(sectionInventory("kp"));document.getElementById("sK").textContent=money(sectionInventory("kg")+sectionInventory("kp"));document.getElementById("sKf").textContent=money(sectionInventory("kf"));document.getElementById("sKw").textContent=money(sectionInventory("kw"));
+  document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw"));document.getElementById("sBmw").textContent=money(sectionInventory("bm"));
   document.getElementById("sShort").textContent=money(t.short);document.getElementById("sOver").textContent=money(t.over);document.getElementById("sNet").textContent=money(t.over-t.short);document.getElementById("sLoss").textContent=money(t.loss);
   document.getElementById("sByCategory").innerHTML=categoryDiffLinesHtml();
   document.getElementById("sCxc").textContent=money(t.cxc);document.getElementById("sNoCxc").textContent=money(t.noCxc);document.getElementById("sPending").textContent=money(t.pending);document.getElementById("sEvaluated").textContent=money(t.cxc+t.noCxc)
@@ -1033,7 +1307,9 @@ function validateInventory(){
 let editingRecordId=null;
 async function saveInventory(status){
   if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede guardar cambios.");return}
-  const issues=validateInventory();if(issues.length){alert("No se puede guardar. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
+  if(status==="Terminado"){
+    const issues=validateInventory();if(issues.length){alert("No se puede terminar el inventario. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
+  }
   const business=fBusiness.value;
   if(!business){alert("Selecciona un negocio antes de guardar.");return}
   await ensureBusinessRecordsLoaded(business);
@@ -1161,8 +1437,14 @@ async function bootHistory(){
 function renderHistory(){
   const b=hBusiness.value,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
-  list.forEach(r=>{const t=calcRecord(r);const actions=currentUser.viewOnly?`<button class="btn" onclick="editRecord(${r.id})">Ver detalle</button>`:`<button class="btn" onclick="editRecord(${r.id})">Editar</button> ${miniDeleteMenu(`deleteRecord(${r.id})`)}`;
-    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button> <button class="btn" onclick="toggleFullRow(${r.id})">Ver inventario completo</button> ${actions}</td></tr>`;
+  list.forEach(r=>{const t=calcRecord(r);
+    const menuItems=[
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);toggleFullRow(${r.id})">📋 Ver inventario completo</button>`,
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);editRecord(${r.id})">${currentUser.viewOnly?"👁️ Ver detalle":"✏️ Editar"}</button>`,
+      currentUser.isAdmin?`<button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">🗑 Eliminar</button>`:""
+    ].filter(Boolean).join("");
+    const actions=`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button><div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}">${menuItems}</div></div></div>`;
+    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`;
     body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
     body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
   });
@@ -1201,7 +1483,7 @@ function toggleDiffRow(id){
   if(row)row.style.display=row.style.display==="none"?"table-row":"none"
 }
 async function deleteRecord(id){
-  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede eliminar inventarios.");return}
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar inventarios.");return}
   if(!confirm("¿Eliminar este inventario?"))return;
   await ensureAllBusinessRecordsLoaded();
   const rec=getRecords().find(r=>r.id===id);
@@ -1211,7 +1493,7 @@ async function deleteRecord(id){
   renderHistory();renderDashboard()
 }
 async function clearHistory(){
-  if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede eliminar historial.");return}
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar historial.");return}
   const b=hBusiness.value;
   const label=b||"TODOS los negocios";
   if(!confirm(`¿Eliminar el historial de ${label}? Esta acción no se puede deshacer.`))return;
@@ -1246,6 +1528,550 @@ async function pushCatalogsToCloud(business){
   if (error) console.error("Error al guardar catálogo de "+business+":", error);
 }
 
+/* ==================== RECETAS ==================== */
+let recipesByBusiness={};
+const recipesLoaded=new Set();
+let currentRecipe=null,editingRecipeId=null;
+async function ensureRecipesLoadedFor(business){
+  if(!business||recipesLoaded.has(business))return;
+  const{data,error}=await sb.from("business_recipes").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar recetas de "+business+":",error);recipesByBusiness[business]=[];recipesLoaded.add(business);return}
+  recipesByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  recipesLoaded.add(business)
+}
+async function ensureAllRecipesLoaded(){
+  await Promise.all(visibleBusinessNames().map(ensureRecipesLoadedFor))
+}
+async function pushRecipesToCloud(business){
+  const{error}=await sb.from("business_recipes").upsert({business,data:recipesByBusiness[business]||[],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar recetas de "+business+":",error)
+}
+function recipeTotals(r){
+  const totalCost=(r.ingredients||[]).reduce((s,i)=>s+(num(i.qty)*num(i.cost)),0);
+  const costPerYield=num(r.yieldQty)>0?totalCost/num(r.yieldQty):totalCost;
+  const salePrice=num(r.salePrice);
+  const costPct=salePrice>0?(costPerYield/salePrice*100):0;
+  const marginAmt=salePrice>0?(salePrice-costPerYield):0;
+  const marginPct=salePrice>0?(marginAmt/salePrice*100):0;
+  return{totalCost,costPerYield,costPct,marginAmt,marginPct}
+}
+async function bootRecipes(){
+  document.getElementById("recipeEditorView").style.display="none";
+  document.getElementById("recipeListView").style.display="block";
+  fillBusinessFilter("recipeBusinessFilter",bootRecipes);
+  document.getElementById("recipeAreaFilter").onchange=renderRecipeList;
+  document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
+  document.getElementById("recipeSearch").oninput=renderRecipeList;
+  document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
+  document.getElementById("recipeAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("recipeAuditBox").style.display="none";
+  await ensureAllRecipesLoaded();
+  renderRecipeList()
+}
+function allRecipesFlat(){
+  return visibleBusinessNames().flatMap(b=>(recipesByBusiness[b]||[]).map(r=>({...r,business:r.business||b})))
+}
+function renderRecipeList(){
+  const bizFilter=document.getElementById("recipeBusinessFilter").value;
+  const areaFilter=document.getElementById("recipeAreaFilter").value;
+  const typeFilter=document.getElementById("recipeTypeFilter").value;
+  const q=(document.getElementById("recipeSearch").value||"").toLowerCase().trim();
+  let list=allRecipesFlat();
+  if(bizFilter)list=list.filter(r=>r.business===bizFilter);
+  if(areaFilter)list=list.filter(r=>(r.area||"Cocina")===areaFilter);
+  if(typeFilter)list=list.filter(r=>r.type===typeFilter);
+  if(q)list=list.filter(r=>(r.name||"").toLowerCase().includes(q));
+  list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+  const box=document.getElementById("recipeCards");
+  if(!list.length){box.innerHTML='<div class="empty">No hay recetas todavía'+(canManageRecipes()?' — usa "+ Nueva receta" para agregar la primera.':'.')+'</div>';return}
+  box.innerHTML=list.map(r=>{
+    const t=recipeTotals(r);
+    const badge=r.type==="menu"?'<span class="badge green">Menú</span>':'<span class="badge">Producción</span>';
+    const areaBadge=`<span class="badge">${esc(r.area||"Cocina")}</span>`;
+    const statusBadge=r.status==="Publicada"?'<span class="badge green">Publicada</span>':'<span class="badge yellow">Borrador</span>';
+    const costPctHtml=num(r.salePrice)>0?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
+    return `<div class="card business">
+      ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
+      <div class="business-head"><h4>${esc(r.name||"Sin nombre")}</h4></div>
+      <div class="line"><span>Negocio</span><strong>${esc(r.business)}</strong></div>
+      <div class="line"><span>Área</span><span>${areaBadge}</span></div>
+      <div class="line"><span>Tipo</span><span>${badge} ${statusBadge}</span></div>
+      <div class="line"><span>Costo por ${esc(r.yieldUnit||"unidad")}</span><strong>${money(t.costPerYield)}</strong></div>
+      ${costPctHtml}
+      <button class="btn" onclick="openRecipeEditor('${escJs(r.business)}',${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
+    </div>`
+  }).join("")
+}
+function startNewRecipe(){
+  if(!canManageRecipes())return;
+  currentRecipe={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),area:"Cocina",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
+  editingRecipeId=null;
+  Promise.all([ensureSuppliersLoadedFor(currentRecipe.business),ensureRecipesLoadedFor(currentRecipe.business)]).then(openRecipeEditorForm)
+}
+async function openRecipeEditor(business,id){
+  await Promise.all([ensureRecipesLoadedFor(business),ensureSuppliersLoadedFor(business)]);
+  const r=(recipesByBusiness[business]||[]).find(x=>x.id===id);
+  if(!r)return;
+  currentRecipe=JSON.parse(JSON.stringify(r));
+  currentRecipe.business=business;
+  editingRecipeId=id;
+  openRecipeEditorForm()
+}
+function openRecipeEditorForm(){
+  document.getElementById("recipeListView").style.display="none";
+  document.getElementById("recipeEditorView").style.display="block";
+  document.getElementById("recipeEditorTitle").textContent=editingRecipeId?"Editar receta":"Nueva receta";
+  const bizSel=document.getElementById("recBusiness");
+  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
+  bizSel.value=currentRecipe.business;
+  bizSel.onchange=async()=>{
+    currentRecipe.business=bizSel.value;
+    await Promise.all([ensureSuppliersLoadedFor(bizSel.value),ensureRecipesLoadedFor(bizSel.value)]);
+    renderIngredientRows();renderRecipeTotals()
+  };
+  document.getElementById("recType").value=currentRecipe.type;
+  document.getElementById("recArea").value=currentRecipe.area||"Cocina";
+  document.getElementById("recName").value=currentRecipe.name||"";
+  document.getElementById("recYieldQty").value=currentRecipe.yieldQty??"";
+  document.getElementById("recYieldUnit").value=currentRecipe.yieldUnit||"";
+  document.getElementById("recSalePrice").value=currentRecipe.salePrice??"";
+  document.getElementById("recSteps").value=currentRecipe.steps||"";
+  document.getElementById("recNotes").value=currentRecipe.notes||"";
+  document.getElementById("recPhotoPreview").innerHTML=currentRecipe.photo?`<img src="${currentRecipe.photo}" style="max-width:220px;border-radius:8px">`:"";
+  renderIngredientRows();
+  onRecipeTypeChange();
+  renderRecipeTotals();
+  const readOnly=!canManageRecipes();
+  ["recBusiness","recType","recArea","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
+  document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
+  document.getElementById("btnPublishRecipe").style.display=readOnly?"none":"";
+  document.getElementById("btnDeleteRecipe").style.display=(editingRecipeId&&!readOnly)?"":"none";
+  document.getElementById("btnRecipeHistory").style.display=editingRecipeId?"":"none";
+  document.getElementById("recipeHistoryBox").style.display="none"
+}
+function onRecipeTypeChange(){
+  const type=document.getElementById("recType").value;
+  document.getElementById("recSalePriceBox").style.display=type==="menu"?"":"none";
+  renderRecipeTotals()
+}
+function closeRecipeEditor(){
+  currentRecipe=null;editingRecipeId=null;
+  document.getElementById("recipeEditorView").style.display="none";
+  document.getElementById("recipeListView").style.display="block";
+  renderRecipeList()
+}
+function getSupplierProductOptions(business){
+  const suppliers=suppliersByBusiness[business]||[];
+  return suppliers.flatMap(s=>(s.products||[]).map(p=>({id:p.id,supplierName:s.name,name:p.name,unit:(PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg).baseLabel,cost:supplierProductCostPerUnit(p)})))
+}
+function getProductionRecipeOptions(business,excludeId){
+  return (recipesByBusiness[business]||[]).filter(r=>r.type==="produccion"&&r.id!==excludeId).map(r=>({id:r.id,name:r.name,unit:r.yieldUnit||"unidad",cost:recipeTotals(r).costPerYield}))
+}
+function renderIngredientRows(){
+  const readOnly=!canManageRecipes();
+  const body=document.getElementById("recIngredientsBody");
+  const list=currentRecipe.ingredients||[];
+  const business=currentRecipe.business;
+  const supplierOpts=getSupplierProductOptions(business);
+  const recipeOpts=getProductionRecipeOptions(business,editingRecipeId);
+  if(!list.length){body.innerHTML='<tr><td colspan="7" class="empty">Sin ingredientes todavía</td></tr>';return}
+  body.innerHTML=list.map((ing,idx)=>{
+    const type=ing.type||"libre";
+    const subtotal=num(ing.qty)*num(ing.cost);
+    let nameCell;
+    if(type==="insumo"){
+      nameCell=`<select onchange="onIngredientRefChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona insumo —</option>${supplierOpts.map(o=>`<option value="${o.id}" ${String(ing.refId)===String(o.id)?"selected":""}>${esc(o.supplierName)}: ${esc(o.name)}</option>`).join("")}</select>`
+    } else if(type==="receta"){
+      nameCell=`<select onchange="onIngredientRefChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona receta —</option>${recipeOpts.map(o=>`<option value="${o.id}" ${String(ing.refId)===String(o.id)?"selected":""}>${esc(o.name)}</option>`).join("")}</select>`
+    } else {
+      nameCell=`<input value="${esc(ing.name||"")}" oninput="updateIngredient(${idx},'name',this.value)" placeholder="Nombre" ${readOnly?"disabled":""}>`
+    }
+    const unitCell=type==="libre"?`<input value="${esc(ing.unit||"")}" oninput="updateIngredient(${idx},'unit',this.value)" style="max-width:90px" placeholder="kg, gr..." ${readOnly?"disabled":""}>`:`<span style="font-size:13px;color:var(--muted)">${esc(ing.unit||"—")}</span>`;
+    const costCell=type==="libre"?`<input type="number" step="any" value="${ing.cost??""}" oninput="updateIngredient(${idx},'cost',this.value)" style="max-width:110px" placeholder="$" ${readOnly?"disabled":""}>`:`<span style="font-size:13px">${ing.cost?money(ing.cost):"—"}</span>`;
+    return `<tr>
+      <td><select onchange="onIngredientTypeChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="libre" ${type==="libre"?"selected":""}>Libre</option><option value="insumo" ${type==="insumo"?"selected":""}>Insumo</option><option value="receta" ${type==="receta"?"selected":""}>Sub-receta</option></select></td>
+      <td>${nameCell}</td>
+      <td><input type="number" step="any" value="${ing.qty??""}" oninput="updateIngredient(${idx},'qty',this.value)" style="max-width:90px" ${readOnly?"disabled":""}></td>
+      <td>${unitCell}</td>
+      <td>${costCell}</td>
+      <td id="recIngSubtotal-${idx}">${money(subtotal)}</td>
+      <td>${readOnly?"":`<button class="btn red" onclick="removeIngredientRow(${idx})" style="padding:4px 8px;font-size:12px">✕</button>`}</td>
+    </tr>`
+  }).join("")
+}
+function addIngredientRow(){
+  if(!canManageRecipes())return;
+  currentRecipe.ingredients=currentRecipe.ingredients||[];
+  currentRecipe.ingredients.push({type:"libre",refId:"",name:"",qty:"",unit:"",cost:""});
+  renderIngredientRows();renderRecipeTotals()
+}
+function removeIngredientRow(idx){
+  if(!canManageRecipes())return;
+  currentRecipe.ingredients.splice(idx,1);
+  renderIngredientRows();renderRecipeTotals()
+}
+function onIngredientTypeChange(idx,type){
+  const ing=currentRecipe.ingredients[idx];
+  ing.type=type;ing.refId="";ing.name="";ing.unit="";ing.cost="";
+  renderIngredientRows();renderRecipeTotals()
+}
+function onIngredientRefChange(idx,refId){
+  const ing=currentRecipe.ingredients[idx];
+  ing.refId=refId;
+  const business=currentRecipe.business;
+  if(ing.type==="insumo"){
+    const opt=getSupplierProductOptions(business).find(o=>String(o.id)===String(refId));
+    if(opt){ing.name=opt.name;ing.unit=opt.unit;ing.cost=opt.cost}
+  } else if(ing.type==="receta"){
+    const opt=getProductionRecipeOptions(business,editingRecipeId).find(o=>String(o.id)===String(refId));
+    if(opt){ing.name=opt.name;ing.unit=opt.unit;ing.cost=opt.cost}
+  }
+  renderIngredientRows();renderRecipeTotals()
+}
+function updateIngredient(idx,field,value){
+  currentRecipe.ingredients[idx][field]=value;
+  const subtotal=num(currentRecipe.ingredients[idx].qty)*num(currentRecipe.ingredients[idx].cost);
+  const cell=document.getElementById(`recIngSubtotal-${idx}`);
+  if(cell)cell.textContent=money(subtotal);
+  renderRecipeTotals()
+}
+function renderRecipeTotals(){
+  if(!currentRecipe)return;
+  currentRecipe.yieldQty=document.getElementById("recYieldQty").value;
+  currentRecipe.yieldUnit=document.getElementById("recYieldUnit").value;
+  currentRecipe.salePrice=document.getElementById("recSalePrice").value;
+  const t=recipeTotals(currentRecipe);
+  const yieldUnit=currentRecipe.yieldUnit||"unidad";
+  const hasPrice=num(currentRecipe.salePrice)>0;
+  document.getElementById("recTotalsBox").innerHTML=
+    `<div class="card kpi"><div><small>Costo total</small><strong>${money(t.totalCost)}</strong></div></div>`+
+    `<div class="card kpi"><div><small>Costo por ${esc(yieldUnit)}</small><strong>${money(t.costPerYield)}</strong></div></div>`+
+    `<div class="card kpi"><div><small>% costo vs. venta</small><strong>${hasPrice?t.costPct.toFixed(1)+"%":"—"}</strong></div></div>`+
+    `<div class="card kpi"><div><small>Margen de ganancia</small><strong>${hasPrice?money(t.marginAmt)+" ("+t.marginPct.toFixed(1)+"%)":"—"}</strong></div></div>`
+}
+function onRecipePhotoChange(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxW=800;
+      const scale=Math.min(1,maxW/img.width);
+      const canvas=document.createElement("canvas");
+      canvas.width=img.width*scale;canvas.height=img.height*scale;
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      currentRecipe.photo=canvas.toDataURL("image/jpeg",0.75);
+      document.getElementById("recPhotoPreview").innerHTML=`<img src="${currentRecipe.photo}" style="max-width:220px;border-radius:8px">`
+    };
+    img.src=ev.target.result
+  };
+  reader.readAsDataURL(file)
+}
+async function saveRecipe(status){
+  if(!canManageRecipes()){alert("No tienes permiso para gestionar recetas.");return}
+  const business=document.getElementById("recBusiness").value;
+  if(!business){alert("Selecciona un negocio.");return}
+  const name=document.getElementById("recName").value.trim();
+  if(!name){alert("Ponle un nombre a la receta.");return}
+  currentRecipe.business=business;
+  currentRecipe.type=document.getElementById("recType").value;
+  currentRecipe.area=document.getElementById("recArea").value;
+  currentRecipe.name=name;
+  currentRecipe.yieldQty=document.getElementById("recYieldQty").value;
+  currentRecipe.yieldUnit=document.getElementById("recYieldUnit").value;
+  currentRecipe.salePrice=document.getElementById("recSalePrice").value;
+  currentRecipe.steps=document.getElementById("recSteps").value;
+  currentRecipe.notes=document.getElementById("recNotes").value;
+  currentRecipe.status=status;
+  currentRecipe.updatedBy=currentUser.name||currentUser.email;
+  currentRecipe.updatedAt=new Date().toISOString();
+  currentRecipe.history=currentRecipe.history||[];
+  const isNew=!editingRecipeId;
+  currentRecipe.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?`Creó la receta (${status})`:`Editó la receta (${status})`});
+  if(isNew){currentRecipe.createdBy=currentUser.name||currentUser.email;currentRecipe.createdAt=new Date().toISOString()}
+  await ensureRecipesLoadedFor(business);
+  let list=recipesByBusiness[business]||[];
+  if(editingRecipeId){list=list.map(r=>r.id===editingRecipeId?currentRecipe:r)} else {list=[...list,currentRecipe]}
+  recipesByBusiness[business]=list;
+  await pushRecipesToCloud(business);
+  await logRecipeAudit(business,isNew?"Creó la receta":"Editó la receta",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"}) — ${status}`);
+  alert("Receta guardada como "+status+".");
+  closeRecipeEditor()
+}
+async function deleteCurrentRecipe(){
+  if(!canManageRecipes()||!editingRecipeId)return;
+  if(!confirm(`¿Eliminar la receta "${currentRecipe.name}"? Esta acción no se puede deshacer.`))return;
+  const business=currentRecipe.business;
+  await ensureRecipesLoadedFor(business);
+  recipesByBusiness[business]=(recipesByBusiness[business]||[]).filter(r=>r.id!==editingRecipeId);
+  await pushRecipesToCloud(business);
+  await logRecipeAudit(business,"ELIMINÓ la receta",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"})`);
+  closeRecipeEditor()
+}
+function toggleRecipeHistory(){
+  const box=document.getElementById("recipeHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(currentRecipe.history||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de esta receta</h3>`+(history.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th></tr></thead><tbody>${history.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay historial para esta receta.</div>');
+  box.style.display="block"
+}
+/* ---- Auditoría de recetas (persiste aunque se elimine la receta) ---- */
+let recipeAuditByBusiness={};
+const recipeAuditLoaded=new Set();
+async function ensureRecipeAuditLoadedFor(business){
+  if(!business||recipeAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("recipe_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de recetas de "+business+":",error);recipeAuditByBusiness[business]=[];recipeAuditLoaded.add(business);return}
+  recipeAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  recipeAuditLoaded.add(business)
+}
+async function logRecipeAudit(business,action,details){
+  if(!business)return;
+  await ensureRecipeAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  recipeAuditByBusiness[business]=[...(recipeAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("recipe_audit_log").upsert({business,data:recipeAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de recetas de "+business+":",error)
+}
+async function toggleRecipeAuditPanel(){
+  const box=document.getElementById("recipeAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("recipeBusinessFilter").value;
+  if(!business){alert("Selecciona un negocio en el filtro primero.");return}
+  await ensureRecipeAuditLoadedFor(business);
+  const log=(recipeAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Recetas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
+}
+
+/* ==================== PROVEEDORES / INSUMOS ==================== */
+const PURCHASE_UNITS={
+  kg:{label:"Kilogramo",baseLabel:"gramos",eqLabel:"¿Cuántos gramos trae?",defaultEq:1000},
+  litro:{label:"Litro",baseLabel:"mililitros",eqLabel:"¿Cuántos mililitros trae?",defaultEq:1000},
+  pieza:{label:"Pieza",baseLabel:"piezas",eqLabel:null,defaultEq:1},
+  lote:{label:"Lote/Paquete",baseLabel:"piezas",eqLabel:"¿Cuántas piezas trae el lote?",defaultEq:1}
+};
+function supplierProductCostPerUnit(p){
+  const eq=num(p.baseQty)>0?num(p.baseQty):1;
+  return num(p.purchasePrice)/eq
+}
+let suppliersByBusiness={};
+const suppliersLoaded=new Set();
+let currentSupplier=null,editingSupplierId=null;
+async function ensureSuppliersLoadedFor(business){
+  if(!business||suppliersLoaded.has(business))return;
+  const{data,error}=await sb.from("business_suppliers").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar proveedores de "+business+":",error);suppliersByBusiness[business]=[];suppliersLoaded.add(business);return}
+  suppliersByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  suppliersLoaded.add(business)
+}
+async function pushSuppliersToCloud(business){
+  const{error}=await sb.from("business_suppliers").upsert({business,data:suppliersByBusiness[business]||[],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar proveedores de "+business+":",error)
+}
+async function bootSuppliers(){
+  document.getElementById("supplierEditorView").style.display="none";
+  document.getElementById("supplierListView").style.display="block";
+  fillBusinessFilter("supplierBusinessFilter",bootSuppliers);
+  document.getElementById("supplierSearch").oninput=renderSupplierList;
+  document.getElementById("btnNewSupplier").style.display=canManageRecipes()?"":"none";
+  document.getElementById("supplierAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("supplierAuditBox").style.display="none";
+  await Promise.all(visibleBusinessNames().map(ensureSuppliersLoadedFor));
+  renderSupplierList()
+}
+function allSuppliersFlat(){
+  return visibleBusinessNames().flatMap(b=>(suppliersByBusiness[b]||[]).map(s=>({...s,business:s.business||b})))
+}
+function toggleSupplierPreview(business,id){
+  const box=document.getElementById(`supPreview-${id}`);
+  if(!box)return;
+  box.style.display=box.style.display==="none"?"block":"none"
+}
+function renderSupplierList(){
+  const bizFilter=document.getElementById("supplierBusinessFilter").value;
+  const q=(document.getElementById("supplierSearch").value||"").toLowerCase().trim();
+  let list=allSuppliersFlat();
+  if(bizFilter)list=list.filter(s=>s.business===bizFilter);
+  if(q)list=list.filter(s=>(s.name||"").toLowerCase().includes(q)||(s.products||[]).some(p=>(p.name||"").toLowerCase().includes(q)));
+  list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+  const box=document.getElementById("supplierCards");
+  if(!list.length){box.innerHTML='<div class="empty">No hay proveedores todavía'+(canManageRecipes()?' — usa "+ Nuevo proveedor" para agregar el primero.':'.')+'</div>';return}
+  box.innerHTML=list.map(s=>{
+    const products=s.products||[];
+    const n=products.length;
+    const productsHtml=n?`<div id="supPreview-${s.id}" style="display:none;margin:8px 0;border-top:1px solid var(--line);padding-top:8px">${products.map(p=>{
+      const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
+      return `<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}</span></div>`
+    }).join("")}</div>`:"";
+    return `<div class="card business">
+      <div class="business-head"><h4>${esc(s.name||"Sin nombre")}</h4></div>
+      <div class="line"><span>Negocio</span><strong>${esc(s.business)}</strong></div>
+      <div class="line"><span>Insumos</span><strong>${n}</strong></div>
+      ${s.contact?`<div class="line"><span>Contacto</span><span>${esc(s.contact)}</span></div>`:""}
+      ${productsHtml}
+      <div class="flex" style="gap:8px">
+        ${n?`<button class="btn" onclick="toggleSupplierPreview('${escJs(s.business)}',${s.id})">Ver insumos</button>`:""}
+        <button class="btn" onclick="openSupplierEditor('${escJs(s.business)}',${s.id})">${canManageRecipes()?"Editar":"Ver detalle"}</button>
+      </div>
+    </div>`
+  }).join("")
+}
+function startNewSupplier(){
+  if(!canManageRecipes())return;
+  currentSupplier={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),name:"",contact:"",products:[]};
+  editingSupplierId=null;
+  openSupplierEditorForm()
+}
+async function openSupplierEditor(business,id){
+  await ensureSuppliersLoadedFor(business);
+  const s=(suppliersByBusiness[business]||[]).find(x=>x.id===id);
+  if(!s)return;
+  currentSupplier=JSON.parse(JSON.stringify(s));
+  currentSupplier.business=business;
+  editingSupplierId=id;
+  openSupplierEditorForm()
+}
+function openSupplierEditorForm(){
+  document.getElementById("supplierListView").style.display="none";
+  document.getElementById("supplierEditorView").style.display="block";
+  document.getElementById("supplierEditorTitle").textContent=editingSupplierId?"Editar proveedor":"Nuevo proveedor";
+  const bizSel=document.getElementById("supBusiness");
+  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
+  bizSel.value=currentSupplier.business;
+  document.getElementById("supName").value=currentSupplier.name||"";
+  document.getElementById("supContact").value=currentSupplier.contact||"";
+  renderSupplierProductRows();
+  const readOnly=!canManageRecipes();
+  ["supBusiness","supName","supContact"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  document.getElementById("btnAddSupplierProduct").style.display=readOnly?"none":"";
+  document.getElementById("btnSaveSupplier").style.display=readOnly?"none":"";
+  document.getElementById("btnDeleteSupplier").style.display=(editingSupplierId&&!readOnly)?"":"none";
+  document.getElementById("btnSupplierHistory").style.display=editingSupplierId?"":"none";
+  document.getElementById("supplierHistoryBox").style.display="none"
+}
+function closeSupplierEditor(){
+  currentSupplier=null;editingSupplierId=null;
+  document.getElementById("supplierEditorView").style.display="none";
+  document.getElementById("supplierListView").style.display="block";
+  renderSupplierList()
+}
+function renderSupplierProductRows(){
+  const readOnly=!canManageRecipes();
+  const body=document.getElementById("supProductsBody");
+  const list=currentSupplier.products||[];
+  if(!list.length){body.innerHTML='<tr><td colspan="6" class="empty">Sin insumos todavía</td></tr>';return}
+  body.innerHTML=list.map((p,idx)=>{
+    const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
+    const costPerUnit=supplierProductCostPerUnit(p);
+    const showEq=cfg.eqLabel!==null;
+    return `<tr>
+      <td><input value="${esc(p.name||"")}" oninput="updateSupplierProduct(${idx},'name',this.value)" placeholder="Ej. Sal de mesa" ${readOnly?"disabled":""}></td>
+      <td><select onchange="onSupplierUnitChange(${idx},this.value)" ${readOnly?"disabled":""}>${Object.entries(PURCHASE_UNITS).map(([k,v])=>`<option value="${k}" ${p.purchaseUnit===k?"selected":""}>${v.label}</option>`).join("")}</select></td>
+      <td><input type="number" step="any" value="${p.purchasePrice??""}" oninput="updateSupplierProduct(${idx},'purchasePrice',this.value)" style="max-width:100px" placeholder="$" ${readOnly?"disabled":""}></td>
+      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateSupplierProduct(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td id="supCostCell-${idx}">${money(costPerUnit)} / ${cfg.baseLabel.replace(/s$/,"")}</td>
+      <td>${readOnly?"":`<button class="btn red" onclick="removeSupplierProductRow(${idx})" style="padding:4px 8px;font-size:12px">✕</button>`}</td>
+    </tr>`
+  }).join("")
+}
+function addSupplierProductRow(){
+  if(!canManageRecipes())return;
+  currentSupplier.products=currentSupplier.products||[];
+  currentSupplier.products.push({id:Date.now()+Math.random(),name:"",purchaseUnit:"kg",purchasePrice:"",baseQty:1000});
+  renderSupplierProductRows()
+}
+function removeSupplierProductRow(idx){
+  if(!canManageRecipes())return;
+  currentSupplier.products.splice(idx,1);
+  renderSupplierProductRows()
+}
+function onSupplierUnitChange(idx,unit){
+  currentSupplier.products[idx].purchaseUnit=unit;
+  currentSupplier.products[idx].baseQty=PURCHASE_UNITS[unit].defaultEq;
+  renderSupplierProductRows()
+}
+function updateSupplierProduct(idx,field,value){
+  currentSupplier.products[idx][field]=value;
+  const p=currentSupplier.products[idx];
+  const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
+  const cell=document.getElementById(`supCostCell-${idx}`);
+  if(cell)cell.textContent=`${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}`
+}
+async function saveSupplier(){
+  if(!canManageRecipes()){alert("No tienes permiso para gestionar proveedores.");return}
+  const business=document.getElementById("supBusiness").value;
+  if(!business){alert("Selecciona un negocio.");return}
+  const name=document.getElementById("supName").value.trim();
+  if(!name){alert("Ponle un nombre al proveedor.");return}
+  currentSupplier.business=business;
+  currentSupplier.name=name;
+  currentSupplier.contact=document.getElementById("supContact").value.trim();
+  currentSupplier.history=currentSupplier.history||[];
+  const isNew=!editingSupplierId;
+  currentSupplier.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?"Creó el proveedor":"Editó el proveedor"});
+  await ensureSuppliersLoadedFor(business);
+  let list=suppliersByBusiness[business]||[];
+  if(editingSupplierId){list=list.map(s=>s.id===editingSupplierId?currentSupplier:s)} else {list=[...list,currentSupplier]}
+  suppliersByBusiness[business]=list;
+  await pushSuppliersToCloud(business);
+  await logSupplierAudit(business,isNew?"Creó el proveedor":"Editó el proveedor",`"${currentSupplier.name}" — ${(currentSupplier.products||[]).length} insumos`);
+  alert("Proveedor guardado.");
+  closeSupplierEditor()
+}
+async function deleteCurrentSupplier(){
+  if(!canManageRecipes()||!editingSupplierId)return;
+  if(!confirm(`¿Eliminar el proveedor "${currentSupplier.name}"? Esta acción no se puede deshacer.`))return;
+  const business=currentSupplier.business;
+  await ensureSuppliersLoadedFor(business);
+  suppliersByBusiness[business]=(suppliersByBusiness[business]||[]).filter(s=>s.id!==editingSupplierId);
+  await pushSuppliersToCloud(business);
+  await logSupplierAudit(business,"ELIMINÓ el proveedor",`"${currentSupplier.name}" — ${(currentSupplier.products||[]).length} insumos`);
+  closeSupplierEditor()
+}
+function toggleSupplierHistory(){
+  const box=document.getElementById("supplierHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(currentSupplier.history||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de este proveedor</h3>`+(history.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th></tr></thead><tbody>${history.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay historial para este proveedor.</div>');
+  box.style.display="block"
+}
+/* ---- Auditoría de proveedores (persiste aunque se elimine el proveedor) ---- */
+let supplierAuditByBusiness={};
+const supplierAuditLoaded=new Set();
+async function ensureSupplierAuditLoadedFor(business){
+  if(!business||supplierAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("supplier_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de proveedores de "+business+":",error);supplierAuditByBusiness[business]=[];supplierAuditLoaded.add(business);return}
+  supplierAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  supplierAuditLoaded.add(business)
+}
+async function logSupplierAudit(business,action,details){
+  if(!business)return;
+  await ensureSupplierAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  supplierAuditByBusiness[business]=[...(supplierAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("supplier_audit_log").upsert({business,data:supplierAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de proveedores de "+business+":",error)
+}
+async function toggleSupplierAuditPanel(){
+  const box=document.getElementById("supplierAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("supplierBusinessFilter").value;
+  if(!business){alert("Selecciona un negocio en el filtro primero.");return}
+  await ensureSupplierAuditLoadedFor(business);
+  const log=(supplierAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Proveedores — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
+}
+
 /* ==================== TOMA FÍSICA ==================== */
 let tomasByBusiness={};
 const tomasLoaded=new Set();
@@ -1260,8 +2086,37 @@ async function pushTomasToCloud(business){
   const{error}=await sb.from("physical_takes").upsert({business,data:tomasByBusiness[business]||[],updated_at:new Date().toISOString()});
   if(error)console.error("Error al guardar tomas de "+business+":",error)
 }
+/* ==================== AUDITORÍA DE TOMAS FÍSICAS ==================== */
+let tomaAuditByBusiness={};
+const tomaAuditLoaded=new Set();
+async function ensureTomaAuditLoadedFor(business){
+  if(!business||tomaAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("toma_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de "+business+":",error);tomaAuditByBusiness[business]=[];tomaAuditLoaded.add(business);return}
+  tomaAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  tomaAuditLoaded.add(business)
+}
+async function logTomaAudit(business,action,details){
+  if(!business)return;
+  await ensureTomaAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  tomaAuditByBusiness[business]=[...(tomaAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("toma_audit_log").upsert({business,data:tomaAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de "+business+":",error)
+}
+async function toggleTomaAuditPanel(){
+  const box=document.getElementById("tomaAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("tomaBusiness").value;
+  if(!business){alert("Selecciona un negocio primero.");return}
+  await ensureTomaAuditLoadedFor(business);
+  const log=(tomaAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Tomas físicas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
+}
 function parsePhysicalCountCatalogPdf(text){
-  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML"]);
+  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"]);
   const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
   const EXCLUDE=/CLAVE|DESCRIPCION|DESCRIPCIÓN|ALMACEN|ALMACÉN|EXISTENCIAS|REGISTROS|ENTREGO|ENTREGÓ|RECIBIO|RECIBIÓ|INVENTARIO|FORMATO|UNIDAD|INSUMOS|SoftRestaurant|COPYRIGHT|NATIONAL|^AV\s|^\d{1,2}\/\d{1,2}\/\d{4}|PAG\.|^\d{1,2}:\d{2}:\d{2}/i;
   const splitCols=line=>line.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
@@ -1307,6 +2162,8 @@ function parsePhysicalCountCatalogPdf(text){
 async function bootTomaList(){
   const val=fillBusinessFilter("tomaBusiness",bootTomaList);
   document.getElementById("btnNewToma").style.display=canManageTomas()?"":"none";
+  document.getElementById("tomaAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("tomaAuditBox").style.display="none";
   await ensureTomasLoadedFor(val);
   renderTomaList()
 }
@@ -1320,7 +2177,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${canMan?` ${miniDeleteMenu(`deleteToma('${escJs(b)}','${t.id}')`)}`:""}`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="tomaListMenu-${t.id}"><button type="button" class="danger" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event);deleteToma('${escJs(b)}','${t.id}')">🗑 Eliminar</button></div></div>`:""}</div>`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
       ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px">${tomaDepartmentOptionsHtml(t.department||"")}</select>`
@@ -1356,6 +2213,7 @@ function startNewToma(){
   currentToma={id:Date.now(),business:b,countDate:new Date().toISOString().slice(0,10),department:"",catalog:[],quantities:{},status:"Borrador",history:[]};
   tomaDirtyCodes=new Set();
   tomaHistoryBaseLen=0;
+  tomaEditingIdx=new Set();
   document.getElementById("tomaCaptureTitle").textContent="Nueva toma física";
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(b)}</option>`;
   document.getElementById("tomaCapDate").value=currentToma.countDate;
@@ -1385,6 +2243,7 @@ function openToma(business,id){
   currentToma=JSON.parse(JSON.stringify(t));
   tomaDirtyCodes=new Set();
   tomaHistoryBaseLen=(currentToma.history||[]).length;
+  tomaEditingIdx=new Set();
   const canCap=canCaptureTomas(),canMan=canManageTomas();
   document.getElementById("tomaCaptureTitle").textContent=(!canCap?"Viendo toma física — ":canMan?"Editando toma física — ":"Capturando cantidades — ")+business+" ("+t.countDate+")"+(t.department?" — "+t.department:"");
   document.getElementById("tomaCapBusiness").innerHTML=`<option>${esc(business)}</option>`;
@@ -1439,6 +2298,7 @@ async function uploadTomaCatalog(){
     currentToma.quantities=newQty;
     currentToma.history=currentToma.history||[];
     currentToma.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:`Cargó el catálogo (${items.length} productos)`});
+    logTomaAudit(currentToma.business,"Cargó/reemplazó catálogo",`Toma del ${currentToma.countDate} — ${items.length} productos, depto: ${currentToma.department||"sin especificar"}`);
     msg.style.color="#1f9d55";msg.textContent=`Se cargaron ${items.length} productos para esta toma.`;
     fileInput.value="";
     document.getElementById("tomaCapActions").style.display="flex";
@@ -1465,11 +2325,20 @@ function renderTomaGroups(){
     ${currentToma.catalog.map((it,idx)=>{
       const q=currentToma.quantities[it.code]||{};
       const hasVal=q.enteros!==undefined||q.fraccion!==undefined;
-      const infoHtml=it.manual
-        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap;align-items:center"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px">${miniDeleteMenu(`deleteTomaProduct(${idx})`)}</div>`
+      const editing=tomaEditingIdx.has(idx);
+      const infoHtml=editing
+        ?`<input type="text" class="toma-edit-field" value="${esc(it.product)}" onchange="editTomaProduct(${idx},'product',this.value)" placeholder="Nombre del producto" style="font-weight:600;margin-bottom:4px;width:100%"><div class="flex" style="gap:6px;flex-wrap:wrap"><input type="text" class="toma-edit-field" value="${esc(it.code)}" onchange="editTomaProduct(${idx},'code',this.value)" placeholder="Código" style="max-width:90px;font-size:11px"><input type="text" class="toma-edit-field" value="${esc(it.unit)}" onchange="editTomaProduct(${idx},'unit',this.value)" placeholder="Unidad" style="max-width:70px;font-size:11px"><button type="button" class="btn red" onclick="deleteTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Eliminar</button><button type="button" class="btn" onclick="stopEditTomaProduct(${idx})" style="padding:3px 8px;font-size:11px">Listo</button></div>`
         :`<strong>${esc(it.product)}</strong><span>${esc(it.code)} · ${esc(it.unit)}</span>`;
+      const kebabHtml=(canMan&&!editing)?`<div class="toma-kebab-wrap">
+          <button type="button" class="toma-kebab-btn" onclick="toggleTomaRowMenu(event,${idx})" title="Más opciones">⋮</button>
+          <div class="toma-kebab-dropdown" id="tomaMenu-${idx}">
+            <button type="button" onclick="startEditTomaProduct(${idx})">✏️ Editar producto</button>
+            <button type="button" class="danger" onclick="toggleTomaRowMenu(event,${idx});deleteTomaProduct(${idx})">🗑 Eliminar</button>
+          </div>
+        </div>`:"";
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
         <div class="toma-row-info">${infoHtml}</div>
+        ${kebabHtml}
         <div class="toma-row-inputs">
           <div><label>Enteros</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.enteros!==undefined?q.enteros:"")}" onchange="setTomaQty('${escJs(it.code)}','enteros',this.value)" onkeydown="tomaInputKeydown(event,this)"></div>
           <div><label>Fracción / copas</label><input type="text" inputmode="decimal" class="toma-input" ${readOnly?"disabled":""} value="${esc(q.fraccion!==undefined?q.fraccion:"")}" onchange="setTomaQty('${escJs(it.code)}','fraccion',this.value)" onkeydown="tomaInputKeydown(event,this)" placeholder="ej. .700 o 110ML"></div>
@@ -1481,6 +2350,39 @@ function renderTomaGroups(){
   const searchInput=document.getElementById("tomaSearch");
   if(searchInput)searchInput.addEventListener("input",()=>filterTomaItems(searchInput.value));
   updateTomaCount()
+}
+let tomaEditingIdx=new Set();
+function positionKebabDropdown(btn,el){
+  const r=btn.getBoundingClientRect();
+  el.style.top=(r.bottom+4)+"px";
+  const width=el.offsetWidth||170;
+  let left=r.right-width;
+  if(left<4)left=4;
+  el.style.left=left+"px"
+}
+function toggleTomaRowMenu(e,idx){
+  e.stopPropagation();
+  const id="tomaMenu-"+idx;
+  document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
+  const el=document.getElementById(id);
+  if(el){const willOpen=!el.classList.contains("open");if(willOpen)positionKebabDropdown(e.currentTarget,el);el.classList.toggle("open")}
+}
+function toggleKebabMenu(id,e){
+  if(e)e.stopPropagation();
+  document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>{if(d.id!==id)d.classList.remove("open")});
+  const el=document.getElementById(id);
+  if(el){const willOpen=!el.classList.contains("open");if(willOpen&&e)positionKebabDropdown(e.currentTarget,el);el.classList.toggle("open")}
+}
+document.addEventListener("click",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")));
+document.addEventListener("scroll",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")),true);
+function startEditTomaProduct(idx){
+  if(!canManageTomas())return;
+  tomaEditingIdx.add(idx);
+  renderTomaGroups()
+}
+function stopEditTomaProduct(idx){
+  tomaEditingIdx.delete(idx);
+  renderTomaGroups()
 }
 function editTomaProduct(idx,field,value){
   if(!currentToma||!canManageTomas())return;
@@ -1501,11 +2403,14 @@ function deleteTomaProduct(idx){
   if(!confirm(`¿Eliminar "${item.product||item.code}" de esta toma?`))return;
   delete currentToma.quantities[item.code];
   currentToma.catalog.splice(idx,1);
+  tomaEditingIdx.clear();
   renderTomaGroups()
 }
 function addTomaProduct(){
   if(!currentToma||!canManageTomas())return;
+  const newIdx=currentToma.catalog.length;
   currentToma.catalog.push({group:"Agregado manualmente",code:"",product:"",unit:"",manual:true});
+  tomaEditingIdx.add(newIdx);
   renderTomaGroups();
   const box=document.getElementById("tomaCapGroups");
   if(box&&box.scrollTo)box.scrollTo({top:box.scrollHeight,behavior:"smooth"})
@@ -1582,16 +2487,19 @@ async function saveToma(status){
   tomasByBusiness[business]=freshList;
   tomasLoaded.add(business);
   await pushTomasToCloud(business);
+  logTomaAudit(business,idx>=0?`Guardó avance (${status})`:`Creó la toma (${status})`,`Toma del ${currentToma.countDate} — depto: ${currentToma.department||"sin especificar"}, ${currentToma.catalog.length} productos`);
   tomaDirtyCodes=new Set();
   alert("Toma guardada como "+status+".");
   closeTomaCapture()
 }
 async function deleteToma(business,id){
-  if(!canManageTomas())return;
+  if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar tomas físicas.");return}
   if(!confirm("¿Eliminar esta toma física? Esta acción no se puede deshacer."))return;
   await ensureTomasLoadedFor(business);
+  const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
   tomasByBusiness[business]=(tomasByBusiness[business]||[]).filter(t=>String(t.id)!==String(id));
   await pushTomasToCloud(business);
+  await logTomaAudit(business,"ELIMINÓ la toma",t?`Toma del ${t.countDate} — depto: ${t.department||"sin especificar"}, ${t.catalog.length} productos, estatus: ${t.status}`:`ID ${id}`);
   renderTomaList()
 }
 async function pushBusinessesToCloud(){
@@ -1606,16 +2514,24 @@ async function renderUsersPanel(){
   if (!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Todavía no hay otros usuarios registrados. En cuanto alguien más entre por primera vez, aparecerá aquí. Tu propia cuenta no se muestra en esta lista.</div></div>`; return; }
   panel.innerHTML = `<div class="empty" style="margin-bottom:10px">Tu propia cuenta no aparece aquí — ya tienes acceso completo como administrador. Da clic en "Editar" para cambiar el acceso de alguien.</div>` + users.map(u=>{
     const name = u.display_name || u.email.split("@")[0];
-    const badges = [
-      u.is_admin?'<span class="badge green">Administrador</span>':"",
-      u.view_only?'<span class="badge yellow">Solo lectura</span>':"",
+    const roleBadge = u.is_admin?'<span class="badge green">Administrador</span>':(u.view_only?'<span class="badge yellow">Solo lectura</span>':'<span class="badge">Estándar</span>');
+    const extraBadges = [
       u.can_edit_tomas?'<span class="badge">Administra Tomas</span>':"",
       u.can_capture_tomas?'<span class="badge">Captura Tomas</span>':"",
-      !u.is_admin&&(!u.businesses||!u.businesses.length)?'<span class="badge red">Sin negocio asignado</span>':""
+      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':""
     ].filter(Boolean).join(" ");
+    const bizHtml = u.is_admin
+      ? '<span class="badge green">Todos los negocios</span>'
+      : (u.businesses&&u.businesses.length ? u.businesses.map(b=>`<span class="badge">${esc(b)}</span>`).join(" ") : '<span class="badge red">Sin negocio asignado</span>');
     return`<div class="card form-card" style="margin-bottom:10px">
-      <div class="flex" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div><strong>${esc(name)}</strong> <span style="color:var(--muted);font-size:13px">${esc(u.email)}</span><div style="margin-top:4px">${badges||'<span class="badge">Sin permisos asignados</span>'}</div></div>
+      <div class="flex" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div style="min-width:220px">
+          <strong>${esc(name)}</strong> <span style="color:var(--muted);font-size:13px">${esc(u.email)}</span>
+          <div style="margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:start;font-size:12px">
+            <span style="color:var(--muted);white-space:nowrap;padding-top:2px">Perfil</span><div>${roleBadge} ${extraBadges}</div>
+            <span style="color:var(--muted);white-space:nowrap;padding-top:2px">Negocios</span><div>${bizHtml}</div>
+          </div>
+        </div>
         <button class="btn" onclick="toggleUserEdit('${u.id}')" id="toggleBtn-${u.id}">Editar</button>
       </div>
       <div id="userEdit-${u.id}" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
@@ -1624,9 +2540,10 @@ async function renderUsersPanel(){
           <label style="font-weight:600;font-size:13px"><input type="checkbox" class="viewonly-${u.id}" id="viewonly-${u.id}" ${u.view_only?"checked":""} style="width:auto;margin-right:6px">Solo lectura</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomaedit-${u.id}" ${u.can_edit_tomas?"checked":""} style="width:auto;margin-right:6px">Administrar Tomas físicas</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomacapture-${u.id}" ${u.can_capture_tomas?"checked":""} style="width:auto;margin-right:6px">Capturar cantidades en Tomas físicas</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="recipes-${u.id}" ${u.can_manage_recipes?"checked":""} style="width:auto;margin-right:6px">Gestionar recetas (chef)</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="admin-${u.id}" ${u.is_admin?"checked":""} style="width:auto;margin-right:6px">Administrador</label>
         </div>
-        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.).</div>
+        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.). <b>"Gestionar recetas"</b> permite crear, editar y eliminar recetas de menú y producción en los negocios asignados (pensado para chefs), sin darle el resto de los permisos de administrador.</div>
         <div style="margin-top:12px">
           <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Departamentos de Toma física que puede ver y capturar (deja todos sin marcar para que vea todos)</label>
           <div class="flex" style="gap:16px;flex-wrap:wrap">
@@ -1660,13 +2577,14 @@ async function saveUserAccess(userId){
   const viewOnly = document.getElementById(`viewonly-${userId}`).checked;
   const canEditTomas = document.getElementById(`tomaedit-${userId}`).checked;
   const canCaptureTomas = document.getElementById(`tomacapture-${userId}`).checked;
+  const canManageRecipesFlag = document.getElementById(`recipes-${userId}`).checked;
   const name = document.getElementById(`name-${userId}`).value.trim();
   const checked = Array.from(document.querySelectorAll(`.biz-${userId}:checked`)).map(el=>el.value);
   const tomaDepartments = Array.from(document.querySelectorAll(`.tomadept-${userId}:checked`)).map(el=>el.value);
-  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
+  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, can_manage_recipes:canManageRecipesFlag, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
   if (error){ alert("No se pudo guardar el acceso."); console.error(error); return; }
   if (userId === currentUser.id){
-    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
+    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.canManageRecipes = canManageRecipesFlag; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
     applyViewOnlyUI();
     const label=document.getElementById("userLabel"),avatar=document.getElementById("userAvatar");
     const shownName=name||currentUser.email.split("@")[0];
@@ -1735,7 +2653,7 @@ async function extractPdfText(file){
   return fullText
 }
 function parseInventoryPdfText(text){
-  const re=/^(\S+)\s+(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const re=/^(\S+)\s+(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+\$(-?[\d,]+\.\d{2})\s*$/;
   const items=[];
   text.split("\n").forEach(raw=>{
     const line=raw.trim();const m=line.match(re);
@@ -1746,13 +2664,39 @@ function parseInventoryPdfText(text){
   return items
 }
 function parseMermaPdfText(text){
-  const re=/^([^\s-]+)-(.*?)\s+([A-Za-zÁÉÍÓÚÑ]{2,8})\s+(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const UNIT_LIST=["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"];
+  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const isNewRecord=l=>/^[^\s-]+-/.test(l);
+  const isSkip=l=>/^GRUPO:/i.test(l)||/^\$/.test(l);
+  const records=[];
+  let buf=null;
+  for(const l of lines){
+    if(isNewRecord(l)){if(buf)records.push(buf);buf=l;continue}
+    if(isSkip(l)){if(buf){records.push(buf);buf=null}continue}
+    if(buf!==null)buf+=" "+l
+  }
+  if(buf)records.push(buf);
   const items=[];
-  text.split("\n").forEach(raw=>{
-    const line=raw.trim();const m=line.match(re);
-    if(!m)return;
-    const[,code,product,unit,,salidaUStr,costStr]=m;
-    items.push({code:code.trim(),product:product.trim(),unit:unit.trim().toUpperCase(),cost:parseFloat(costStr.replace(/,/g,""))||0,theo:parseFloat(salidaUStr.replace(/,/g,""))||0,phys:0})
+  records.forEach(rec=>{
+    const codeMatch=rec.match(/^([^\s-]+)-/);
+    if(!codeMatch)return;
+    const code=codeMatch[1];
+    const rest=rec.slice(codeMatch[0].length);
+    const dollars=[...rest.matchAll(/\$(-?[\d,]+\.\d{2})/g)].map(m=>m[1]);
+    const cleaned=rest.replace(/\$-?[\d,]+\.\d{2}/g," ");
+    const words=cleaned.split(/\s+/).filter(Boolean);
+    const numRe=/^-?[\d,]+\.\d{2,4}$/;
+    let unit=null,unitIdx=-1;
+    for(let i=0;i<words.length;i++){
+      if(UNIT_LIST.includes(words[i].toUpperCase())){unit=words[i].toUpperCase();unitIdx=i}
+    }
+    if(!unit||dollars.length<3)return;
+    const plainNums=words.filter(w=>numRe.test(w));
+    if(plainNums.length<2)return;
+    const productWords=words.filter((w,i)=>i!==unitIdx&&!numRe.test(w));
+    const product=productWords.join(" ").trim();
+    if(!product)return;
+    items.push({code:code.trim(),product,unit,cost:parseFloat(dollars[0].replace(/,/g,""))||0,theo:parseFloat(plainNums[1].replace(/,/g,""))||0,phys:0})
   });
   return items
 }
@@ -1921,6 +2865,7 @@ function loadCatalogIntoRows(b){
 }
 async function onBusinessChangeInCapture(){
   const b=fBusiness.value;if(!b)return;
+  saveCurrentBusiness(b);
   await ensureCatalogsLoadedFor(b);
   const cat=catalogs[b];
   const hasCatalog=cat&&Object.values(cat).some(l=>l.length);
