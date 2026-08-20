@@ -501,10 +501,12 @@ textarea{min-height:76px;resize:vertical}
             <textarea id="recNotes" rows="3" placeholder="Alérgenos, variaciones, tips..."></textarea>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
-            <div class="flex" style="flex-wrap:wrap;gap:10px">
+            <div class="flex" style="flex-wrap:wrap;gap:10px;align-items:center">
               <button class="btn" id="btnSaveDraftRecipe" onclick="saveRecipe('Borrador')">Guardar borrador</button>
-              <button class="btn green" id="btnPublishRecipe" onclick="saveRecipe('Publicada')">Publicar receta</button>
+              <button class="btn" id="btnSendForReview" onclick="saveRecipe('Pendiente de revisión')">Enviar a revisión</button>
+              <button class="btn green" id="btnMarkRecipeReady" style="display:none" onclick="markRecipeReady()">✅ Marcar como Listo</button>
               <button class="btn red" id="btnDeleteRecipe" style="display:none" onclick="deleteCurrentRecipe()">Eliminar receta</button>
+              <span id="recStatusHint" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
           </div>
         </div>
@@ -724,6 +726,7 @@ function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.
 function canManageTomas(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
 function canCaptureTomas(){ return canManageTomas() || currentUser.canCaptureTomas; }
 function canManageRecipes(){ return currentUser.isAdmin || currentUser.canManageRecipes; }
+function canApproveRecipes(){ return currentUser.isAdmin || currentUser.canEditTomas; }
 async function loadAllUserAccess(){
   const { data, error } = await sb.from("user_access").select("*").order("email");
   if (error){ console.error("Error al leer usuarios:", error); return []; }
@@ -1571,6 +1574,11 @@ async function bootRecipes(){
 function allRecipesFlat(){
   return visibleBusinessNames().flatMap(b=>(recipesByBusiness[b]||[]).map(r=>({...r,business:r.business||b})))
 }
+function recipeStatusBadge(status){
+  if(status==="Listo"||status==="Publicada")return'<span class="badge green">Listo</span>';
+  if(status==="Pendiente de revisión")return'<span class="badge yellow">Pendiente de revisión</span>';
+  return'<span class="badge">Borrador</span>'
+}
 function renderRecipeList(){
   const bizFilter=document.getElementById("recipeBusinessFilter").value;
   const areaFilter=document.getElementById("recipeAreaFilter").value;
@@ -1588,7 +1596,7 @@ function renderRecipeList(){
     const t=recipeTotals(r);
     const badge=r.type==="menu"?'<span class="badge green">Menú</span>':'<span class="badge">Producción</span>';
     const areaBadge=`<span class="badge">${esc(r.area||"Cocina")}</span>`;
-    const statusBadge=r.status==="Publicada"?'<span class="badge green">Publicada</span>':'<span class="badge yellow">Borrador</span>';
+    const statusBadge=recipeStatusBadge(r.status);
     const costPctHtml=num(r.salePrice)>0?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
     return `<div class="card business">
       ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
@@ -1645,10 +1653,15 @@ function openRecipeEditorForm(){
   ["recBusiness","recType","recArea","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
   document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
-  document.getElementById("btnPublishRecipe").style.display=readOnly?"none":"";
+  document.getElementById("btnSendForReview").style.display=readOnly?"none":"";
+  const canApprove=canApproveRecipes();
+  const isPending=currentRecipe.status==="Pendiente de revisión";
+  document.getElementById("btnMarkRecipeReady").style.display=(editingRecipeId&&isPending&&canApprove)?"":"none";
   document.getElementById("btnDeleteRecipe").style.display=(editingRecipeId&&!readOnly)?"":"none";
   document.getElementById("btnRecipeHistory").style.display=editingRecipeId?"":"none";
-  document.getElementById("recipeHistoryBox").style.display="none"
+  document.getElementById("recipeHistoryBox").style.display="none";
+  const hintEl=document.getElementById("recStatusHint");
+  hintEl.textContent=editingRecipeId?"Estatus actual: "+(currentRecipe.status==="Listo"||currentRecipe.status==="Publicada"?"Listo":currentRecipe.status||"Borrador")+(isPending&&!canApprove?" — falta que un supervisor o administrador la marque como Listo una vez cargada al sistema de ventas.":""):""
 }
 function onRecipeTypeChange(){
   const type=document.getElementById("recType").value;
@@ -1799,6 +1812,25 @@ async function saveRecipe(status){
   await pushRecipesToCloud(business);
   await logRecipeAudit(business,isNew?"Creó la receta":"Editó la receta",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"}) — ${status}`);
   alert("Receta guardada como "+status+".");
+  closeRecipeEditor()
+}
+async function markRecipeReady(){
+  if(!canApproveRecipes()){alert("Solo un supervisor o administrador puede marcar una receta como Listo.");return}
+  if(!editingRecipeId)return;
+  if(!confirm(`¿Confirmas que "${currentRecipe.name}" ya quedó cargada en el sistema de ventas y lista para usarse?`))return;
+  const business=currentRecipe.business;
+  currentRecipe.status="Listo";
+  currentRecipe.approvedBy=currentUser.name||currentUser.email;
+  currentRecipe.approvedAt=new Date().toISOString();
+  currentRecipe.history=currentRecipe.history||[];
+  currentRecipe.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:"Marcó la receta como Listo (cargada al sistema de ventas)"});
+  await ensureRecipesLoadedFor(business);
+  let list=recipesByBusiness[business]||[];
+  list=list.map(r=>r.id===editingRecipeId?currentRecipe:r);
+  recipesByBusiness[business]=list;
+  await pushRecipesToCloud(business);
+  await logRecipeAudit(business,"Marcó como Listo",`"${currentRecipe.name}" (${currentRecipe.area||"Cocina"} — ${currentRecipe.type==="menu"?"Menú":"Producción"}) — ya cargada al sistema de ventas`);
+  alert("Listo, la receta quedó marcada como aprobada.");
   closeRecipeEditor()
 }
 async function deleteCurrentRecipe(){
