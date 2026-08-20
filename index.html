@@ -2318,7 +2318,8 @@ async function uploadTomaCatalog(){
     if(name.endsWith(".pdf")){
       const text=await extractPdfText(file);
       items=parsePhysicalCountCatalogPdf(text);
-      if(!items.length)items=parsePhysicalCountCatalogPdfNoUnit(text)
+      const altItems=parsePhysicalCountCatalogPdfNoUnit(text);
+      if(altItems.length>items.length)items=altItems
     } else {
       const raw=await parseRawTableFile(file);
       items=raw.map(r=>{
