@@ -40,17 +40,17 @@ button{cursor:pointer}
 .app{min-height:100vh;display:grid;grid-template-columns:244px 1fr}
 .sidebar{
   background:linear-gradient(180deg,var(--nav),#081338);color:#fff;position:sticky;top:0;
-  height:100vh;overflow-y:auto;padding:24px 18px;display:flex;flex-direction:column
+  height:100vh;overflow:hidden;padding:24px 18px;display:flex;flex-direction:column
 }
-.brand{margin-bottom:28px}
+.brand{margin-bottom:28px;flex-shrink:0}
 .brand-logo{width:100%;max-width:172px;height:auto;display:block;margin:0 auto 12px}
 .brand-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8fb4ff;text-align:center}
-.nav{display:grid;gap:7px}.nav button{
+.nav{display:grid;gap:7px;overflow-y:auto;flex:1;min-height:0;margin:0 -18px;padding:0 18px 4px}.nav button{
   border:0;background:transparent;color:#dbe5f4;text-align:left;padding:12px 13px;border-radius:9px
 }
 .nav button.active,.nav button:hover{background:var(--nav2);color:#fff}
 .nav button span{display:inline-flex;width:26px;align-items:center;justify-content:center}.nav button svg{width:17px;height:17px;flex-shrink:0}
-.userbox{margin-top:auto;border-top:1px solid #23314c;padding-top:17px;display:flex;gap:10px;align-items:center}
+.userbox{margin-top:auto;border-top:1px solid #23314c;padding-top:17px;display:flex;gap:10px;align-items:center;flex-shrink:0}
 .avatar{width:36px;height:36px;min-width:36px;min-height:36px;flex-shrink:0;border-radius:50%;background:var(--purple);display:grid;place-items:center;overflow:hidden;font-size:13px;font-weight:700}
 .userbox small{display:block;color:#aab7ca}
 .userbox{min-width:0}
@@ -163,7 +163,7 @@ textarea{min-height:76px;resize:vertical}
 .brand{position:relative}
 @media(max-width:850px){
   .app{grid-template-columns:1fr}
-  .sidebar{position:fixed;top:0;left:0;height:100vh;width:280px;z-index:40;transform:translateX(-100%);transition:transform .25s ease;overflow-y:auto}
+  .sidebar{position:fixed;top:0;left:0;height:100vh;width:280px;z-index:40;transform:translateX(-100%);transition:transform .25s ease}
   .sidebar.open{transform:translateX(0)}
   .userbox{display:flex}
   #mobileMenuBtn{display:flex}
