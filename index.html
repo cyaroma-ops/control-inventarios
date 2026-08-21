@@ -50,6 +50,11 @@ button{cursor:pointer}
 }
 .nav button.active,.nav button:hover{background:var(--nav2);color:#fff}
 .nav button span{display:inline-flex;width:26px;align-items:center;justify-content:center}.nav button svg{width:17px;height:17px;flex-shrink:0}
+.nav::-webkit-scrollbar{width:6px}
+.nav::-webkit-scrollbar-track{background:transparent}
+.nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px}
+.nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
+.nav{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
 .userbox{margin-top:auto;border-top:1px solid #23314c;padding-top:17px;display:flex;gap:10px;align-items:center;flex-shrink:0}
 .avatar{width:36px;height:36px;min-width:36px;min-height:36px;flex-shrink:0;border-radius:50%;background:var(--purple);display:grid;place-items:center;overflow:hidden;font-size:13px;font-weight:700}
 .userbox small{display:block;color:#aab7ca}
