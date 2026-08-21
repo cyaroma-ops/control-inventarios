@@ -336,9 +336,10 @@ textarea{min-height:76px;resize:vertical}
       <section id="capture" class="view">
         <div class="page-title">
           <div><h2>Inventario operativo</h2><p>Captura teórico, físico, diferencias, mermas y decisión de CxC</p></div>
-          <div class="actions" id="captureTopActions"><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
+          <div class="actions" id="captureTopActions"><button class="btn" id="btnInvHistory" style="display:none" onclick="toggleInventoryHistory()">🕘 Historial de cambios</button><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
         </div>
         <div id="editBanner" class="card form-card" style="display:none;margin-bottom:14px;background:#fff7e6;border-color:#f0c869"></div>
+        <div id="invHistoryBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
 
         <div class="stagebar">
           <div class="stage done">1. Captura</div><div class="stage current">2. Revisión</div><div class="stage">3. Justificación</div>
@@ -394,7 +395,8 @@ textarea{min-height:76px;resize:vertical}
       </section>
 
       <section id="history" class="view">
-        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="printHistory()">🖨️ Imprimir</button></div></div>
+        <div class="page-title"><div><h2>Historial</h2><p>Inventarios almacenados por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="toggleInventoryAuditPanel()" id="invAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="printHistory()">🖨️ Imprimir</button></div></div>
+        <div id="invAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
         <div class="card form-card no-print"><div class="flex"><select id="hBusiness" style="max-width:240px"></select><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
         <div id="historyPrintView" style="display:none"></div>
@@ -1313,6 +1315,39 @@ function validateInventory(){
   return issues
 }
 let editingRecordId=null;
+let editingRecordHistory=[];
+function sectionNameById(id){
+  for(const list of Object.values(sections)){const m=list.find(s=>s.id===id);if(m)return m.name}
+  return id
+}
+function diffInventoryRecords(oldData,newData){
+  const changes=[];
+  const allSectionIds=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+  allSectionIds.forEach(sid=>{
+    const oldList=(oldData&&oldData[sid])||[];
+    const newList=(newData&&newData[sid])||[];
+    const oldByKey={};oldList.forEach((r,i)=>{oldByKey[r.code||("_idx"+i)]=r});
+    const seen=new Set();
+    const sname=sectionNameById(sid);
+    newList.forEach((r,i)=>{
+      const key=r.code||("_idx"+i);seen.add(key);
+      const old=oldByKey[key];
+      if(!old){changes.push(`+ Se agregó "${r.product||key}" (${sname})`);return}
+      const label=r.product||old.product||key;
+      [["theo","Teórico"],["phys","Físico"],["cost","Costo"]].forEach(([f,fl])=>{
+        const a=num(old[f]),b=num(r[f]);
+        if(Math.abs(a-b)>0.001)changes.push(`${label} (${sname}): ${fl} ${a}→${b}`)
+      });
+      if((old.cxc||"")!==(r.cxc||""))changes.push(`${label} (${sname}): CxC "${old.cxc||"—"}"→"${r.cxc||"—"}"`);
+      if((old.justification||"").trim()!==(r.justification||"").trim())changes.push(`${label} (${sname}): cambió la justificación`)
+    });
+    oldList.forEach((r,i)=>{
+      const key=r.code||("_idx"+i);
+      if(!seen.has(key))changes.push(`- Se eliminó "${r.product||key}" (${sname})`)
+    })
+  });
+  return changes
+}
 async function saveInventory(status){
   if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede guardar cambios.");return}
   if(status==="Terminado"){
@@ -1321,15 +1356,68 @@ async function saveInventory(status){
   const business=fBusiness.value;
   if(!business){alert("Selecciona un negocio antes de guardar.");return}
   await ensureBusinessRecordsLoaded(business);
-  const record={id:editingRecordId||Date.now(),business,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:JSON.parse(JSON.stringify(rows))};
+  const oldRecord=editingRecordId?(recordsByBusiness[business]||[]).find(r=>r.id===editingRecordId):null;
+  const newData=JSON.parse(JSON.stringify(rows));
+  const history=(oldRecord&&oldRecord.history)?[...oldRecord.history]:[];
+  const who=currentUser.name||currentUser.email||"Desconocido";
+  let auditDetail;
+  if(oldRecord){
+    const changes=diffInventoryRecords(oldRecord.data,newData);
+    const summary=changes.length?changes.slice(0,25).join(" · ")+(changes.length>25?` · (+${changes.length-25} cambios más)`:""):"Sin cambios en los productos, solo se volvió a guardar.";
+    history.push({at:new Date().toISOString(),by:who,action:`Editó el inventario (${status})`,details:summary});
+    auditDetail=summary
+  } else {
+    history.push({at:new Date().toISOString(),by:who,action:`Creó el inventario (${status})`});
+    auditDetail=`Inventario nuevo del ${fCount.value}`
+  }
+  const record={id:editingRecordId||Date.now(),business,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:newData,history};
   let list=recordsByBusiness[business]||[];
   if(editingRecordId){list=list.map(r=>r.id===editingRecordId?record:r)} else {list=[...list,record]}
   recordsByBusiness[business]=list;
   await pushBusinessRecords(business);
+  await logInventoryAudit(business,editingRecordId?"Editó el inventario":"Creó el inventario",`Inventario del ${fCount.value} (${status}) — ${auditDetail}`);
   const wasEditing=!!editingRecordId;
   editingRecordId=null;
   document.getElementById("editBanner").style.display="none";
+  document.getElementById("invHistoryBox").style.display="none";
   alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status);await ensureRecordsFor(document.getElementById("dashBusiness")?.value||"");renderDashboard();openView("dashboard")
+}
+function toggleInventoryHistory(){
+  const box=document.getElementById("invHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(editingRecordHistory||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de este inventario</h3>`+(history.length?history.map(h=>`<div style="border-bottom:1px solid #f1f5f9;padding:8px 0"><div><b>${esc(new Date(h.at).toLocaleString("es-MX"))}</b> — ${esc(h.by)} — ${esc(h.action)}</div>${h.details?`<div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(h.details)}</div>`:""}</div>`).join(""):'<div class="empty">Todavía no hay historial para este inventario.</div>');
+  box.style.display="block"
+}
+/* ---- Auditoría de inventarios (persiste aunque se elimine el registro) ---- */
+let inventoryAuditByBusiness={};
+const inventoryAuditLoaded=new Set();
+async function ensureInventoryAuditLoadedFor(business){
+  if(!business||inventoryAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("inventory_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de inventarios de "+business+":",error);inventoryAuditByBusiness[business]=[];inventoryAuditLoaded.add(business);return}
+  inventoryAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  inventoryAuditLoaded.add(business)
+}
+async function logInventoryAudit(business,action,details){
+  if(!business)return;
+  await ensureInventoryAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  inventoryAuditByBusiness[business]=[...(inventoryAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("inventory_audit_log").upsert({business,data:inventoryAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de inventarios de "+business+":",error)
+}
+async function toggleInventoryAuditPanel(){
+  const box=document.getElementById("invAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=document.getElementById("hBusiness").value;
+  if(!business){alert("Selecciona un negocio en el filtro primero.");return}
+  await ensureInventoryAuditLoadedFor(business);
+  const log=(inventoryAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Inventarios — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px;white-space:nowrap">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px;white-space:nowrap">${esc(h.by)}</td><td style="padding:6px;white-space:nowrap">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
 }
 async function editRecord(id){
   await ensureAllBusinessRecordsLoaded();
@@ -1337,6 +1425,7 @@ async function editRecord(id){
   if(!r)return;
   const viewOnly=currentUser.viewOnly;
   editingRecordId=viewOnly?null:id;
+  editingRecordHistory=r.history||[];
   fBusiness.value=r.business;fFrequency.value=r.frequency;fCount.value=r.countDate;fStart.value=r.startDate;fEnd.value=r.endDate;fSupervisor.value=r.supervisor;fStatus.value=r.workflow;fNotes.value=r.notes||"";
   if(!viewOnly)await ensureCatalogsLoadedFor(r.business);
   rows=JSON.parse(JSON.stringify(r.data));
@@ -1345,13 +1434,17 @@ async function editRecord(id){
   banner.style.display="block";
   banner.innerHTML=viewOnly
     ? `Estás viendo el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Solo lectura. <button class="btn" onclick="closeViewing()" style="margin-left:10px">Volver al historial</button>`
-    : `Estás editando el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Al guardar, se actualiza este mismo registro en vez de crear uno nuevo. <button class="btn" onclick="cancelEdit()" style="margin-left:10px">Cancelar edición</button>`;
+    : `Estás editando el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Al guardar, se actualiza este mismo registro en vez de crear uno nuevo, y queda registrado qué producto cambió para efectos de CxC. <button class="btn" onclick="cancelEdit()" style="margin-left:10px">Cancelar edición</button>`;
+  document.getElementById("btnInvHistory").style.display="";
+  document.getElementById("invHistoryBox").style.display="none";
   renderTabs();renderInventory();
   applyCaptureReadOnly(viewOnly);
   openView("capture")
 }
 function closeViewing(){
   document.getElementById("editBanner").style.display="none";
+  document.getElementById("btnInvHistory").style.display="none";
+  document.getElementById("invHistoryBox").style.display="none";
   applyCaptureReadOnly(false);
   seedRows();
   openView("history")
@@ -1368,6 +1461,8 @@ function applyCaptureReadOnly(readonly){
 function cancelEdit(){
   editingRecordId=null;
   document.getElementById("editBanner").style.display="none";
+  document.getElementById("btnInvHistory").style.display="none";
+  document.getElementById("invHistoryBox").style.display="none";
   const b=fBusiness.value;
   if(b&&catalogs[b]&&Object.values(catalogs[b]).some(l=>l.length))loadCatalogIntoRows(b);
   else seedRows();
@@ -1430,16 +1525,22 @@ function renderDashboard(){
 }
 function startNewInventory(){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
+  document.getElementById("btnInvHistory").style.display="none";
+  document.getElementById("invHistoryBox").style.display="none";
   openView("capture")
 }
 async function openBusiness(b){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
+  document.getElementById("btnInvHistory").style.display="none";
+  document.getElementById("invHistoryBox").style.display="none";
   await ensureCatalogsLoadedFor(b);
   fBusiness.value=b;onBusinessChangeInCapture();openView("capture")
 }
 async function bootHistory(){
   const val=fillBusinessFilter("hBusiness",bootHistory);
   await ensureRecordsFor(val);
+  document.getElementById("invAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("invAuditBox").style.display="none";
   renderHistory()
 }
 function renderHistory(){
