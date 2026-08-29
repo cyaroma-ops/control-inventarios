@@ -230,7 +230,7 @@ textarea{min-height:76px;resize:vertical}
 .inventory-table{min-width:1500px}
 .inventory-table input,.inventory-table select{padding:7px;font-size:12px;min-width:90px}
 .inventory-table .wide{min-width:180px}
-.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:14px;margin-top:18px}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}
 .summary{padding:16px;min-width:0;overflow-wrap:anywhere}.summary h4{margin:0 0 12px}
 #sByCategory{overflow-x:auto}
 .summary .line{min-width:0}
@@ -530,6 +530,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="summary-grid">
           <div class="card summary"><h4>Cocina</h4><div class="line"><span>Almacén general</span><strong id="sKg">$0</strong></div><div class="line"><span>Producción</span><strong id="sKp">$0</strong></div><div class="line total"><span>Inventario cocina</span><strong id="sK">$0</strong></div><div class="line"><span>Alimento de personal</span><strong id="sKf" class="orangetxt">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sKw" class="orangetxt">$0</strong></div></div>
           <div class="card summary"><h4>Barra</h4><div class="line"><span>Almacén general</span><strong id="sBg">$0</strong></div><div class="line"><span>Producción</span><strong id="sBp">$0</strong></div><div class="line"><span>Almacén de vinos</span><strong id="sBw">$0</strong></div><div class="line total"><span>Inventario barra</span><strong id="sB">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sBmw" class="orangetxt">$0</strong></div></div>
+          <div class="card summary"><h4>Almacén General</h4><div class="line"><span>Almacén general</span><strong id="sGg">$0</strong></div><div class="line total"><span>Inventario almacén general</span><strong id="sG">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sGm" class="orangetxt">$0</strong></div></div>
           <div class="card summary"><h4>Diferencias</h4><div class="line"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div><div class="line"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div><div class="line"><span>Diferencia neta</span><strong id="sNet">$0</strong></div><div class="line total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div><div id="sByCategory"></div></div>
           <div class="card summary"><h4>CxC por faltantes</h4><div class="line"><span>Aplicar a CxC</span><strong id="sCxc" class="redtxt">$0</strong></div><div class="line"><span>No aplicar</span><strong id="sNoCxc">$0</strong></div><div class="line"><span>Pendiente</span><strong id="sPending" class="orangetxt">$0</strong></div><div class="line total"><span>Faltantes evaluados</span><strong id="sEvaluated">$0</strong></div></div>
         </div>
@@ -832,10 +833,11 @@ function renderCustomAlmacenesList(){
   box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('almMenu-${a.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="almMenu-${a.id}"><button type="button" class="danger" onclick="toggleKebabMenu('almMenu-${a.id}',event);removeCustomAlmacen('${escJs(a.id)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
 }
 let tomaDepartmentsList=["Cocina","Barra","Vinos","Almacén General"];
+function deptKeyLoose(s){return normalizeKey(s||"").replace(/\s+/g," ").trim()}
 async function loadTomaDepartmentsFromCloud(){
   const{data,error}=await sb.from("inventarios_data").select("data").eq("id",4).maybeSingle();
   if(!error&&data&&Array.isArray(data.data)&&data.data.length)tomaDepartmentsList=data.data;
-  if(!tomaDepartmentsList.includes("Almacén General"))tomaDepartmentsList.push("Almacén General")
+  if(!tomaDepartmentsList.some(d=>deptKeyLoose(d)===deptKeyLoose("Almacén General")))tomaDepartmentsList.push("Almacén General")
 }
 async function pushTomaDepartmentsToCloud(){
   const{error}=await sb.from("inventarios_data").upsert({id:4,data:tomaDepartmentsList,updated_at:new Date().toISOString()});
@@ -845,7 +847,7 @@ async function addTomaDepartment(){
   if(!currentUser.isAdmin){alert("Solo un administrador puede agregar departamentos.");return}
   const name=document.getElementById("newTomaDeptName").value.trim();
   if(!name){alert("Ponle un nombre al departamento.");return}
-  if(tomaDepartmentsList.includes(name)){alert("Ese departamento ya existe.");return}
+  if(tomaDepartmentsList.some(d=>deptKeyLoose(d)===deptKeyLoose(name))){alert("Ese departamento ya existe (revisa mayúsculas o acentos).");return}
   tomaDepartmentsList.push(name);
   await pushTomaDepartmentsToCloud();
   document.getElementById("newTomaDeptName").value="";
@@ -1513,6 +1515,7 @@ function updateCaptureSummary(){
   ["capTheo","capPhys","capShort","capOver"].forEach((id,i)=>document.getElementById(id).textContent=money([t.theo,t.phys,t.short,t.over][i]));
   document.getElementById("sKg").textContent=money(sectionInventory("kg"));document.getElementById("sKp").textContent=money(sectionInventory("kp"));document.getElementById("sK").textContent=money(sectionInventory("kg")+sectionInventory("kp"));document.getElementById("sKf").textContent=money(sectionInventory("kf"));document.getElementById("sKw").textContent=money(sectionInventory("kw"));
   document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw"));document.getElementById("sBmw").textContent=money(sectionInventory("bm"));
+  document.getElementById("sGg").textContent=money(sectionInventory("gg"));document.getElementById("sG").textContent=money(sectionInventory("gg"));document.getElementById("sGm").textContent=money(sectionInventory("gm"));
   document.getElementById("sShort").textContent=money(t.short);document.getElementById("sOver").textContent=money(t.over);document.getElementById("sNet").textContent=money(t.over-t.short);document.getElementById("sLoss").textContent=money(t.loss);
   document.getElementById("sByCategory").innerHTML=categoryDiffLinesHtml();
   document.getElementById("sCxc").textContent=money(t.cxc);document.getElementById("sNoCxc").textContent=money(t.noCxc);document.getElementById("sPending").textContent=money(t.pending);document.getElementById("sEvaluated").textContent=money(t.cxc+t.noCxc)
