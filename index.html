@@ -719,6 +719,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
             <p class="empty" style="margin:0 0 10px">Los renglones marcados como "Sin receta (paquete/menú)" o sin estatus todavía no se incluyen aquí (no tienen costo de receta propio) — sí se muestran abajo, en el detalle, para que los revises.</p>
+            <div class="notice" style="margin-bottom:14px">Captura el <b>costo real en pesos</b> tal cual lo ves en tu P&amp;L (no un porcentaje) — el sistema calcula el % y la <b>brecha</b> solo. La brecha es la diferencia en puntos porcentuales entre tu % de costo real y el % de costo teórico (según receta y ventas): <span class="redtxt"><b>positiva y en rojo</b></span> significa que gastaste más de lo que la receta decía que debías gastar; <span class="greentxt"><b>negativa y en verde</b></span> significa que gastaste menos.</div>
             <div id="costSummaryCards" class="business-grid"></div>
           </div>
           <div class="card table-card">
@@ -2544,9 +2545,11 @@ function costingSummary(record){
     const real=record.costoReal[dept]||{};
     const pctSinIVA=v.ventaTotal>0?v.costoSinIVA/v.ventaTotal*100:0;
     const pctConIVA=v.ventaTotal>0?v.costoConIVA/v.ventaTotal*100:0;
-    const pctReal=num(real.pct);
+    const montoReal=num(real.monto);
+    const pctReal=v.ventaTotal>0?montoReal/v.ventaTotal*100:0;
+    const tieneReal=real.monto!==undefined&&real.monto!==null&&real.monto!=="";
     return{departamento:dept,ventaTotal:v.ventaTotal,costoSinIVA:v.costoSinIVA,costoConIVA:v.costoConIVA,
-      pctSinIVA,pctConIVA,pctReal,tieneReal:real.pct!==undefined&&real.pct!==null&&real.pct!=="",
+      pctSinIVA,pctConIVA,montoReal,pctReal,tieneReal,
       brechaSinIVA:pctReal-pctSinIVA,brechaConIVA:pctReal-pctConIVA}
   }).sort((a,b)=>a.departamento.localeCompare(b.departamento,"es"))
 }
@@ -2671,22 +2674,32 @@ function renderCostingSummary(){
   const readOnly=!canManageRecipes();
   const summary=costingSummary(currentCosting);
   if(!summary.length){box.innerHTML='<div class="empty">Sube un archivo para ver el resumen por departamento.</div>';return}
-  const cls=v=>v<0?"redtxt":v>0?"greentxt":"";
+  const cls=v=>v>0.05?"redtxt":v<-0.05?"greentxt":"";
   box.innerHTML=summary.map(d=>{
-    const realVal=currentCosting.costoReal[d.departamento]&&currentCosting.costoReal[d.departamento].pct!==undefined?currentCosting.costoReal[d.departamento].pct:"";
+    const montoVal=currentCosting.costoReal[d.departamento]&&currentCosting.costoReal[d.departamento].monto!==undefined?currentCosting.costoReal[d.departamento].monto:"";
+    const brechaLine=(label,brecha)=>{
+      const bad=brecha>0.05,good=brecha<-0.05;
+      const nota=bad?"tu costo real fue MÁS ALTO que el teórico":good?"tu costo real fue MÁS BAJO que el teórico":"prácticamente igual al teórico";
+      return`<div class="line"><span>${label}</span><strong class="${cls(brecha)}">${brecha>0?"+":""}${brecha.toFixed(1)} pp</strong></div><div class="empty" style="margin:-4px 0 8px;font-size:11.5px">${nota}</div>`
+    };
     return`<div class="card business">
       <div class="business-head"><h4>${esc(d.departamento)}</h4></div>
       <div class="line"><span>Venta total</span><strong>${money(d.ventaTotal)}</strong></div>
       <div class="line"><span>Costo teórico (sin IVA)</span><strong>${money(d.costoSinIVA)} — ${d.pctSinIVA.toFixed(1)}%</strong></div>
       <div class="line"><span>Costo teórico (con IVA)</span><strong>${money(d.costoConIVA)} — ${d.pctConIVA.toFixed(1)}%</strong></div>
-      <div class="line"><span>Costo real (de tu P&amp;L)</span><input type="number" step="0.01" placeholder="% real" value="${realVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:110px"></div>
-      ${d.tieneReal?`<div class="line"><span>Brecha sin IVA</span><strong class="${cls(d.brechaSinIVA)}">${d.brechaSinIVA.toFixed(1)} pp</strong></div><div class="line"><span>Brecha con IVA</span><strong class="${cls(d.brechaConIVA)}">${d.brechaConIVA.toFixed(1)} pp</strong></div>`:'<div class="empty" style="margin-top:6px">Captura el % real para ver la brecha.</div>'}
+      <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+      <div class="line"><span>Costo real, en pesos (de tu P&amp;L)</span><input type="number" step="0.01" placeholder="$ costo real" value="${montoVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:130px"></div>
+      ${d.tieneReal?`<div class="line"><span>% costo real (calculado)</span><strong>${d.pctReal.toFixed(1)}%</strong></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+      ${brechaLine("Brecha sin IVA (real − teórico)",d.brechaSinIVA)}
+      ${brechaLine("Brecha con IVA (real − teórico)",d.brechaConIVA)}`
+      :'<div class="empty" style="margin-top:6px">Captura el costo real en pesos (de tu P&L) para ver el % y la brecha.</div>'}
     </div>`
   }).join("")
 }
 function updateCostoReal(dept,value){
   currentCosting.costoReal=currentCosting.costoReal||{};
-  currentCosting.costoReal[dept]={pct:value===""?undefined:num(value)};
+  currentCosting.costoReal[dept]={monto:value===""?undefined:num(value)};
   renderCostingSummary()
 }
 let costDeptActive="";
