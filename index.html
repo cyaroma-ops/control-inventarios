@@ -720,8 +720,9 @@ textarea{min-height:76px;resize:vertical}
             <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Venta total</th><th>Costo teórico (sin IVA)</th><th>% costo (sin IVA)</th><th>Costo teórico (con IVA)</th><th>% costo (con IVA)</th><th>Costo real (P&amp;L)</th><th>% costo real</th><th>Brecha sin IVA</th><th>Brecha con IVA</th></tr></thead><tbody id="costSummaryBody"></tbody></table></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div>
-            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Aplica IVA?</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;flex-wrap:wrap"><select id="costDeptFilter" onchange="renderCostingDetail()" style="max-width:170px"><option value="">Todos los departamentos</option></select><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div></div>
+            <p class="empty" style="margin:0 0 10px">Edita el <b>Estatus</b>, <b>¿Aplica IVA?</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo.</p>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Aplica IVA?</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
@@ -2568,6 +2569,8 @@ function openCostingEditorForm(){
   document.getElementById("costingListView").style.display="none";
   document.getElementById("costingEditorView").style.display="block";
   document.getElementById("costingEditorTitle").textContent=editingCostingId?"Editar análisis":"Nuevo análisis";
+  const deptSel=document.getElementById("costDeptFilter");deptSel.dataset.built="";deptSel.value="";
+  document.getElementById("costDetailSearch").value="";
   document.getElementById("costPeriodicidad").value=currentCosting.periodicidad||"Mensual";
   document.getElementById("costStartDate").value=currentCosting.startDate||"";
   document.getElementById("costEndDate").value=currentCosting.endDate||"";
@@ -2653,18 +2656,43 @@ function updateCostoReal(dept,value){
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
   const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
+  const deptFilter=document.getElementById("costDeptFilter").value;
+  const readOnly=!canManageRecipes();
   const ivaDefaults=costingIvaDefaultsFor(currentCosting);
-  let list=currentCosting.items||[];
-  if(q)list=list.filter(it=>(it.producto||"").toLowerCase().includes(q)||(it.clave||"").toLowerCase().includes(q));
-  if(!list.length){body.innerHTML='<tr><td colspan="10" class="empty">Sin platillos capturados.</td></tr>';return}
-  body.innerHTML=list.map(it=>{
+  const depts=[...new Set((currentCosting.items||[]).map(it=>it.departamento))].sort((a,b)=>a.localeCompare(b,"es"));
+  const deptSel=document.getElementById("costDeptFilter");
+  if(deptSel.dataset.built!==depts.join("|")){
+    deptSel.innerHTML='<option value="">Todos los departamentos</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("");
+    deptSel.value=deptFilter||"";
+    deptSel.dataset.built=depts.join("|")
+  }
+  let list=(currentCosting.items||[]).map((it,idx)=>({it,idx}));
+  if(deptFilter)list=list.filter(x=>x.it.departamento===deptFilter);
+  if(q)list=list.filter(x=>(x.it.producto||"").toLowerCase().includes(q)||(x.it.clave||"").toLowerCase().includes(q));
+  if(!list.length){body.innerHTML='<tr><td colspan="11" class="empty">Sin platillos capturados.</td></tr>';return}
+  body.innerHTML=list.map(({it,idx})=>{
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults);
-    const ivaLabel=it.aplicaIVA===true?"Sí":it.aplicaIVA===false?"No":"(genérico)";
     const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
     const rowStyle=excluded?' style="color:var(--muted)"':"";
-    const estatusLabel=excluded?`${esc(it.estatus||"Sin receta")} — no entra al resumen`:esc(it.estatus);
-    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}<br><small>${estatusLabel}</small></td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${ivaLabel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:110px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Sí</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No</option></select>`;
+    const estatusSel=`<select onchange="updateCostingItem(${idx},'estatus',this.value)" ${readOnly?"disabled":""} style="max-width:170px"><option value="Con receta" ${!excluded?"selected":""}>Con receta</option><option value="Sin receta (paquete/menú)" ${excluded?"selected":""}>Sin receta (paquete/menú)</option></select>`;
+    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td><input type="number" step="0.01" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
   }).join("")
+}
+function updateCostingItem(idx,field,value){
+  if(!canManageRecipes())return;
+  const it=currentCosting.items[idx];
+  if(field==="aplicaIVA"){
+    it.aplicaIVA=value===""?null:value==="si";
+    it.costoTeoricoConIVA=null
+  } else if(field==="estatus"){
+    it.estatus=value
+  } else if(field==="costoUnitario"){
+    it.costoUnitario=num(value);
+    it.costoTeoricoSinIVA=null;
+    it.costoTeoricoConIVA=null
+  }
+  renderCostingSummary();renderCostingDetail()
 }
 async function saveCosting(status){
   if(!canManageRecipes()){alert("No tienes permiso para gestionar este análisis.");return}
