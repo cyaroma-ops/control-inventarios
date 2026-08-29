@@ -510,7 +510,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="notice">Las mermas se concentran por separado y no se suman al inventario final. Todo faltante debe indicar si se aplicará a CxC y contar con una justificación.</div>
 
         <div class="section-title"><h3>Área de inventario</h3></div>
-        <div class="tabs"><button class="tab active" data-group="Cocina">Cocina</button><button class="tab" data-group="Barra">Barra</button></div>
+        <div class="tabs"><button class="tab active" data-group="Cocina">Cocina</button><button class="tab" data-group="Barra">Barra</button><button class="tab" data-group="Almacén General">Almacén General</button></div>
         <div id="subtabs" class="subtabs"></div>
 
         <div class="card table-card">
@@ -584,7 +584,7 @@ textarea{min-height:76px;resize:vertical}
           <p class="empty" style="margin-top:-4px">Úsalo cuando un negocio necesite un almacén que no sea de los ya incluidos (Almacén general, Producción, etc.). Se agrega como una pestaña más dentro de Cocina o Barra, junto a las demás.</p>
           <div class="flex" style="flex-wrap:wrap">
             <input id="newAlmacenName" placeholder="Nombre del almacén (ej. Panadería)" style="max-width:260px">
-            <select id="newAlmacenGroup"><option>Cocina</option><option>Barra</option></select>
+            <select id="newAlmacenGroup"><option>Cocina</option><option>Barra</option><option>Almacén General</option></select>
             <label style="font-size:13px;align-self:center"><input type="checkbox" id="newAlmacenWaste" style="width:auto;margin-right:6px">Es de mermas (no cuenta como inventario disponible)</label>
             <button class="btn primary" onclick="addCustomAlmacen()">+ Agregar almacén</button>
           </div>
@@ -609,7 +609,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
           <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
-            <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select>
+            <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select>
             <select id="recipeTypeFilter" style="max-width:200px"><option value="">Todos los tipos</option><option value="menu">Menú</option><option value="produccion">Producción</option></select>
             <input type="text" id="recipeSearch" placeholder="Buscar receta..." style="max-width:220px">
           </div></div>
@@ -621,7 +621,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="card form-card">
             <div class="form-grid">
               <div><label>Negocio</label><select id="recBusiness"></select></div>
-              <div><label>Área</label><select id="recArea"><option value="Cocina">Cocina</option><option value="Barra">Barra</option></select></div>
+              <div><label>Área</label><select id="recArea"><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select></div>
               <div><label>Tipo de receta</label><select id="recType" onchange="onRecipeTypeChange()"><option value="menu">Menú (se vende al cliente)</option><option value="produccion">Producción (sub-receta / prep)</option></select></div>
             </div>
             <div class="form-grid" style="margin-top:10px">
@@ -723,6 +723,10 @@ const BASE_SECTIONS={
     {id:"bp",name:"Producción barra",waste:false},
     {id:"bw",name:"Almacén vinos",waste:false},
     {id:"bm",name:"Mermas barra",waste:true}
+  ],
+  "Almacén General":[
+    {id:"gg",name:"Almacén general",waste:false},
+    {id:"gm",name:"Mermas generales",waste:true}
   ]
 };
 let sections=JSON.parse(JSON.stringify(BASE_SECTIONS));
@@ -775,10 +779,11 @@ function renderCustomAlmacenesList(){
   if(!customAlmacenes.length){box.innerHTML='<div class="empty">Todavía no has agregado ningún almacén adicional.</div>';return}
   box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('almMenu-${a.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="almMenu-${a.id}"><button type="button" class="danger" onclick="toggleKebabMenu('almMenu-${a.id}',event);removeCustomAlmacen('${escJs(a.id)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
 }
-let tomaDepartmentsList=["Cocina","Barra","Vinos"];
+let tomaDepartmentsList=["Cocina","Barra","Vinos","Almacén General"];
 async function loadTomaDepartmentsFromCloud(){
   const{data,error}=await sb.from("inventarios_data").select("data").eq("id",4).maybeSingle();
-  if(!error&&data&&Array.isArray(data.data)&&data.data.length)tomaDepartmentsList=data.data
+  if(!error&&data&&Array.isArray(data.data)&&data.data.length)tomaDepartmentsList=data.data;
+  if(!tomaDepartmentsList.includes("Almacén General"))tomaDepartmentsList.push("Almacén General")
 }
 async function pushTomaDepartmentsToCloud(){
   const{error}=await sb.from("inventarios_data").upsert({id:4,data:tomaDepartmentsList,updated_at:new Date().toISOString()});
