@@ -3557,6 +3557,28 @@ async function parseRawTableFile(file){
     return XLSX.utils.sheet_to_json(sheet,{defval:""});
   }
 }
+function parseInventoryFisicoReportPdf(text){
+  const re=/^(\d{3,7})\s+(.*?)\s+\$(-?[\d,]+\.\d{2})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+(-?[\d,]+\.\d{2,4})\s+\$(-?[\d,]+\.\d{2})\s*$/;
+  const items=[];
+  text.split("\n").forEach(raw=>{
+    const line=raw.trim();
+    if(!line)return;
+    const m=line.match(re);
+    if(!m)return;
+    const[,code,product,costStr,fisicaStr,teoricaStr]=m;
+    const productClean=product.trim();
+    if(!productClean)return;
+    items.push({
+      code:code.trim(),
+      product:productClean,
+      unit:guessUnitFromDesc(productClean),
+      cost:parseFloat(costStr.replace(/,/g,""))||0,
+      theo:parseFloat(teoricaStr.replace(/,/g,""))||0,
+      phys:parseFloat(fisicaStr.replace(/,/g,""))||0
+    })
+  });
+  return items
+}
 async function importInventoryPdf(){
   const input=document.getElementById("pdfInvFile");
   if(!input.files.length)return;
@@ -3568,7 +3590,11 @@ async function importInventoryPdf(){
     if(name.endsWith(".pdf")){
       const text=await extractPdfText(file);
       if(/salida por merma|movimientos de inventario/i.test(text)){items=parseMermaPdfText(text);kind="mermas"}
-      else{items=parseInventoryPdfText(text);kind="inventario"}
+      else{
+        items=parseInventoryPdfText(text);kind="inventario";
+        const altItems=parseInventoryFisicoReportPdf(text);
+        if(altItems.length>items.length){items=altItems;kind="inventario"}
+      }
     } else {
       const rowsRaw=await parseRawTableFile(file);
       const hasStaffCols=rowsRaw.length&&Object.keys(rowsRaw[0]).some(k=>normalizeKey(k)==="existenciaalmacen1"||normalizeKey(k)==="idinsumo");
