@@ -709,17 +709,19 @@ textarea{min-height:76px;resize:vertical}
               <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
-            <p class="empty" style="margin:10px 0 0">Puedes cargar varios archivos por separado (por ejemplo, primero popularidad de platillos y después costo por receta) — el sistema completa los datos que falten en vez de borrar lo que ya tenías.</p>
+            <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costeo primero) — se van completando entre sí.</p>
           </div>
           <div class="card form-card">
-            <h3 style="margin-top:0">IVA genérico (solo para el costo, cuando un renglón no trae su propio dato)</h3>
-            <p class="empty" style="margin-top:-4px">Esto solo afecta el <b>costo de receta/insumo</b> (¿ese insumo llevó IVA al comprarlo?) — si tu archivo ya trae "¿Aplica IVA?" o el costo con IVA por platillo, se usa ese dato tal cual. La <b>venta</b> es distinta: al cliente siempre se le cobra IVA sobre el 100% de lo que paga, así que "Venta con IVA" se calcula completa usando la "Tasa de IVA %" que configures aquí abajo por departamento — sin importar si la receta llevó IVA o no.</p>
-            <div id="costIvaSettings"></div>
+            <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleCostIvaHelp()">
+              <h3 style="margin:0">IVA genérico (solo para el costo)</h3>
+              <span id="costIvaHelpToggle" style="font-size:12.5px;color:var(--blue);white-space:nowrap">¿Cómo funciona? ▾</span>
+            </div>
+            <p class="empty" id="costIvaHelpText" style="display:none;margin:8px 0 0">Esto solo afecta el <b>costo de receta/insumo</b> (¿ese insumo llevó IVA al comprarlo?) — si tu archivo ya trae "¿Aplica IVA?" o el costo con IVA por platillo, se usa ese dato tal cual. La <b>venta</b> es distinta: al cliente siempre se le cobra IVA sobre el 100% de lo que paga, así que "Venta con IVA" se calcula completa usando la "Tasa de IVA %" de abajo — sin importar si la receta llevó IVA o no.</p>
+            <div id="costIvaSettings" style="margin-top:10px"></div>
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
-            <p class="empty" style="margin:0 0 10px">Los renglones marcados como "Sin receta (paquete/menú)" o sin estatus todavía no se incluyen aquí (no tienen costo de receta propio) — sí se muestran abajo, en el detalle, para que los revises.</p>
-            <div class="notice" style="margin-bottom:14px">Captura el <b>costo real en pesos</b> tal cual lo ves en tu P&amp;L (no un porcentaje) — el sistema calcula el % y la <b>brecha</b> solo. La brecha es la diferencia en puntos porcentuales entre tu % de costo real y el % de costo teórico (según receta y ventas): <span class="redtxt"><b>positiva y en rojo</b></span> significa que gastaste más de lo que la receta decía que debías gastar; <span class="greentxt"><b>negativa y en verde</b></span> significa que gastaste menos.</div>
+            <div class="notice" style="margin-bottom:14px">Captura el <b>costo real en pesos o en %</b>, tal cual lo ves en tu P&amp;L — el sistema calcula la <b>brecha</b> (diferencia en puntos porcentuales contra el costo teórico, comparando siempre contra venta sin IVA): <span class="redtxt"><b>positiva y en rojo</b></span> = gastaste más de lo previsto; <span class="greentxt"><b>negativa y en verde</b></span> = gastaste menos. Los renglones "Sin receta (paquete/menú)" o sin estatus no se incluyen aquí — sí aparecen abajo, en el detalle.</div>
             <div id="costSummaryCards" class="business-grid"></div>
           </div>
           <div class="card table-card">
@@ -2664,6 +2666,12 @@ async function uploadCostingFile(){
     console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un .xlsx o .csv válido."
   }
 }
+function toggleCostIvaHelp(){
+  const el=document.getElementById("costIvaHelpText"),tog=document.getElementById("costIvaHelpToggle");
+  const show=el.style.display==="none";
+  el.style.display=show?"block":"none";
+  tog.textContent=show?"¿Cómo funciona? ▴":"¿Cómo funciona? ▾"
+}
 function renderIvaSettings(){
   const box=document.getElementById("costIvaSettings");
   const readOnly=!canManageRecipes();
@@ -2694,9 +2702,8 @@ function renderCostingSummary(){
     const montoVal=real.monto!==undefined?real.monto:"";
     const pctVal=real.pct!==undefined?real.pct:"";
     const brechaLine=(label,brecha)=>{
-      const bad=brecha>0.05,good=brecha<-0.05;
-      const nota=bad?"tu costo real fue MÁS ALTO que el teórico":good?"tu costo real fue MÁS BAJO que el teórico":"prácticamente igual al teórico";
-      return`<div class="line"><span>${label}</span><strong class="${cls(brecha)}">${brecha>0?"+":""}${brecha.toFixed(1)} pp</strong></div><div class="empty" style="margin:-4px 0 8px;font-size:11.5px">${nota}</div>`
+      const tag=brecha>0.05?"↑ más caro que lo previsto":brecha<-0.05?"↓ más barato que lo previsto":"≈ igual al previsto";
+      return`<div class="line"><span>${label}</span><strong class="${cls(brecha)}">${brecha>0?"+":""}${brecha.toFixed(1)} pp — ${tag}</strong></div>`
     };
     return`<div class="card business">
       <div class="business-head"><h4>${esc(d.departamento)}</h4></div>
@@ -2713,7 +2720,6 @@ function renderCostingSummary(){
       </div>
       <div class="line"><span>${modo==="pct"?"% costo real":"Costo real, en pesos"}</span><input type="number" step="0.01" placeholder="${modo==="pct"?"%":"$"}" value="${modo==="pct"?pctVal:montoVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:130px"></div>
       ${d.tieneReal?`${modo==="monto"?`<div class="line"><span>% costo real (calculado)</span><strong>${d.pctReal.toFixed(1)}%</strong></div>`:""}
-      <p class="empty" style="margin:4px 0 8px;font-size:11px">La brecha compara tu % de costo real contra la venta <b>sin IVA</b> en ambos casos (sin y con IVA es del lado del costo).</p>
       <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
       ${brechaLine("Brecha sin IVA (real − teórico)",d.brechaSinIVA)}
       ${brechaLine("Brecha con IVA (real − teórico)",d.brechaConIVA)}`
