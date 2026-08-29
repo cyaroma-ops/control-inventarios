@@ -712,8 +712,8 @@ textarea{min-height:76px;resize:vertical}
             <p class="empty" style="margin:10px 0 0">Puedes cargar varios archivos por separado (por ejemplo, primero popularidad de platillos y después costo por receta) — el sistema completa los datos que falten en vez de borrar lo que ya tenías.</p>
           </div>
           <div class="card form-card">
-            <h3 style="margin-top:0">IVA genérico (solo para renglones que no traigan su propio dato de IVA)</h3>
-            <p class="empty" style="margin-top:-4px">Si tu archivo ya trae "¿Aplica IVA?" o el costo con IVA por platillo, se usa ese dato tal cual. Esto solo aplica como respaldo genérico.</p>
+            <h3 style="margin-top:0">IVA genérico (solo para el costo, cuando un renglón no trae su propio dato)</h3>
+            <p class="empty" style="margin-top:-4px">Esto solo afecta el <b>costo de receta/insumo</b> (¿ese insumo llevó IVA al comprarlo?) — si tu archivo ya trae "¿Aplica IVA?" o el costo con IVA por platillo, se usa ese dato tal cual. La <b>venta</b> es distinta: al cliente siempre se le cobra IVA sobre el 100% de lo que paga, así que "Venta con IVA" se calcula completa usando la "Tasa de IVA %" que configures aquí abajo por departamento — sin importar si la receta llevó IVA o no.</p>
             <div id="costIvaSettings"></div>
           </div>
           <div class="card table-card">
@@ -2519,21 +2519,19 @@ function computeItemCosting(it,ivaDefaults){
   const costoSinIVA=(it.costoTeoricoSinIVA!==null&&it.costoTeoricoSinIVA!==undefined)?num(it.costoTeoricoSinIVA):costoUnitario*cantidad;
   const ventaSinIVA=num(it.ventaTotal);
   const def=(ivaDefaults&&ivaDefaults[it.departamento])||{pct:95,tasa:16};
-  let costoConIVA,ventaConIVA;
+  // Costo con IVA: depende de si ESE insumo/receta llevó IVA al comprarlo (aplicaIVA por renglón, o el genérico si no se especifica)
+  let costoConIVA;
   if(it.aplicaIVA===true){
-    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA*(1+num(def.tasa)/100);
-    ventaConIVA=ventaSinIVA*(1+num(def.tasa)/100)
+    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA*(1+num(def.tasa)/100)
   } else if(it.aplicaIVA===false){
-    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA;
-    ventaConIVA=ventaSinIVA
+    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA
+  } else if(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined){
+    costoConIVA=num(it.costoTeoricoConIVA)
   } else {
-    if(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined){
-      costoConIVA=num(it.costoTeoricoConIVA)
-    } else {
-      costoConIVA=costoSinIVA*(1+(num(def.pct)/100)*(num(def.tasa)/100))
-    }
-    ventaConIVA=ventaSinIVA*(1+(num(def.pct)/100)*(num(def.tasa)/100))
+    costoConIVA=costoSinIVA*(1+(num(def.pct)/100)*(num(def.tasa)/100))
   }
+  // Venta con IVA: al cliente SIEMPRE se le cobra IVA sobre el 100% de la venta — no depende de si la receta/insumo llevó IVA o no
+  const ventaConIVA=ventaSinIVA*(1+num(def.tasa)/100);
   return{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}
 }
 function costingSummary(record){
