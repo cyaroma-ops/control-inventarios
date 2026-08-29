@@ -706,8 +706,10 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="align-items:flex-end;gap:14px;margin-top:14px;flex-wrap:wrap">
               <div><label>Archivo de popularidad y costeo (.xlsx o .csv)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv"></div>
               <button class="btn" onclick="uploadCostingFile()">Cargar archivo</button>
+              <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
+            <p class="empty" style="margin:10px 0 0">Puedes cargar varios archivos por separado (por ejemplo, primero popularidad de platillos y después costo por receta) — el sistema completa los datos que falten en vez de borrar lo que ya tenías.</p>
           </div>
           <div class="card form-card">
             <h3 style="margin-top:0">IVA genérico (solo para renglones que no traigan su propio dato de IVA)</h3>
@@ -716,11 +718,12 @@ textarea{min-height:76px;resize:vertical}
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
-            <p class="empty" style="margin:0 0 10px">Los renglones marcados como "Sin receta (paquete/menú)" no se incluyen en este resumen (no tienen costo de receta propio) — sí se muestran abajo, en el detalle, para que los revises.</p>
-            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Venta total</th><th>Costo teórico (sin IVA)</th><th>% costo (sin IVA)</th><th>Costo teórico (con IVA)</th><th>% costo (con IVA)</th><th>Costo real (P&amp;L)</th><th>% costo real</th><th>Brecha sin IVA</th><th>Brecha con IVA</th></tr></thead><tbody id="costSummaryBody"></tbody></table></div>
+            <p class="empty" style="margin:0 0 10px">Los renglones marcados como "Sin receta (paquete/menú)" o sin estatus todavía no se incluyen aquí (no tienen costo de receta propio) — sí se muestran abajo, en el detalle, para que los revises.</p>
+            <div id="costSummaryCards" class="business-grid"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;flex-wrap:wrap"><select id="costDeptFilter" onchange="renderCostingDetail()" style="max-width:170px"><option value="">Todos los departamentos</option></select><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div></div>
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div>
+            <div class="tabs" id="costDeptTabs"></div>
             <p class="empty" style="margin:0 0 10px">Edita el <b>Estatus</b>, <b>¿Aplica IVA?</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo.</p>
             <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Aplica IVA?</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
@@ -2458,27 +2461,51 @@ async function parsePopularityFile(file){
       if(!producto||!String(producto).trim())return;
       const grupo=findByKeys(rawNorm,["grupo"])??findByKeys(rawNorm,["categoria"])??"";
       const clave=findByKeys(rawNorm,["clave"])??findByKeys(rawNorm,["codigo"])??"";
-      const cantidadVendida=num(findByKeys(rawNorm,["cantidad"])??0);
-      const ventaTotal=num(findByKeys(rawNorm,["venta"])??0);
-      const costoUnitario=num(findByKeys(rawNorm,["costo","unitario"])??0);
+      const cantidadRaw=findByKeys(rawNorm,["cantidad"]);
+      const ventaRaw=findByKeys(rawNorm,["venta"]);
+      const costoUnitarioRaw=findByKeys(rawNorm,["costo","unitario"]);
+      const cantidadVendida=(cantidadRaw===undefined||cantidadRaw==="")?null:num(cantidadRaw);
+      const ventaTotal=(ventaRaw===undefined||ventaRaw==="")?null:num(ventaRaw);
+      const costoUnitario=(costoUnitarioRaw===undefined||costoUnitarioRaw==="")?null:num(costoUnitarioRaw);
       const aplicaIVARaw=(findByKeys(rawNorm,["aplica","iva"])??"").toString().trim().toLowerCase();
       let aplicaIVA=null;
       if(["si","sí","s","true","1"].includes(aplicaIVARaw))aplicaIVA=true;
       else if(["no","n","false","0"].includes(aplicaIVARaw))aplicaIVA=false;
       const costoSinIVARaw=findByKeys(rawNorm,["costo","teorico","sin"]);
       const costoConIVARaw=findByKeys(rawNorm,["costo","teorico","con"]);
-      const estatus=findByKeys(rawNorm,["estatus"])??findByKeys(rawNorm,["status"])??"";
+      const estatusRaw=findByKeys(rawNorm,["estatus"])??findByKeys(rawNorm,["status"]);
       items.push({
         departamento:deptFromSheet||String(grupo||"General").trim()||"General",
         grupo:String(grupo||""),clave:String(clave||""),producto:String(producto).trim(),
         cantidadVendida,ventaTotal,costoUnitario,aplicaIVA,
         costoTeoricoSinIVA:(costoSinIVARaw===undefined||costoSinIVARaw==="")?null:num(costoSinIVARaw),
         costoTeoricoConIVA:(costoConIVARaw===undefined||costoConIVARaw==="")?null:num(costoConIVARaw),
-        estatus:String(estatus||"")
+        estatus:(estatusRaw===undefined||estatusRaw==="")?null:String(estatusRaw)
       })
     })
   });
   return items
+}
+function costingItemKey(it){
+  const clave=it.clave&&String(it.clave).trim()?String(it.clave).trim().toLowerCase():("__"+normalizeKey(it.producto||""));
+  return (it.departamento||"")+"||"+clave
+}
+function mergeCostingItems(existing,incoming){
+  const map={};
+  let added=0,updated=0;
+  (existing||[]).forEach(it=>{map[costingItemKey(it)]=it});
+  (incoming||[]).forEach(inc=>{
+    const k=costingItemKey(inc);
+    if(map[k]){
+      const cur=map[k];
+      Object.keys(inc).forEach(f=>{if(inc[f]!==null&&inc[f]!==undefined)cur[f]=inc[f]});
+      updated++
+    } else {
+      map[k]={...inc};
+      added++
+    }
+  });
+  return{items:Object.values(map),added,updated}
 }
 function costingIvaDefaultsFor(record){
   const depts=[...new Set((record.items||[]).map(it=>it.departamento))];
@@ -2569,7 +2596,7 @@ function openCostingEditorForm(){
   document.getElementById("costingListView").style.display="none";
   document.getElementById("costingEditorView").style.display="block";
   document.getElementById("costingEditorTitle").textContent=editingCostingId?"Editar análisis":"Nuevo análisis";
-  const deptSel=document.getElementById("costDeptFilter");deptSel.dataset.built="";deptSel.value="";
+  costDeptActive="";
   document.getElementById("costDetailSearch").value="";
   document.getElementById("costPeriodicidad").value=currentCosting.periodicidad||"Mensual";
   document.getElementById("costStartDate").value=currentCosting.startDate||"";
@@ -2592,6 +2619,15 @@ function closeCostingEditor(){
   document.getElementById("costingListView").style.display="block";
   renderCostingList()
 }
+function clearCostingItems(){
+  if(!canManageRecipes())return;
+  if(!(currentCosting.items||[]).length)return;
+  if(!confirm("¿Vaciar todos los platillos cargados en este análisis? Esta acción no se puede deshacer (pero puedes volver a cargar tus archivos)."))return;
+  currentCosting.items=[];
+  currentCosting.ivaDefaults={};
+  costDeptActive="";
+  renderIvaSettings();renderCostingSummary();renderCostingDetail()
+}
 async function uploadCostingFile(){
   if(!canManageRecipes())return;
   const input=document.getElementById("costingFile");
@@ -2600,9 +2636,12 @@ async function uploadCostingFile(){
   try{
     const items=await parsePopularityFile(input.files[0]);
     if(!items.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún platillo en este archivo.";return}
-    currentCosting.items=items;
+    const{items:merged,added,updated}=mergeCostingItems(currentCosting.items,items);
+    currentCosting.items=merged;
     costingIvaDefaultsFor(currentCosting);
-    msg.style.color="#15965a";msg.textContent=`Se cargaron ${items.length} platillos correctamente.`;
+    msg.style.color="#15965a";
+    msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`;
+    costDeptActive="";
     renderIvaSettings();renderCostingSummary();renderCostingDetail();
     input.value=""
   }catch(e){
@@ -2628,24 +2667,21 @@ function updateIvaDefault(dept,field,value){
   renderCostingSummary();renderCostingDetail()
 }
 function renderCostingSummary(){
-  const body=document.getElementById("costSummaryBody");
+  const box=document.getElementById("costSummaryCards");
   const readOnly=!canManageRecipes();
   const summary=costingSummary(currentCosting);
-  if(!summary.length){body.innerHTML='<tr><td colspan="10" class="empty">Sube un archivo para ver el resumen por departamento.</td></tr>';return}
-  body.innerHTML=summary.map(d=>{
-    const cls=v=>v<0?"redtxt":v>0?"greentxt":"";
-    return`<tr>
-      <td><b>${esc(d.departamento)}</b></td>
-      <td>${money(d.ventaTotal)}</td>
-      <td>${money(d.costoSinIVA)}</td>
-      <td>${d.pctSinIVA.toFixed(1)}%</td>
-      <td>${money(d.costoConIVA)}</td>
-      <td>${d.pctConIVA.toFixed(1)}%</td>
-      <td><input type="number" step="0.01" placeholder="% (de tu P&L)" value="${currentCosting.costoReal[d.departamento]&&currentCosting.costoReal[d.departamento].pct!==undefined?currentCosting.costoReal[d.departamento].pct:""}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:110px"></td>
-      <td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td>
-      <td class="${d.tieneReal?cls(d.brechaSinIVA):""}">${d.tieneReal?d.brechaSinIVA.toFixed(1)+" pp":"—"}</td>
-      <td class="${d.tieneReal?cls(d.brechaConIVA):""}">${d.tieneReal?d.brechaConIVA.toFixed(1)+" pp":"—"}</td>
-    </tr>`
+  if(!summary.length){box.innerHTML='<div class="empty">Sube un archivo para ver el resumen por departamento.</div>';return}
+  const cls=v=>v<0?"redtxt":v>0?"greentxt":"";
+  box.innerHTML=summary.map(d=>{
+    const realVal=currentCosting.costoReal[d.departamento]&&currentCosting.costoReal[d.departamento].pct!==undefined?currentCosting.costoReal[d.departamento].pct:"";
+    return`<div class="card business">
+      <div class="business-head"><h4>${esc(d.departamento)}</h4></div>
+      <div class="line"><span>Venta total</span><strong>${money(d.ventaTotal)}</strong></div>
+      <div class="line"><span>Costo teórico (sin IVA)</span><strong>${money(d.costoSinIVA)} — ${d.pctSinIVA.toFixed(1)}%</strong></div>
+      <div class="line"><span>Costo teórico (con IVA)</span><strong>${money(d.costoConIVA)} — ${d.pctConIVA.toFixed(1)}%</strong></div>
+      <div class="line"><span>Costo real (de tu P&amp;L)</span><input type="number" step="0.01" placeholder="% real" value="${realVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:110px"></div>
+      ${d.tieneReal?`<div class="line"><span>Brecha sin IVA</span><strong class="${cls(d.brechaSinIVA)}">${d.brechaSinIVA.toFixed(1)} pp</strong></div><div class="line"><span>Brecha con IVA</span><strong class="${cls(d.brechaConIVA)}">${d.brechaConIVA.toFixed(1)} pp</strong></div>`:'<div class="empty" style="margin-top:6px">Captura el % real para ver la brecha.</div>'}
+    </div>`
   }).join("")
 }
 function updateCostoReal(dept,value){
@@ -2653,21 +2689,22 @@ function updateCostoReal(dept,value){
   currentCosting.costoReal[dept]={pct:value===""?undefined:num(value)};
   renderCostingSummary()
 }
+let costDeptActive="";
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
   const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
-  const deptFilter=document.getElementById("costDeptFilter").value;
   const readOnly=!canManageRecipes();
   const ivaDefaults=costingIvaDefaultsFor(currentCosting);
   const depts=[...new Set((currentCosting.items||[]).map(it=>it.departamento))].sort((a,b)=>a.localeCompare(b,"es"));
-  const deptSel=document.getElementById("costDeptFilter");
-  if(deptSel.dataset.built!==depts.join("|")){
-    deptSel.innerHTML='<option value="">Todos los departamentos</option>'+depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("");
-    deptSel.value=deptFilter||"";
-    deptSel.dataset.built=depts.join("|")
-  }
+  if(!depts.includes(costDeptActive))costDeptActive="";
+  const tabsBox=document.getElementById("costDeptTabs");
+  tabsBox.innerHTML=`<button type="button" class="tab${costDeptActive===""?" active":""}" onclick="setCostDeptTab('')">Todos (${(currentCosting.items||[]).length})</button>`+
+    depts.map(d=>{
+      const count=(currentCosting.items||[]).filter(it=>it.departamento===d).length;
+      return`<button type="button" class="tab${costDeptActive===d?" active":""}" onclick="setCostDeptTab('${escJs(d)}')">${esc(d)} (${count})</button>`
+    }).join("");
   let list=(currentCosting.items||[]).map((it,idx)=>({it,idx}));
-  if(deptFilter)list=list.filter(x=>x.it.departamento===deptFilter);
+  if(costDeptActive)list=list.filter(x=>x.it.departamento===costDeptActive);
   if(q)list=list.filter(x=>(x.it.producto||"").toLowerCase().includes(q)||(x.it.clave||"").toLowerCase().includes(q));
   if(!list.length){body.innerHTML='<tr><td colspan="11" class="empty">Sin platillos capturados.</td></tr>';return}
   body.innerHTML=list.map(({it,idx})=>{
@@ -2678,6 +2715,10 @@ function renderCostingDetail(){
     const estatusSel=`<select onchange="updateCostingItem(${idx},'estatus',this.value)" ${readOnly?"disabled":""} style="max-width:170px"><option value="Con receta" ${!excluded?"selected":""}>Con receta</option><option value="Sin receta (paquete/menú)" ${excluded?"selected":""}>Sin receta (paquete/menú)</option></select>`;
     return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td><input type="number" step="0.01" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
   }).join("")
+}
+function setCostDeptTab(dept){
+  costDeptActive=dept;
+  renderCostingDetail()
 }
 function updateCostingItem(idx,field,value){
   if(!canManageRecipes())return;
