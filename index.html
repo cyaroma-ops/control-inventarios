@@ -429,7 +429,7 @@ textarea{min-height:76px;resize:vertical}
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
       <button data-view="recipes"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetas</button>
       <button data-view="suppliers"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16V6a1 1 0 0 1 1-1h9v11"/><path d="M13 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></svg></span>Proveedores</button>
-      <button data-view="costing"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg></span>Popularidad y Costeo</button>
+      <button data-view="costing"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M5 7 2 13a3 3 0 0 0 6 0L5 7ZM19 7l-3 6a3 3 0 0 0 6 0l-3-6Z"/><path d="M9 21h6"/></svg></span>Costeo</button>
       <button data-view="users"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.7 14.3c2.6.3 4.6 2.5 4.8 5.2"/></svg></span>Usuarios</button>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
@@ -690,7 +690,7 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="costing" class="view">
         <div id="costingListView">
-          <div class="page-title"><div><h2>Popularidad y Costeo</h2><p>Costo teórico (por receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
+          <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
           <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div id="costingCards" class="business-grid"></div>
         </div>
@@ -1079,7 +1079,7 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
-const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recipes:"Recetas",suppliers:"Proveedores"};
+const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recipes:"Recetas",suppliers:"Proveedores",costing:"Costeo"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
   const el=document.getElementById("printDate");
@@ -2583,16 +2583,19 @@ function renderCostingList(){
   if(!list.length){box.innerHTML='<div class="empty">No hay análisis todavía'+(canManageRecipes()?' — usa "+ Nuevo análisis" para agregar el primero.':'.')+'</div>';return}
   box.innerHTML=list.map(r=>{
     const summary=costingSummary(r);
-    const totalVenta=summary.reduce((s,d)=>s+d.ventaTotal,0);
-    const totalCosto=summary.reduce((s,d)=>s+d.costoConIVA,0);
-    const pct=totalVenta>0?(totalCosto/totalVenta*100).toFixed(1):"0.0";
     const statusBadge=r.status==="Terminado"?'<span class="badge green">Terminado</span>':'<span class="badge yellow">Borrador</span>';
+    const deptRows=summary.map(d=>{
+      const brechaHtml=d.tieneReal?` <span class="${d.brechaConIVA>0.05?"redtxt":d.brechaConIVA<-0.05?"greentxt":""}" style="font-size:11.5px">(${d.brechaConIVA>0?"+":""}${d.brechaConIVA.toFixed(1)} pp vs. real)</span>`:"";
+      return`<div class="line"><span>${esc(d.departamento)}</span><strong>${d.pctConIVA.toFixed(1)}%${brechaHtml}</strong></div>`
+    }).join("");
     return`<div class="card business">
       <div class="business-head"><h4>${esc(r.periodicidad||"")} — ${esc(r.startDate||"")} a ${esc(r.endDate||"")}</h4></div>
       <div class="line"><span>Estatus</span><span>${statusBadge}</span></div>
-      <div class="line"><span>Platillos</span><strong>${(r.items||[]).length}</strong></div>
-      <div class="line"><span>% costo teórico (con IVA)</span><strong>${pct}%</strong></div>
-      <button class="btn" onclick="openCosting(${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
+      <div class="line"><span>Platillos cargados</span><strong>${(r.items||[]).length}</strong></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:8px 0">
+      <div class="empty" style="margin-bottom:2px;font-size:11px">% costo teórico (con IVA) por departamento</div>
+      ${deptRows||'<div class="empty">Sube un archivo para ver el desglose.</div>'}
+      <button class="btn" style="margin-top:10px" onclick="openCosting(${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
     </div>`
   }).join("")
 }
@@ -2681,8 +2684,8 @@ function renderIvaSettings(){
     const def=currentCosting.ivaDefaults[d];
     return`<div class="flex" style="gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
       <div style="min-width:120px"><label>Departamento</label><input value="${esc(d)}" disabled style="background:#f4f6fb"></div>
-      <div><label>% de partidas con IVA</label><input type="number" step="1" min="0" max="100" value="${def.pct}" onchange="updateIvaDefault('${escJs(d)}','pct',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
-      <div><label>Tasa de IVA %</label><input type="number" step="0.5" min="0" value="${def.tasa}" onchange="updateIvaDefault('${escJs(d)}','tasa',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
+      <div><label>% de partidas con IVA</label><input type="number" step="1" min="0" max="100" lang="en" value="${def.pct}" onchange="updateIvaDefault('${escJs(d)}','pct',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
+      <div><label>Tasa de IVA %</label><input type="number" step="0.5" min="0" lang="en" value="${def.tasa}" onchange="updateIvaDefault('${escJs(d)}','tasa',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
     </div>`
   }).join("")
 }
@@ -2718,7 +2721,7 @@ function renderCostingSummary(){
           <option value="pct" ${modo==="pct"?"selected":""}>% directo</option>
         </select>
       </div>
-      <div class="line"><span>${modo==="pct"?"% costo real":"Costo real, en pesos"}</span><input type="number" step="0.01" placeholder="${modo==="pct"?"%":"$"}" value="${modo==="pct"?pctVal:montoVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:130px"></div>
+      <div class="line"><span>${modo==="pct"?"% costo real":"Costo real, en pesos"}</span><input type="number" step="0.01" lang="en" placeholder="${modo==="pct"?"%":"$"}" value="${modo==="pct"?pctVal:montoVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:130px"></div>
       ${d.tieneReal?`${modo==="monto"?`<div class="line"><span>% costo real (calculado)</span><strong>${d.pctReal.toFixed(1)}%</strong></div>`:""}
       <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
       ${brechaLine("Brecha sin IVA (real − teórico)",d.brechaSinIVA)}
@@ -2766,7 +2769,7 @@ function renderCostingDetail(){
     const rowStyle=excluded?' style="color:var(--muted)"':"";
     const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:110px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Sí</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No</option></select>`;
     const estatusSel=`<select onchange="updateCostingItem(${idx},'estatus',this.value)" ${readOnly?"disabled":""} style="max-width:170px"><option value="Con receta" ${!excluded?"selected":""}>Con receta</option><option value="Sin receta (paquete/menú)" ${excluded?"selected":""}>Sin receta (paquete/menú)</option></select>`;
-    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td><input type="number" step="0.01" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
   }).join("")
 }
 function setCostDeptTab(dept){
@@ -2853,7 +2856,7 @@ async function toggleCostingAuditPanel(){
   if(!business){alert("Selecciona un negocio primero.");return}
   await ensureCostingAuditLoadedFor(business);
   const log=(costingAuditByBusiness[business]||[]).slice().reverse();
-  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Popularidad y Costeo — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Costeo — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
   box.style.display="block"
 }
 
