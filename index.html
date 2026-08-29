@@ -172,6 +172,13 @@ button{cursor:pointer}
 .section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px}
 .section-title h3{margin:0;font-size:20px}
 .business-grid{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:14px}
+.costing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:16px}
+.costing-table{width:100%;border-collapse:collapse;font-size:13px}
+.costing-table th{text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:4px 0 6px}
+.costing-table th:first-child,.costing-table td:first-child{text-align:left}
+.costing-table td{text-align:right;padding:6px 0;border-top:1px solid var(--line)}
+.costing-table tr:first-child td{border-top:none}
+.costing-section-title{font-weight:700;font-size:14px;color:var(--nav);margin:16px 0 4px}
 .business{padding:16px}
 .business-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .business h4{margin:0;font-size:16px}.dot{width:10px;height:10px;border-radius:50%}
@@ -693,7 +700,7 @@ textarea{min-height:76px;resize:vertical}
         <div id="costingListView">
           <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
           <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
-          <div id="costingCards" class="business-grid"></div>
+          <div id="costingCards" class="costing-grid"></div>
         </div>
         <div id="costingEditorView" style="display:none">
           <div class="page-title"><div><h2 id="costingEditorTitle">Nuevo análisis</h2><p>Sube el archivo de popularidad y costeo que exportas de tu sistema (por platillo, con cantidad vendida y costo de receta).</p></div><div class="actions"><button class="btn" id="btnCostingHistory" onclick="toggleCostingHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeCostingEditor()">← Volver al listado</button></div></div>
@@ -723,12 +730,12 @@ textarea{min-height:76px;resize:vertical}
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen del periodo</h3></div>
             <p class="empty" style="margin:0 0 10px">Vista ejecutiva combinada de Alimentos + Bebidas para este periodo.</p>
-            <div id="costPeriodSummary" class="business-grid"></div>
+            <div id="costPeriodSummary"></div>
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
             <div class="notice" style="margin-bottom:14px">Captura el <b>costo real en pesos o en %</b>, tal cual lo ves en tu P&amp;L — el sistema calcula la <b>desviación</b> (diferencia en puntos porcentuales contra el costo teórico) y su <b>impacto económico</b> en pesos: <span class="redtxt"><b>positiva y en rojo</b></span> = gastaste más de lo previsto; <span class="greentxt"><b>negativa y en verde</b></span> = gastaste menos. Los renglones "Sin receta (paquete/menú)" o sin estatus no se incluyen aquí — sí aparecen abajo, en el detalle.</div>
-            <div id="costSummaryCards" class="business-grid"></div>
+            <div id="costSummaryCards" class="costing-grid"></div>
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div>
@@ -2612,41 +2619,52 @@ async function bootCosting(){
   await ensureCostingLoadedFor(currentBusiness);
   renderCostingList()
 }
+function periodSummaryTableHtml(totals){
+  if(!totals.depsTotal)return '<div class="empty">Sube un archivo para ver el resumen del periodo.</div>';
+  const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
+  const impSin=totals.depsConReal?`${totals.impactoSinIVA>=0?"+":"−"}${money(Math.abs(totals.impactoSinIVA))}`:"—";
+  const impCon=totals.depsConReal?`${totals.impactoConIVA>=0?"+":"−"}${money(Math.abs(totals.impactoConIVA))}`:"—";
+  return`<table class="costing-table">
+    <thead><tr><th>Resumen del periodo</th><th>Sin IVA</th><th>Con IVA</th></tr></thead>
+    <tbody>
+      <tr><td>Venta analizada</td><td colspan="2">${money(totals.ventaAnalizada)}</td></tr>
+      <tr><td>Costo teórico A&amp;B</td><td>${money(totals.costoTeoricoSinIVA)}</td><td>${money(totals.costoTeoricoConIVA)}</td></tr>
+      <tr><td>Costo real A&amp;B (P&amp;L)</td><td colspan="2">${totals.depsConReal?money(totals.costoReal):"—"}</td></tr>
+      <tr><td>Desviación en pesos</td><td class="${totals.depsConReal?clsImpacto(totals.impactoSinIVA):""}">${impSin}</td><td class="${totals.depsConReal?clsImpacto(totals.impactoConIVA):""}">${impCon}</td></tr>
+      <tr><td>Cobertura del recetario</td><td colspan="2">${totals.cobertura.toFixed(1)}% de la venta</td></tr>
+    </tbody>
+  </table>${totals.depsConReal<totals.depsTotal?`<div class="empty" style="margin-top:6px;font-size:11.5px">Falta capturar el costo real de ${totals.depsTotal-totals.depsConReal} departamento(s).</div>`:""}`
+}
+function deptComparisonTableHtml(d){
+  const clsBrecha=v=>v>0.05?"redtxt":v<-0.05?"greentxt":"";
+  const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
+  const row=(label,sinVal,conVal,sinCls,conCls)=>`<tr><td>${label}</td><td class="${sinCls||""}">${sinVal}</td><td class="${conCls||""}">${conVal}</td></tr>`;
+  let rows=row("Costo teórico",d.pctSinIVA.toFixed(1)+"%",d.pctConIVA.toFixed(1)+"%");
+  if(d.tieneReal){
+    rows+=row("Costo real (P&amp;L)",d.pctReal.toFixed(1)+"%",d.pctReal.toFixed(1)+"%");
+    rows+=row("Desviación",(d.brechaSinIVA>0?"+":"")+d.brechaSinIVA.toFixed(1)+" pp",(d.brechaConIVA>0?"+":"")+d.brechaConIVA.toFixed(1)+" pp",clsBrecha(d.brechaSinIVA),clsBrecha(d.brechaConIVA));
+    rows+=row("Impacto económico",(d.impactoSinIVA>=0?"+":"−")+money(Math.abs(d.impactoSinIVA)),(d.impactoConIVA>=0?"+":"−")+money(Math.abs(d.impactoConIVA)),clsImpacto(d.impactoSinIVA),clsImpacto(d.impactoConIVA))
+  }
+  return`<div class="costing-section-title">${esc(d.departamento)}</div>
+  <table class="costing-table"><thead><tr><th></th><th>Sin IVA</th><th>Con IVA</th></tr></thead><tbody>${rows}</tbody></table>
+  ${!d.tieneReal?'<div class="empty" style="font-size:11.5px;margin-top:4px">Falta capturar el costo real.</div>':""}`
+}
 function renderCostingList(){
   const box=document.getElementById("costingCards");
   const list=(costingByBusiness[currentBusiness]||[]).slice().sort((a,b)=>String(b.endDate).localeCompare(String(a.endDate)));
   if(!list.length){box.innerHTML='<div class="empty">No hay análisis todavía'+(canManageRecipes()?' — usa "+ Nuevo análisis" para agregar el primero.':'.')+'</div>';return}
-  const clsBrecha=v=>v>0.05?"redtxt":v<-0.05?"greentxt":"";
-  const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
   box.innerHTML=list.map(r=>{
     const summary=costingSummary(r);
     const totals=costingPeriodTotals(r);
     const statusBadge=r.status==="Terminado"?'<span class="badge green">Terminado</span>':'<span class="badge yellow">Borrador</span>';
-    const deptBlocks=summary.map(d=>{
-      const impactoLine=(label,pp,impacto)=>d.tieneReal?`<div class="line" style="font-size:12.5px"><span>${label}</span><span class="${clsBrecha(pp)}">${pp>0?"+":""}${pp.toFixed(1)} pp — <span class="${clsImpacto(impacto)}">${impacto>=0?"+":"−"}${money(Math.abs(impacto))}</span></span></div>`:"";
-      return`<div style="margin:10px 0 4px"><b>${esc(d.departamento)}</b></div>
-        <div class="line" style="font-size:12.5px"><span>Costo teórico (sin IVA)</span><span>${d.pctSinIVA.toFixed(1)}%</span></div>
-        <div class="line" style="font-size:12.5px"><span>Costo teórico (con IVA)</span><span>${d.pctConIVA.toFixed(1)}%</span></div>
-        ${d.tieneReal?`<div class="line" style="font-size:12.5px"><span>Costo real (P&amp;L)</span><span>${d.pctReal.toFixed(1)}%</span></div>`:'<div class="empty" style="font-size:11.5px;margin:2px 0">Falta capturar el costo real.</div>'}
-        ${impactoLine("Desviación sin IVA",d.brechaSinIVA,d.impactoSinIVA)}
-        ${impactoLine("Desviación con IVA",d.brechaConIVA,d.impactoConIVA)}`
-    }).join("");
-    const periodBlock=summary.length?`<div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin:8px 0">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Resumen del periodo</div>
-      <div class="line" style="font-size:12.5px"><span>Venta analizada</span><span>${money(totals.ventaAnalizada)}</span></div>
-      <div class="line" style="font-size:12.5px"><span>Costo teórico A&amp;B (sin/con IVA)</span><span>${money(totals.costoTeoricoSinIVA)} / ${money(totals.costoTeoricoConIVA)}</span></div>
-      <div class="line" style="font-size:12.5px"><span>Costo real A&amp;B (P&amp;L)</span><span>${totals.depsConReal?money(totals.costoReal):"—"}</span></div>
-      <div class="line" style="font-size:12.5px"><span>Desviación (sin/con IVA)</span><span>${totals.depsConReal?`${money(totals.impactoSinIVA)} / ${money(totals.impactoConIVA)}`:"—"}</span></div>
-      <div class="line" style="font-size:12.5px"><span>Cobertura del recetario</span><span>${totals.cobertura.toFixed(1)}% de la venta</span></div>
-    </div>`:"";
+    const deptBlocks=summary.map(d=>deptComparisonTableHtml(d)).join("");
     return`<div class="card business">
       <div class="business-head"><h4>${esc(r.periodicidad||"")} — ${esc(r.startDate||"")} a ${esc(r.endDate||"")}</h4></div>
       <div class="line"><span>Estatus</span><span>${statusBadge}</span></div>
       <div class="line"><span>Platillos cargados</span><strong>${(r.items||[]).length}</strong></div>
-      ${periodBlock}
-      <hr style="border:none;border-top:1px solid var(--line);margin:8px 0 2px">
+      <div style="margin-top:12px">${periodSummaryTableHtml(totals)}</div>
       ${deptBlocks||'<div style="font-size:12px;color:var(--muted);margin-top:6px">Sube un archivo para ver el desglose.</div>'}
-      <button class="btn" style="margin-top:12px" onclick="openCosting(${r.id})">Ver detalle</button>
+      <button class="btn" style="margin-top:14px" onclick="openCosting(${r.id})">Ver detalle</button>
     </div>`
   }).join("")
 }
@@ -2682,6 +2700,7 @@ function openCostingEditorForm(){
   document.getElementById("btnCostingHistory").style.display=editingCostingId?"":"none";
   document.getElementById("costingHistoryBox").style.display="none";
   renderIvaSettings();
+  renderCostPeriodSummary();
   renderCostingSummary();
   renderCostingDetail()
 }
@@ -2748,42 +2767,22 @@ function renderCostPeriodSummary(){
   const box=document.getElementById("costPeriodSummary");
   if(!box)return;
   const totals=costingPeriodTotals(currentCosting);
-  if(!totals.depsTotal){box.innerHTML='<div class="empty">Sube un archivo para ver el resumen del periodo.</div>';return}
-  const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
-  box.innerHTML=`<div class="card business" style="grid-column:1/-1">
-    <div class="line"><span>Venta analizada</span><strong>${money(totals.ventaAnalizada)}</strong></div>
-    <div class="line"><span>Costo teórico A&amp;B — sin IVA</span><strong>${money(totals.costoTeoricoSinIVA)}</strong></div>
-    <div class="line"><span>Costo teórico A&amp;B — con IVA</span><strong>${money(totals.costoTeoricoConIVA)}</strong></div>
-    <div class="line"><span>Costo real A&amp;B (P&amp;L)</span><strong>${totals.depsConReal?money(totals.costoReal):"—"}</strong></div>
-    <div class="line"><span>Desviación en pesos — sin IVA</span><strong class="${totals.depsConReal?clsImpacto(totals.impactoSinIVA):""}">${totals.depsConReal?(totals.impactoSinIVA>=0?"+":"−")+money(Math.abs(totals.impactoSinIVA)):"—"}</strong></div>
-    <div class="line"><span>Desviación en pesos — con IVA</span><strong class="${totals.depsConReal?clsImpacto(totals.impactoConIVA):""}">${totals.depsConReal?(totals.impactoConIVA>=0?"+":"−")+money(Math.abs(totals.impactoConIVA)):"—"}</strong></div>
-    <div class="line"><span>Cobertura del recetario</span><strong>${totals.cobertura.toFixed(1)}% de la venta pudo cruzarse con una receta</strong></div>
-    ${totals.depsConReal<totals.depsTotal?`<div class="empty" style="margin-top:6px">Falta capturar el costo real de ${totals.depsTotal-totals.depsConReal} departamento(s) para completar este resumen.</div>`:""}
-  </div>`
+  box.innerHTML=`<div style="max-width:520px">${periodSummaryTableHtml(totals)}</div>`
 }
 function renderCostingSummary(){
   const box=document.getElementById("costSummaryCards");
   const readOnly=!canManageRecipes();
   const summary=costingSummary(currentCosting);
   if(!summary.length){box.innerHTML='<div class="empty">Sube un archivo para ver el resumen por departamento.</div>';return}
-  const cls=v=>v>0.05?"redtxt":v<-0.05?"greentxt":"";
-  const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
   box.innerHTML=summary.map(d=>{
     const real=currentCosting.costoReal[d.departamento]||{modo:"monto"};
     const modo=real.modo==="pct"?"pct":"monto";
     const montoVal=real.monto!==undefined?real.monto:"";
     const pctVal=real.pct!==undefined?real.pct:"";
-    const brechaLine=(label,brecha,impacto)=>{
-      const tag=brecha>0.05?"↑ más caro que lo previsto":brecha<-0.05?"↓ más barato que lo previsto":"≈ igual al previsto";
-      return`<div class="line"><span>${label}</span><strong class="${cls(brecha)}">${brecha>0?"+":""}${brecha.toFixed(1)} pp — ${tag}</strong></div>
-      <div class="line" style="font-size:12px;margin-top:-6px"><span>Impacto económico</span><strong class="${clsImpacto(impacto)}">${impacto>=0?"+":"−"}${money(Math.abs(impacto))}</strong></div>`
-    };
-    return`<div class="card business">
+    return`<div class="card business" style="max-width:480px">
       <div class="business-head"><h4>${esc(d.departamento)}</h4></div>
-      <div class="line"><span>Venta total (sin IVA)</span><strong>${money(d.ventaTotal)}</strong></div>
-      <div class="line"><span>Venta total (con IVA)</span><strong>${money(d.ventaConIVA)}</strong></div>
-      <div class="line"><span>Costo teórico según recetas y ventas (sin IVA)</span><strong>${money(d.costoSinIVA)} — ${d.pctSinIVA.toFixed(1)}%</strong></div>
-      <div class="line"><span>Costo teórico según recetas y ventas (con IVA)</span><strong>${money(d.costoConIVA)} — ${d.pctConIVA.toFixed(1)}%</strong></div>
+      <div class="line" style="font-size:12.5px"><span>Venta (sin/con IVA)</span><span>${money(d.ventaTotal)} / ${money(d.ventaConIVA)}</span></div>
+      <div class="line" style="font-size:12.5px"><span>Costo teórico $ (sin/con IVA)</span><span>${money(d.costoSinIVA)} / ${money(d.costoConIVA)}</span></div>
       <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
       <div class="line"><span>Costo real (P&amp;L)</span>
         <select onchange="setCostoRealModo('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:95px;font-size:12px">
@@ -2792,11 +2791,7 @@ function renderCostingSummary(){
         </select>
       </div>
       <div class="line"><span>${modo==="pct"?"% costo real":"Costo real, en pesos"}</span><input type="number" step="0.01" lang="en" placeholder="${modo==="pct"?"%":"$"}" value="${modo==="pct"?pctVal:montoVal}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:130px"></div>
-      ${d.tieneReal?`${modo==="monto"?`<div class="line"><span>% costo real (calculado)</span><strong>${d.pctReal.toFixed(1)}%</strong></div>`:`<div class="line"><span>Costo real, en pesos (calculado)</span><strong>${money(d.montoReal)}</strong></div>`}
-      <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
-      ${brechaLine("Desviación sin IVA (real − teórico)",d.brechaSinIVA,d.impactoSinIVA)}
-      ${brechaLine("Desviación con IVA (real − teórico)",d.brechaConIVA,d.impactoConIVA)}`
-      :'<div class="empty" style="margin-top:6px">Captura el costo real (en pesos o en %) para ver la desviación.</div>'}
+      <div style="margin-top:12px">${deptComparisonTableHtml(d)}</div>
     </div>`
   }).join("")
 }
