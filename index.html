@@ -429,6 +429,7 @@ textarea{min-height:76px;resize:vertical}
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
       <button data-view="recipes"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetas</button>
       <button data-view="suppliers"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16V6a1 1 0 0 1 1-1h9v11"/><path d="M13 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></svg></span>Proveedores</button>
+      <button data-view="costing"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg></span>Popularidad y Costeo</button>
       <button data-view="users"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.7 14.3c2.6.3 4.6 2.5 4.8 5.2"/></svg></span>Usuarios</button>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
@@ -683,6 +684,50 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="flex-wrap:wrap;gap:10px">
               <button class="btn primary" id="btnSaveSupplier" onclick="saveSupplier()">Guardar proveedor</button>
               <div class="toma-kebab-wrap" id="btnDeleteSupplier" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('supDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="supDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('supDelMenu',event);deleteCurrentSupplier()">🗑 Eliminar proveedor</button></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="costing" class="view">
+        <div id="costingListView">
+          <div class="page-title"><div><h2>Popularidad y Costeo</h2><p>Costo teórico (por receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
+          <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div id="costingCards" class="business-grid"></div>
+        </div>
+        <div id="costingEditorView" style="display:none">
+          <div class="page-title"><div><h2 id="costingEditorTitle">Nuevo análisis</h2><p>Sube el archivo de popularidad y costeo que exportas de tu sistema (por platillo, con cantidad vendida y costo de receta).</p></div><div class="actions"><button class="btn" id="btnCostingHistory" onclick="toggleCostingHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeCostingEditor()">← Volver al listado</button></div></div>
+          <div id="costingHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div class="card form-card">
+            <div class="form-grid">
+              <div><label>Periodicidad</label><select id="costPeriodicidad"><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Personalizado</option></select></div>
+              <div><label>Fecha inicial</label><input type="date" id="costStartDate"></div>
+              <div><label>Fecha final</label><input type="date" id="costEndDate"></div>
+            </div>
+            <div class="flex" style="align-items:flex-end;gap:14px;margin-top:14px;flex-wrap:wrap">
+              <div><label>Archivo de popularidad y costeo (.xlsx o .csv)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv"></div>
+              <button class="btn" onclick="uploadCostingFile()">Cargar archivo</button>
+              <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
+            </div>
+          </div>
+          <div class="card form-card">
+            <h3 style="margin-top:0">IVA genérico (solo para renglones que no traigan su propio dato de IVA)</h3>
+            <p class="empty" style="margin-top:-4px">Si tu archivo ya trae "¿Aplica IVA?" o el costo con IVA por platillo, se usa ese dato tal cual. Esto solo aplica como respaldo genérico.</p>
+            <div id="costIvaSettings"></div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
+            <p class="empty" style="margin:0 0 10px">Los renglones marcados como "Sin receta (paquete/menú)" no se incluyen en este resumen (no tienen costo de receta propio) — sí se muestran abajo, en el detalle, para que los revises.</p>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Venta total</th><th>Costo teórico (sin IVA)</th><th>% costo (sin IVA)</th><th>Costo teórico (con IVA)</th><th>% costo (con IVA)</th><th>Costo real (P&amp;L)</th><th>% costo real</th><th>Brecha sin IVA</th><th>Brecha con IVA</th></tr></thead><tbody id="costSummaryBody"></tbody></table></div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Aplica IVA?</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
+          </div>
+          <div class="card form-card" style="position:sticky;bottom:8px">
+            <div class="flex" style="flex-wrap:wrap;gap:10px">
+              <button class="btn" id="btnSaveCostingDraft" onclick="saveCosting('Borrador')">Guardar borrador</button>
+              <button class="btn green" id="btnFinishCosting" onclick="saveCosting('Terminado')">Marcar como terminado</button>
+              <div class="toma-kebab-wrap" id="btnDeleteCosting" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('costDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="costDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('costDelMenu',event);deleteCurrentCosting()">🗑 Eliminar análisis</button></div></div>
             </div>
           </div>
         </div>
@@ -1010,6 +1055,8 @@ function applyNavVisibility(){
   if(recBtn)recBtn.style.display=showRecipes?"":"none";
   const supBtn=document.querySelector('[data-view="suppliers"]');
   if(supBtn)supBtn.style.display=showRecipes?"":"none";
+  const costBtn=document.querySelector('[data-view="costing"]');
+  if(costBtn)costBtn.style.display=showRecipes?"":"none";
   document.querySelector('[data-view="users"]').style.display=isAdmin?"":"none";
   if(restricted){
     if(showToma)openView("tomafisica");
@@ -1199,6 +1246,7 @@ async function openView(id){
   if(id==="tomafisica"){currentToma=null;document.getElementById("tomaCaptureView").style.display="none";document.getElementById("tomaListView").style.display="block";await bootTomaList()}
   if(id==="recipes")await bootRecipes();
   if(id==="suppliers")await bootSuppliers();
+  if(id==="costing")await bootCosting();
   if(id==="capture")bootCapture();
   if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
 }
@@ -1240,6 +1288,7 @@ async function manualRefresh(){
     else if(id==="tomafisica")await bootTomaList();
     else if(id==="recipes")await bootRecipes();
     else if(id==="suppliers")await bootSuppliers();
+    else if(id==="costing")await bootCosting();
     currentBusiness=keepBusiness;
     refreshGlobalBusinessSelect();
   } finally {
@@ -2364,6 +2413,328 @@ async function toggleSupplierAuditPanel(){
   box.style.display="block"
 }
 
+/* ==================== POPULARIDAD Y COSTEO ==================== */
+let costingByBusiness={};
+const costingLoaded=new Set();
+let currentCosting=null,editingCostingId=null;
+async function ensureCostingLoadedFor(business){
+  if(!business||costingLoaded.has(business))return;
+  const{data,error}=await sb.from("costing_records").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar análisis de costeo de "+business+":",error);costingByBusiness[business]=[];costingLoaded.add(business);return}
+  costingByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  costingLoaded.add(business)
+}
+async function pushCostingToCloud(business){
+  const{error}=await sb.from("costing_records").upsert({business,data:costingByBusiness[business]||[],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar análisis de costeo de "+business+":",error)
+}
+function normalizeKeyLoose(k){return normalizeKey(k).replace(/[^a-z0-9]/g,"")}
+function findByKeys(rawNorm,matchers){
+  for(const key in rawNorm){if(matchers.every(m=>key.includes(m)))return rawNorm[key]}
+  return undefined
+}
+async function parsePopularityFile(file){
+  const name=file.name.toLowerCase();
+  let sheetGroups=[];
+  if(name.endsWith(".csv")){
+    const text=await file.text();
+    const rows=Papa.parse(text,{header:true,skipEmptyLines:true}).data;
+    sheetGroups=[{name:"Detalle",rows}]
+  } else {
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array"});
+    sheetGroups=wb.SheetNames.filter(n=>!/resumen/i.test(n)).map(n=>({name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:""})}));
+    if(!sheetGroups.length)sheetGroups=wb.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:""})}))
+  }
+  const items=[];
+  sheetGroups.forEach(sh=>{
+    let deptFromSheet=null;
+    if(/bebida/i.test(sh.name))deptFromSheet="Bebidas";
+    else if(/aliment/i.test(sh.name))deptFromSheet="Alimentos";
+    (sh.rows||[]).forEach(raw=>{
+      const rawNorm={};Object.keys(raw).forEach(k=>rawNorm[normalizeKeyLoose(k)]=raw[k]);
+      const producto=findByKeys(rawNorm,["producto"])??findByKeys(rawNorm,["platillo"])??findByKeys(rawNorm,["nombre"])??"";
+      if(!producto||!String(producto).trim())return;
+      const grupo=findByKeys(rawNorm,["grupo"])??findByKeys(rawNorm,["categoria"])??"";
+      const clave=findByKeys(rawNorm,["clave"])??findByKeys(rawNorm,["codigo"])??"";
+      const cantidadVendida=num(findByKeys(rawNorm,["cantidad"])??0);
+      const ventaTotal=num(findByKeys(rawNorm,["venta"])??0);
+      const costoUnitario=num(findByKeys(rawNorm,["costo","unitario"])??0);
+      const aplicaIVARaw=(findByKeys(rawNorm,["aplica","iva"])??"").toString().trim().toLowerCase();
+      let aplicaIVA=null;
+      if(["si","sí","s","true","1"].includes(aplicaIVARaw))aplicaIVA=true;
+      else if(["no","n","false","0"].includes(aplicaIVARaw))aplicaIVA=false;
+      const costoSinIVARaw=findByKeys(rawNorm,["costo","teorico","sin"]);
+      const costoConIVARaw=findByKeys(rawNorm,["costo","teorico","con"]);
+      const estatus=findByKeys(rawNorm,["estatus"])??findByKeys(rawNorm,["status"])??"";
+      items.push({
+        departamento:deptFromSheet||String(grupo||"General").trim()||"General",
+        grupo:String(grupo||""),clave:String(clave||""),producto:String(producto).trim(),
+        cantidadVendida,ventaTotal,costoUnitario,aplicaIVA,
+        costoTeoricoSinIVA:(costoSinIVARaw===undefined||costoSinIVARaw==="")?null:num(costoSinIVARaw),
+        costoTeoricoConIVA:(costoConIVARaw===undefined||costoConIVARaw==="")?null:num(costoConIVARaw),
+        estatus:String(estatus||"")
+      })
+    })
+  });
+  return items
+}
+function costingIvaDefaultsFor(record){
+  const depts=[...new Set((record.items||[]).map(it=>it.departamento))];
+  record.ivaDefaults=record.ivaDefaults||{};
+  depts.forEach(d=>{if(!record.ivaDefaults[d])record.ivaDefaults[d]={pct:95,tasa:16}});
+  return record.ivaDefaults
+}
+function computeItemCosting(it,ivaDefaults){
+  const costoUnitario=num(it.costoUnitario),cantidad=num(it.cantidadVendida);
+  const costoSinIVA=(it.costoTeoricoSinIVA!==null&&it.costoTeoricoSinIVA!==undefined)?num(it.costoTeoricoSinIVA):costoUnitario*cantidad;
+  let costoConIVA;
+  if(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined){
+    costoConIVA=num(it.costoTeoricoConIVA)
+  } else {
+    const def=(ivaDefaults&&ivaDefaults[it.departamento])||{pct:95,tasa:16};
+    if(it.aplicaIVA===true)costoConIVA=costoSinIVA*(1+num(def.tasa)/100);
+    else if(it.aplicaIVA===false)costoConIVA=costoSinIVA;
+    else costoConIVA=costoSinIVA*(1+(num(def.pct)/100)*(num(def.tasa)/100))
+  }
+  return{costoSinIVA,costoConIVA}
+}
+function costingSummary(record){
+  const ivaDefaults=costingIvaDefaultsFor(record);
+  const byDept={};
+  (record.items||[]).forEach(it=>{
+    if(normalizeKey(it.estatus||"").trim()!=="con receta")return;
+    const d=it.departamento||"General";
+    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults);
+    if(!byDept[d])byDept[d]={ventaTotal:0,costoSinIVA:0,costoConIVA:0};
+    byDept[d].ventaTotal+=num(it.ventaTotal);
+    byDept[d].costoSinIVA+=costoSinIVA;
+    byDept[d].costoConIVA+=costoConIVA
+  });
+  record.costoReal=record.costoReal||{};
+  return Object.entries(byDept).map(([dept,v])=>{
+    const real=record.costoReal[dept]||{};
+    const pctSinIVA=v.ventaTotal>0?v.costoSinIVA/v.ventaTotal*100:0;
+    const pctConIVA=v.ventaTotal>0?v.costoConIVA/v.ventaTotal*100:0;
+    const pctReal=num(real.pct);
+    return{departamento:dept,ventaTotal:v.ventaTotal,costoSinIVA:v.costoSinIVA,costoConIVA:v.costoConIVA,
+      pctSinIVA,pctConIVA,pctReal,tieneReal:real.pct!==undefined&&real.pct!==null&&real.pct!=="",
+      brechaSinIVA:pctReal-pctSinIVA,brechaConIVA:pctReal-pctConIVA}
+  }).sort((a,b)=>a.departamento.localeCompare(b.departamento,"es"))
+}
+async function bootCosting(){
+  document.getElementById("costingEditorView").style.display="none";
+  document.getElementById("costingListView").style.display="block";
+  document.getElementById("btnNewCosting").style.display=canManageRecipes()?"":"none";
+  document.getElementById("costingAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("costingAuditBox").style.display="none";
+  await ensureCostingLoadedFor(currentBusiness);
+  renderCostingList()
+}
+function renderCostingList(){
+  const box=document.getElementById("costingCards");
+  const list=(costingByBusiness[currentBusiness]||[]).slice().sort((a,b)=>String(b.endDate).localeCompare(String(a.endDate)));
+  if(!list.length){box.innerHTML='<div class="empty">No hay análisis todavía'+(canManageRecipes()?' — usa "+ Nuevo análisis" para agregar el primero.':'.')+'</div>';return}
+  box.innerHTML=list.map(r=>{
+    const summary=costingSummary(r);
+    const totalVenta=summary.reduce((s,d)=>s+d.ventaTotal,0);
+    const totalCosto=summary.reduce((s,d)=>s+d.costoConIVA,0);
+    const pct=totalVenta>0?(totalCosto/totalVenta*100).toFixed(1):"0.0";
+    const statusBadge=r.status==="Terminado"?'<span class="badge green">Terminado</span>':'<span class="badge yellow">Borrador</span>';
+    return`<div class="card business">
+      <div class="business-head"><h4>${esc(r.periodicidad||"")} — ${esc(r.startDate||"")} a ${esc(r.endDate||"")}</h4></div>
+      <div class="line"><span>Estatus</span><span>${statusBadge}</span></div>
+      <div class="line"><span>Platillos</span><strong>${(r.items||[]).length}</strong></div>
+      <div class="line"><span>% costo teórico (con IVA)</span><strong>${pct}%</strong></div>
+      <button class="btn" onclick="openCosting(${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
+    </div>`
+  }).join("")
+}
+function startNewCosting(){
+  if(!canManageRecipes())return;
+  currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},status:"Borrador",history:[]};
+  editingCostingId=null;
+  openCostingEditorForm()
+}
+async function openCosting(id){
+  await ensureCostingLoadedFor(currentBusiness);
+  const r=(costingByBusiness[currentBusiness]||[]).find(x=>x.id===id);
+  if(!r)return;
+  currentCosting=JSON.parse(JSON.stringify(r));
+  editingCostingId=id;
+  openCostingEditorForm()
+}
+function openCostingEditorForm(){
+  document.getElementById("costingListView").style.display="none";
+  document.getElementById("costingEditorView").style.display="block";
+  document.getElementById("costingEditorTitle").textContent=editingCostingId?"Editar análisis":"Nuevo análisis";
+  document.getElementById("costPeriodicidad").value=currentCosting.periodicidad||"Mensual";
+  document.getElementById("costStartDate").value=currentCosting.startDate||"";
+  document.getElementById("costEndDate").value=currentCosting.endDate||"";
+  document.getElementById("costingUploadMsg").textContent="";
+  const readOnly=!canManageRecipes();
+  ["costPeriodicidad","costStartDate","costEndDate","costingFile"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  document.getElementById("btnSaveCostingDraft").style.display=readOnly?"none":"";
+  document.getElementById("btnFinishCosting").style.display=readOnly?"none":"";
+  document.getElementById("btnDeleteCosting").style.display=(editingCostingId&&currentUser.isAdmin)?"":"none";
+  document.getElementById("btnCostingHistory").style.display=editingCostingId?"":"none";
+  document.getElementById("costingHistoryBox").style.display="none";
+  renderIvaSettings();
+  renderCostingSummary();
+  renderCostingDetail()
+}
+function closeCostingEditor(){
+  currentCosting=null;editingCostingId=null;
+  document.getElementById("costingEditorView").style.display="none";
+  document.getElementById("costingListView").style.display="block";
+  renderCostingList()
+}
+async function uploadCostingFile(){
+  if(!canManageRecipes())return;
+  const input=document.getElementById("costingFile");
+  const msg=document.getElementById("costingUploadMsg");
+  if(!input.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo .xlsx o .csv.";return}
+  try{
+    const items=await parsePopularityFile(input.files[0]);
+    if(!items.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún platillo en este archivo.";return}
+    currentCosting.items=items;
+    costingIvaDefaultsFor(currentCosting);
+    msg.style.color="#15965a";msg.textContent=`Se cargaron ${items.length} platillos correctamente.`;
+    renderIvaSettings();renderCostingSummary();renderCostingDetail();
+    input.value=""
+  }catch(e){
+    console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un .xlsx o .csv válido."
+  }
+}
+function renderIvaSettings(){
+  const box=document.getElementById("costIvaSettings");
+  const readOnly=!canManageRecipes();
+  const depts=Object.keys(costingIvaDefaultsFor(currentCosting));
+  if(!depts.length){box.innerHTML='<div class="empty">Sube un archivo primero para ver los departamentos detectados.</div>';return}
+  box.innerHTML=depts.map(d=>{
+    const def=currentCosting.ivaDefaults[d];
+    return`<div class="flex" style="gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+      <div style="min-width:120px"><label>Departamento</label><input value="${esc(d)}" disabled style="background:#f4f6fb"></div>
+      <div><label>% de partidas con IVA</label><input type="number" step="1" min="0" max="100" value="${def.pct}" onchange="updateIvaDefault('${escJs(d)}','pct',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
+      <div><label>Tasa de IVA %</label><input type="number" step="0.5" min="0" value="${def.tasa}" onchange="updateIvaDefault('${escJs(d)}','tasa',this.value)" ${readOnly?"disabled":""} style="max-width:120px"></div>
+    </div>`
+  }).join("")
+}
+function updateIvaDefault(dept,field,value){
+  currentCosting.ivaDefaults[dept][field]=num(value);
+  renderCostingSummary();renderCostingDetail()
+}
+function renderCostingSummary(){
+  const body=document.getElementById("costSummaryBody");
+  const readOnly=!canManageRecipes();
+  const summary=costingSummary(currentCosting);
+  if(!summary.length){body.innerHTML='<tr><td colspan="10" class="empty">Sube un archivo para ver el resumen por departamento.</td></tr>';return}
+  body.innerHTML=summary.map(d=>{
+    const cls=v=>v<0?"redtxt":v>0?"greentxt":"";
+    return`<tr>
+      <td><b>${esc(d.departamento)}</b></td>
+      <td>${money(d.ventaTotal)}</td>
+      <td>${money(d.costoSinIVA)}</td>
+      <td>${d.pctSinIVA.toFixed(1)}%</td>
+      <td>${money(d.costoConIVA)}</td>
+      <td>${d.pctConIVA.toFixed(1)}%</td>
+      <td><input type="number" step="0.01" placeholder="% (de tu P&L)" value="${currentCosting.costoReal[d.departamento]&&currentCosting.costoReal[d.departamento].pct!==undefined?currentCosting.costoReal[d.departamento].pct:""}" onchange="updateCostoReal('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:110px"></td>
+      <td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td>
+      <td class="${d.tieneReal?cls(d.brechaSinIVA):""}">${d.tieneReal?d.brechaSinIVA.toFixed(1)+" pp":"—"}</td>
+      <td class="${d.tieneReal?cls(d.brechaConIVA):""}">${d.tieneReal?d.brechaConIVA.toFixed(1)+" pp":"—"}</td>
+    </tr>`
+  }).join("")
+}
+function updateCostoReal(dept,value){
+  currentCosting.costoReal=currentCosting.costoReal||{};
+  currentCosting.costoReal[dept]={pct:value===""?undefined:num(value)};
+  renderCostingSummary()
+}
+function renderCostingDetail(){
+  const body=document.getElementById("costDetailBody");
+  const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
+  const ivaDefaults=costingIvaDefaultsFor(currentCosting);
+  let list=currentCosting.items||[];
+  if(q)list=list.filter(it=>(it.producto||"").toLowerCase().includes(q)||(it.clave||"").toLowerCase().includes(q));
+  if(!list.length){body.innerHTML='<tr><td colspan="10" class="empty">Sin platillos capturados.</td></tr>';return}
+  body.innerHTML=list.map(it=>{
+    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults);
+    const ivaLabel=it.aplicaIVA===true?"Sí":it.aplicaIVA===false?"No":"(genérico)";
+    const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
+    const rowStyle=excluded?' style="color:var(--muted)"':"";
+    const estatusLabel=excluded?`${esc(it.estatus||"Sin receta")} — no entra al resumen`:esc(it.estatus);
+    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}<br><small>${estatusLabel}</small></td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${ivaLabel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+  }).join("")
+}
+async function saveCosting(status){
+  if(!canManageRecipes()){alert("No tienes permiso para gestionar este análisis.");return}
+  const business=currentBusiness;
+  if(!business){alert("Selecciona un negocio.");return}
+  if(!(currentCosting.items||[]).length){alert("Sube un archivo de popularidad y costeo antes de guardar.");return}
+  currentCosting.business=business;
+  currentCosting.periodicidad=document.getElementById("costPeriodicidad").value;
+  currentCosting.startDate=document.getElementById("costStartDate").value;
+  currentCosting.endDate=document.getElementById("costEndDate").value;
+  currentCosting.status=status;
+  currentCosting.history=currentCosting.history||[];
+  const isNew=!editingCostingId;
+  currentCosting.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?`Creó el análisis (${status})`:`Editó el análisis (${status})`});
+  await ensureCostingLoadedFor(business);
+  let list=costingByBusiness[business]||[];
+  if(editingCostingId){list=list.map(r=>r.id===editingCostingId?currentCosting:r)} else {list=[...list,currentCosting]}
+  costingByBusiness[business]=list;
+  await pushCostingToCloud(business);
+  await logCostingAudit(business,isNew?"Creó el análisis":"Editó el análisis",`${currentCosting.periodicidad} — ${currentCosting.startDate} a ${currentCosting.endDate} — ${status}`);
+  alert("Análisis guardado como "+status+".");
+  closeCostingEditor()
+}
+async function deleteCurrentCosting(){
+  if(!currentUser.isAdmin||!editingCostingId)return;
+  if(!confirm("¿Eliminar este análisis de popularidad y costeo? Esta acción no se puede deshacer."))return;
+  const business=currentCosting.business;
+  await ensureCostingLoadedFor(business);
+  costingByBusiness[business]=(costingByBusiness[business]||[]).filter(r=>r.id!==editingCostingId);
+  await pushCostingToCloud(business);
+  await logCostingAudit(business,"ELIMINÓ el análisis",`${currentCosting.periodicidad} — ${currentCosting.startDate} a ${currentCosting.endDate}`);
+  closeCostingEditor()
+}
+function toggleCostingHistory(){
+  const box=document.getElementById("costingHistoryBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const history=(currentCosting.history||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de este análisis</h3>`+(history.length?history.map(h=>`<div style="border-bottom:1px solid #f1f5f9;padding:8px 0">${esc(new Date(h.at).toLocaleString("es-MX"))} — ${esc(h.by)} — ${esc(h.action)}</div>`).join(""):'<div class="empty">Todavía no hay historial.</div>');
+  box.style.display="block"
+}
+let costingAuditByBusiness={};
+const costingAuditLoaded=new Set();
+async function ensureCostingAuditLoadedFor(business){
+  if(!business||costingAuditLoaded.has(business))return;
+  const{data,error}=await sb.from("costing_audit_log").select("data").eq("business",business).maybeSingle();
+  if(error){console.error("Error al cargar auditoría de costeo de "+business+":",error);costingAuditByBusiness[business]=[];costingAuditLoaded.add(business);return}
+  costingAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  costingAuditLoaded.add(business)
+}
+async function logCostingAudit(business,action,details){
+  if(!business)return;
+  await ensureCostingAuditLoadedFor(business);
+  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  costingAuditByBusiness[business]=[...(costingAuditByBusiness[business]||[]),entry];
+  const{error}=await sb.from("costing_audit_log").upsert({business,data:costingAuditByBusiness[business],updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar auditoría de costeo de "+business+":",error)
+}
+async function toggleCostingAuditPanel(){
+  const box=document.getElementById("costingAuditBox");
+  const open=box.style.display!=="none";
+  if(open){box.style.display="none";return}
+  const business=currentBusiness;
+  if(!business){alert("Selecciona un negocio primero.");return}
+  await ensureCostingAuditLoadedFor(business);
+  const log=(costingAuditByBusiness[business]||[]).slice().reverse();
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Popularidad y Costeo — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
+  box.style.display="block"
+}
+
 /* ==================== TOMA FÍSICA ==================== */
 let tomasByBusiness={};
 const tomasLoaded=new Set();
@@ -3237,6 +3608,7 @@ async function onGlobalBusinessChange(){
   else if(id==="tomafisica")await bootTomaList();
   else if(id==="recipes")await bootRecipes();
   else if(id==="suppliers")await bootSuppliers();
+  else if(id==="costing")await bootCosting();
   else if(id==="capture"){await ensureCatalogsLoadedFor(currentBusiness);fBusiness.value=currentBusiness;onBusinessChangeInCapture()}
 }
 async function bootCxc(){
