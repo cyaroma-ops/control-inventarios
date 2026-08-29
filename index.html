@@ -2464,6 +2464,9 @@ async function parsePopularityFile(file){
       if(!producto||!String(producto).trim())return;
       const grupo=findByKeys(rawNorm,["grupo"])??findByKeys(rawNorm,["categoria"])??"";
       const clave=findByKeys(rawNorm,["clave"])??findByKeys(rawNorm,["codigo"])??"";
+      const productoUpper=String(producto).trim().toUpperCase();
+      const looksLikeTotalRow=/^(GRAN\s+)?TOTAL(ES)?\b/.test(productoUpper)||/^SUBTOTAL/.test(productoUpper);
+      if(looksLikeTotalRow&&!String(clave||"").trim())return;
       const cantidadRaw=findByKeys(rawNorm,["cantidad"]);
       const ventaRaw=findByKeys(rawNorm,["venta"]);
       const costoUnitarioRaw=findByKeys(rawNorm,["costo","unitario"]);
