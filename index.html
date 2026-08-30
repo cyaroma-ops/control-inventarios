@@ -945,6 +945,7 @@ function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.
 function canManageTomas(){ return currentUser.isAdmin || !currentUser.viewOnly || currentUser.canEditTomas; }
 function canCaptureTomas(){ return canManageTomas() || currentUser.canCaptureTomas; }
 function canManageRecipes(){ return currentUser.isAdmin || currentUser.canManageRecipes; }
+function canManageCosting(){ return currentUser.isAdmin; }
 function canApproveRecipes(){ return currentUser.isAdmin || currentUser.canEditTomas; }
 async function loadAllUserAccess(){
   const { data, error } = await sb.from("user_access").select("*").order("email");
@@ -1081,7 +1082,7 @@ function applyNavVisibility(){
   const supBtn=document.querySelector('[data-view="suppliers"]');
   if(supBtn)supBtn.style.display=showRecipes?"":"none";
   const costBtn=document.querySelector('[data-view="costing"]');
-  if(costBtn)costBtn.style.display=showRecipes?"":"none";
+  if(costBtn)costBtn.style.display=isAdmin?"":"none";
   document.querySelector('[data-view="users"]').style.display=isAdmin?"":"none";
   if(restricted){
     if(showToma)openView("tomafisica");
@@ -2618,9 +2619,10 @@ function costingPeriodTotals(record){
   return t
 }
 async function bootCosting(){
+  if(!currentUser.isAdmin){openView("dashboard");return}
   document.getElementById("costingEditorView").style.display="none";
   document.getElementById("costingListView").style.display="block";
-  document.getElementById("btnNewCosting").style.display=canManageRecipes()?"":"none";
+  document.getElementById("btnNewCosting").style.display=canManageCosting()?"":"none";
   document.getElementById("costingAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("costingAuditBox").style.display="none";
   await ensureCostingLoadedFor(currentBusiness);
@@ -2660,7 +2662,7 @@ function deptComparisonTableHtml(d){
 function renderCostingList(){
   const box=document.getElementById("costingCards");
   const list=(costingByBusiness[currentBusiness]||[]).slice().sort((a,b)=>String(b.endDate).localeCompare(String(a.endDate)));
-  if(!list.length){box.innerHTML='<div class="empty">No hay análisis todavía'+(canManageRecipes()?' — usa "+ Nuevo análisis" para agregar el primero.':'.')+'</div>';return}
+  if(!list.length){box.innerHTML='<div class="empty">No hay análisis todavía'+(canManageCosting()?' — usa "+ Nuevo análisis" para agregar el primero.':'.')+'</div>';return}
   box.innerHTML=list.map(r=>{
     const summary=costingSummary(r);
     const totals=costingPeriodTotals(r);
@@ -2677,7 +2679,7 @@ function renderCostingList(){
   }).join("")
 }
 function startNewCosting(){
-  if(!canManageRecipes())return;
+  if(!canManageCosting())return;
   currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},status:"Borrador",history:[]};
   editingCostingId=null;
   openCostingEditorForm()
@@ -2700,7 +2702,7 @@ function openCostingEditorForm(){
   document.getElementById("costStartDate").value=currentCosting.startDate||"";
   document.getElementById("costEndDate").value=currentCosting.endDate||"";
   document.getElementById("costingUploadMsg").textContent="";
-  const readOnly=!canManageRecipes();
+  const readOnly=!canManageCosting();
   ["costPeriodicidad","costStartDate","costEndDate","costingFile"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnSaveCostingDraft").style.display=readOnly?"none":"";
   document.getElementById("btnFinishCosting").style.display=readOnly?"none":"";
@@ -2719,7 +2721,7 @@ function closeCostingEditor(){
   renderCostingList()
 }
 function clearCostingItems(){
-  if(!canManageRecipes())return;
+  if(!canManageCosting())return;
   if(!(currentCosting.items||[]).length)return;
   if(!confirm("¿Vaciar todos los platillos cargados en este análisis? Esta acción no se puede deshacer (pero puedes volver a cargar tus archivos)."))return;
   currentCosting.items=[];
@@ -2733,7 +2735,7 @@ function looksLikeTotalRowItem(it){
   return !hasCode&&(/^(GRAN\s+)?TOTAL(ES)?\b/.test(p)||/^SUBTOTAL/.test(p))
 }
 function removeTotalRowsFromCosting(){
-  if(!canManageRecipes())return;
+  if(!canManageCosting())return;
   const matches=(currentCosting.items||[]).filter(looksLikeTotalRowItem);
   if(!matches.length){alert('No se encontró ningún renglón de "TOTAL" en este análisis — ya está limpio.');return}
   if(!confirm(`Se encontraron ${matches.length} renglón(es) que no son platillos reales (ej. "${matches[0].producto}"). ¿Quitarlos de este análisis?`))return;
@@ -2743,7 +2745,7 @@ function removeTotalRowsFromCosting(){
   alert(`Listo, se quitaron ${matches.length} renglón(es). No olvides darle "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`)
 }
 async function uploadCostingFile(){
-  if(!canManageRecipes())return;
+  if(!canManageCosting())return;
   const input=document.getElementById("costingFile");
   const msg=document.getElementById("costingUploadMsg");
   if(!input.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo .xlsx o .csv.";return}
@@ -2770,7 +2772,7 @@ function toggleCostIvaHelp(){
 }
 function renderIvaSettings(){
   const box=document.getElementById("costIvaSettings");
-  const readOnly=!canManageRecipes();
+  const readOnly=!canManageCosting();
   const depts=Object.keys(costingIvaDefaultsFor(currentCosting));
   if(!depts.length){box.innerHTML='<div class="empty">Sube un archivo primero para ver los departamentos detectados.</div>';return}
   box.innerHTML=depts.map(d=>{
@@ -2794,7 +2796,7 @@ function renderCostPeriodSummary(){
 }
 function renderCostingSummary(){
   const box=document.getElementById("costSummaryCards");
-  const readOnly=!canManageRecipes();
+  const readOnly=!canManageCosting();
   const summary=costingSummary(currentCosting);
   if(!summary.length){box.innerHTML='<div class="empty">Sube un archivo para ver el resumen por departamento.</div>';return}
   box.innerHTML=summary.map(d=>{
@@ -2835,7 +2837,7 @@ let costDeptActive="";
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
   const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
-  const readOnly=!canManageRecipes();
+  const readOnly=!canManageCosting();
   const ivaDefaults=costingIvaDefaultsFor(currentCosting);
   const depts=[...new Set((currentCosting.items||[]).map(it=>it.departamento))].sort((a,b)=>a.localeCompare(b,"es"));
   if(!depts.includes(costDeptActive))costDeptActive="";
@@ -2863,7 +2865,7 @@ function setCostDeptTab(dept){
   renderCostingDetail()
 }
 function updateCostingItem(idx,field,value){
-  if(!canManageRecipes())return;
+  if(!canManageCosting())return;
   const it=currentCosting.items[idx];
   if(field==="aplicaIVA"){
     it.aplicaIVA=value===""?null:value==="si";
@@ -2878,7 +2880,7 @@ function updateCostingItem(idx,field,value){
   renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
 }
 async function saveCosting(status){
-  if(!canManageRecipes()){alert("No tienes permiso para gestionar este análisis.");return}
+  if(!canManageCosting()){alert("No tienes permiso para gestionar este análisis.");return}
   const business=currentBusiness;
   if(!business){alert("Selecciona un negocio.");return}
   if(!(currentCosting.items||[]).length){alert("Sube un archivo de popularidad y costeo antes de guardar.");return}
