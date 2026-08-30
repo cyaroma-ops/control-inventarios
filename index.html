@@ -2636,7 +2636,6 @@ function periodSummaryTableHtml(totals){
     <tbody>
       <tr><td>Venta analizada</td><td>${money(totals.ventaAnalizada)}</td><td>${money(totals.ventaAnalizadaConIVA)}</td></tr>
       <tr><td>Costo teórico A&amp;B</td><td>${money(totals.costoTeoricoSinIVA)}</td><td>${money(totals.costoTeoricoConIVA)}</td></tr>
-      <tr><td>Costo real A&amp;B (P&amp;L)</td><td colspan="2">${totals.depsConReal?money(totals.costoReal):"—"}</td></tr>
       <tr><td>Desviación en pesos</td><td class="${totals.depsConReal?clsImpacto(totals.impactoSinIVA):""}">${impSin}</td><td class="${totals.depsConReal?clsImpacto(totals.impactoConIVA):""}">${impCon}</td></tr>
       <tr><td>Cobertura del recetario</td><td colspan="2">${totals.cobertura.toFixed(1)}% de la venta</td></tr>
     </tbody>
@@ -2646,7 +2645,9 @@ function deptComparisonTableHtml(d){
   const clsBrecha=v=>v>0.05?"redtxt":v<-0.05?"greentxt":"";
   const clsImpacto=v=>v>1?"redtxt":v<-1?"greentxt":"";
   const row=(label,sinVal,conVal,sinCls,conCls)=>`<tr><td>${label}</td><td class="${sinCls||""}">${sinVal}</td><td class="${conCls||""}">${conVal}</td></tr>`;
-  let rows=row("Costo teórico",d.pctSinIVA.toFixed(1)+"%",d.pctConIVA.toFixed(1)+"%");
+  let rows=row("Venta",money(d.ventaTotal),money(d.ventaConIVA));
+  rows+=row("Costo teórico $",money(d.costoSinIVA),money(d.costoConIVA));
+  rows+=row("Costo teórico %",d.pctSinIVA.toFixed(1)+"%",d.pctConIVA.toFixed(1)+"%");
   if(d.tieneReal){
     rows+=row("Costo real (P&amp;L)",d.pctReal.toFixed(1)+"%",d.pctReal.toFixed(1)+"%");
     rows+=row("Desviación",(d.brechaSinIVA>0?"+":"")+d.brechaSinIVA.toFixed(1)+" pp",(d.brechaConIVA>0?"+":"")+d.brechaConIVA.toFixed(1)+" pp",clsBrecha(d.brechaSinIVA),clsBrecha(d.brechaConIVA));
@@ -2803,9 +2804,7 @@ function renderCostingSummary(){
     const pctVal=real.pct!==undefined?real.pct:"";
     return`<div class="card business" style="max-width:480px">
       <div class="business-head"><h4>${esc(d.departamento)}</h4></div>
-      <div class="line" style="font-size:12.5px"><span>Venta (sin/con IVA)</span><span>${money(d.ventaTotal)} / ${money(d.ventaConIVA)}</span></div>
-      <div class="line" style="font-size:12.5px"><span>Costo teórico $ (sin/con IVA)</span><span>${money(d.costoSinIVA)} / ${money(d.costoConIVA)}</span></div>
-      <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+      <hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px">
       <div class="line"><span>Costo real (P&amp;L)</span>
         <select onchange="setCostoRealModo('${escJs(d.departamento)}',this.value)" ${readOnly?"disabled":""} style="max-width:95px;font-size:12px">
           <option value="monto" ${modo==="monto"?"selected":""}>$ pesos</option>
