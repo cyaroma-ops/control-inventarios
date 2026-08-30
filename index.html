@@ -2595,18 +2595,21 @@ function costingSummary(record){
   }).sort((a,b)=>a.departamento.localeCompare(b.departamento,"es"))
 }
 function costingCoverage(record){
-  let ventaTotal=0,ventaConReceta=0;
+  const ivaDefaults=costingIvaDefaultsFor(record);
+  let ventaTotal=0,ventaTotalConIVA=0,ventaConReceta=0;
   (record.items||[]).forEach(it=>{
     const v=num(it.ventaTotal);
+    const{ventaConIVA}=computeItemCosting(it,ivaDefaults);
     ventaTotal+=v;
+    ventaTotalConIVA+=ventaConIVA;
     if(normalizeKey(it.estatus||"").trim()==="con receta")ventaConReceta+=v
   });
-  return{ventaTotal,ventaConReceta,pct:ventaTotal>0?ventaConReceta/ventaTotal*100:0}
+  return{ventaTotal,ventaTotalConIVA,ventaConReceta,pct:ventaTotal>0?ventaConReceta/ventaTotal*100:0}
 }
 function costingPeriodTotals(record){
   const summary=costingSummary(record);
   const coverage=costingCoverage(record);
-  const t={ventaAnalizada:coverage.ventaTotal,costoTeoricoSinIVA:0,costoTeoricoConIVA:0,costoReal:0,impactoSinIVA:0,impactoConIVA:0,cobertura:coverage.pct,depsConReal:0,depsTotal:summary.length};
+  const t={ventaAnalizada:coverage.ventaTotal,ventaAnalizadaConIVA:coverage.ventaTotalConIVA,costoTeoricoSinIVA:0,costoTeoricoConIVA:0,costoReal:0,impactoSinIVA:0,impactoConIVA:0,cobertura:coverage.pct,depsConReal:0,depsTotal:summary.length};
   summary.forEach(d=>{
     t.costoTeoricoSinIVA+=d.costoSinIVA;t.costoTeoricoConIVA+=d.costoConIVA;
     t.impactoSinIVA+=d.impactoSinIVA;t.impactoConIVA+=d.impactoConIVA;
@@ -2631,7 +2634,7 @@ function periodSummaryTableHtml(totals){
   return`<table class="costing-table">
     <thead><tr><th>Resumen del periodo</th><th>Sin IVA</th><th>Con IVA</th></tr></thead>
     <tbody>
-      <tr><td>Venta analizada</td><td colspan="2">${money(totals.ventaAnalizada)}</td></tr>
+      <tr><td>Venta analizada</td><td>${money(totals.ventaAnalizada)}</td><td>${money(totals.ventaAnalizadaConIVA)}</td></tr>
       <tr><td>Costo teórico A&amp;B</td><td>${money(totals.costoTeoricoSinIVA)}</td><td>${money(totals.costoTeoricoConIVA)}</td></tr>
       <tr><td>Costo real A&amp;B (P&amp;L)</td><td colspan="2">${totals.depsConReal?money(totals.costoReal):"—"}</td></tr>
       <tr><td>Desviación en pesos</td><td class="${totals.depsConReal?clsImpacto(totals.impactoSinIVA):""}">${impSin}</td><td class="${totals.depsConReal?clsImpacto(totals.impactoConIVA):""}">${impCon}</td></tr>
