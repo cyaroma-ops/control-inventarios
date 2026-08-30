@@ -172,9 +172,9 @@ button{cursor:pointer}
 .section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px}
 .section-title h3{margin:0;font-size:20px}
 .business-grid{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:14px}
-.costing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:16px}
+.costing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(430px,100%),1fr));gap:16px}
 .costing-grid>.card{min-width:0}
-.costing-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px}
+.costing-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:13px}
 .costing-table td,.costing-table th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .costing-table th{text-align:right;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:4px 0 6px}
 .costing-table th:first-child,.costing-table td:first-child{text-align:left}
