@@ -718,6 +718,7 @@ textarea{min-height:76px;resize:vertical}
               <div><label>Archivo de popularidad y costeo (.xlsx o .csv)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv"></div>
               <button class="btn" onclick="uploadCostingFile()">Cargar archivo</button>
               <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
+              <button class="btn" onclick="removeTotalRowsFromCosting()" style="color:#ae1d23">Quitar renglones de "TOTAL"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
             <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costeo primero) — se van completando entre sí.</p>
@@ -2721,6 +2722,21 @@ function clearCostingItems(){
   currentCosting.ivaDefaults={};
   costDeptActive="";
   renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+}
+function looksLikeTotalRowItem(it){
+  const p=(it.producto||"").trim().toUpperCase();
+  const hasCode=!!(it.clave||"").toString().trim();
+  return !hasCode&&(/^(GRAN\s+)?TOTAL(ES)?\b/.test(p)||/^SUBTOTAL/.test(p))
+}
+function removeTotalRowsFromCosting(){
+  if(!canManageRecipes())return;
+  const matches=(currentCosting.items||[]).filter(looksLikeTotalRowItem);
+  if(!matches.length){alert('No se encontró ningún renglón de "TOTAL" en este análisis — ya está limpio.');return}
+  if(!confirm(`Se encontraron ${matches.length} renglón(es) que no son platillos reales (ej. "${matches[0].producto}"). ¿Quitarlos de este análisis?`))return;
+  currentCosting.items=currentCosting.items.filter(it=>!looksLikeTotalRowItem(it));
+  costDeptActive="";
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  alert(`Listo, se quitaron ${matches.length} renglón(es). No olvides darle "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`)
 }
 async function uploadCostingFile(){
   if(!canManageRecipes())return;
