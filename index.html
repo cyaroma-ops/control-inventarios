@@ -2273,7 +2273,7 @@ async function toggleRecipeAuditPanel(){
 /* ==================== PROVEEDORES / INSUMOS ==================== */
 const PURCHASE_UNITS={
   kg:{label:"Kilogramo",baseLabel:"gramos",eqLabel:"¿Cuántos gramos trae?",defaultEq:1000},
-  litro:{label:"Litro",baseLabel:"mililitros",eqLabel:"¿Cuántos mililitros trae?",defaultEq:1000},
+  litro:{label:"Litro",baseLabel:"mililitros",eqLabel:"¿Cuántos mililitros trae? (revisa la etiqueta: la mayoría de botellas de licor son de 750 ml, no de 1 litro)",defaultEq:1000},
   pieza:{label:"Pieza",baseLabel:"piezas",eqLabel:null,defaultEq:1},
   lote:{label:"Lote/Paquete",baseLabel:"piezas",eqLabel:"¿Cuántas piezas trae el lote?",defaultEq:1}
 };
@@ -2406,7 +2406,7 @@ function renderSupplierProductRows(){
       <td><input value="${esc(p.name||"")}" oninput="updateSupplierProduct(${idx},'name',this.value)" placeholder="Ej. Sal de mesa" ${readOnly?"disabled":""}></td>
       <td><select onchange="onSupplierUnitChange(${idx},this.value)" ${readOnly?"disabled":""}>${Object.entries(PURCHASE_UNITS).map(([k,v])=>`<option value="${k}" ${p.purchaseUnit===k?"selected":""}>${v.label}</option>`).join("")}</select></td>
       <td><input type="number" step="any" value="${p.purchasePrice??""}" oninput="updateSupplierProduct(${idx},'purchasePrice',this.value)" style="max-width:100px" placeholder="$" ${readOnly?"disabled":""}></td>
-      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateSupplierProduct(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateSupplierProduct(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>${p.purchaseUnit==="litro"&&!readOnly?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${[["750","750 ml"],["700","700 ml"],["1000","1 L"]].map(([val,lbl])=>`<button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="updateSupplierProduct(${idx},'baseQty','${val}');renderSupplierProductRows()">${lbl}</button>`).join("")}</div>`:""}`:'<span style="color:var(--muted)">—</span>'}</td>
       <td id="supCostCell-${idx}">${money(costPerUnit)} / ${cfg.baseLabel.replace(/s$/,"")}</td>
       <td>${readOnly?"":invEditKebab(`removeSupplierProductRow(${idx})`,`supRowMenu-${idx}`)}</td>
     </tr>`
