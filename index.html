@@ -2258,6 +2258,14 @@ const PURCHASE_UNITS={
   pieza:{label:"Pieza",baseLabel:"piezas",eqLabel:null,defaultEq:1},
   lote:{label:"Lote/Paquete",baseLabel:"piezas",eqLabel:"¿Cuántas piezas trae el lote?",defaultEq:1}
 };
+function supplierProductPresentation(p){
+  const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
+  const eq=num(p.baseQty)>0?num(p.baseQty):cfg.defaultEq;
+  if(p.purchaseUnit==="kg")return`${(eq/1000).toLocaleString("es-MX",{maximumFractionDigits:2})} kg`;
+  if(p.purchaseUnit==="litro")return`${(eq/1000).toLocaleString("es-MX",{maximumFractionDigits:2})} L`;
+  if(p.purchaseUnit==="lote")return`${eq.toLocaleString("es-MX",{maximumFractionDigits:2})} ${eq===1?"pieza":"piezas"} (lote)`;
+  return`${eq.toLocaleString("es-MX",{maximumFractionDigits:2})} ${eq===1?"pieza":"piezas"}`
+}
 function supplierProductCostPerUnit(p){
   const eq=num(p.baseQty)>0?num(p.baseQty):1;
   return num(p.purchasePrice)/eq
@@ -2307,10 +2315,13 @@ function renderSupplierList(){
   box.innerHTML=list.map(s=>{
     const products=s.products||[];
     const n=products.length;
-    const productsHtml=n?`<div id="supPreview-${s.id}" style="display:none;margin:8px 0;border-top:1px solid var(--line);padding-top:8px">${products.map(p=>{
+    const pricedProducts=products.filter(p=>supplierProductCostPerUnit(p)>0).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+    const zeroCount=products.length-pricedProducts.length;
+    const productsHtml=n?`<div id="supPreview-${s.id}" style="display:none;margin:8px 0;border-top:1px solid var(--line);padding-top:8px">${pricedProducts.map(p=>{
       const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
-      return `<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}</span></div>`
-    }).join("")}</div>`:"";
+      return `<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${esc(supplierProductPresentation(p))}&nbsp;—&nbsp;${money(num(p.purchasePrice))}</span></div>
+      <div style="font-size:11px;color:var(--muted);text-align:right;margin:-6px 0 8px">${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}</div>`
+    }).join("")}${zeroCount?`<div class="empty" style="font-size:11.5px;margin-top:6px">${zeroCount} insumo(s) sin costo capturado (no se muestran aquí).</div>`:""}</div>`:"";
     return `<div class="card business">
       <div class="business-head"><h4>${esc(s.name||"Sin nombre")}</h4></div>
       <div class="line"><span>Negocio</span><strong>${esc(s.business)}</strong></div>
