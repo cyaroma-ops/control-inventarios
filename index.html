@@ -2050,6 +2050,7 @@ function getSupplierProductOptions(business){
 function getProductionRecipeOptions(business,excludeId){
   return (recipesByBusiness[business]||[]).filter(r=>r.type==="produccion"&&r.id!==excludeId).map(r=>({id:r.id,name:r.name,unit:r.yieldUnit||"unidad",cost:recipeTotals(r).costPerYield}))
 }
+const OZ_TO_ML=29.5735;
 function renderIngredientRows(){
   const readOnly=!canManageRecipes();
   const body=document.getElementById("recIngredientsBody");
@@ -2071,16 +2072,34 @@ function renderIngredientRows(){
     }
     const unitCell=type==="libre"?`<input value="${esc(ing.unit||"")}" oninput="updateIngredient(${idx},'unit',this.value)" style="max-width:90px" placeholder="kg, gr..." ${readOnly?"disabled":""}>`:`<span style="font-size:13px;color:var(--muted)">${esc(ing.unit||"—")}</span>`;
     const costCell=type==="libre"?`<input type="number" step="any" value="${ing.cost??""}" oninput="updateIngredient(${idx},'cost',this.value)" style="max-width:110px" placeholder="$" ${readOnly?"disabled":""}>`:`<span style="font-size:13px">${ing.cost?money(ing.cost):"—"}</span>`;
+    const isLiquid=(type==="insumo"||type==="receta")&&ing.unit==="mililitros";
+    const qtyUnit=ing.qtyDisplayUnit==="oz"?"oz":"";
+    const displayQty=qtyUnit==="oz"?(num(ing.qty)>0?(num(ing.qty)/OZ_TO_ML):""):ing.qty;
+    const qtyCell=isLiquid
+      ?`<input type="number" step="any" value="${displayQty??""}" oninput="updateIngredientQtyDisplay(${idx},this.value)" style="max-width:70px" ${readOnly?"disabled":""}><select onchange="updateIngredientQtyUnit(${idx},this.value)" style="font-size:11px;max-width:60px" ${readOnly?"disabled":""}><option value="" ${qtyUnit===""?"selected":""}>ml</option><option value="oz" ${qtyUnit==="oz"?"selected":""}>oz</option></select>`
+      :`<input type="number" step="any" value="${ing.qty??""}" oninput="updateIngredient(${idx},'qty',this.value)" style="max-width:90px" ${readOnly?"disabled":""}>`;
     return `<tr>
       <td><select onchange="onIngredientTypeChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="libre" ${type==="libre"?"selected":""}>Libre</option><option value="insumo" ${type==="insumo"?"selected":""}>Insumo</option><option value="receta" ${type==="receta"?"selected":""}>Sub-receta</option></select></td>
       <td>${nameCell}</td>
-      <td><input type="number" step="any" value="${ing.qty??""}" oninput="updateIngredient(${idx},'qty',this.value)" style="max-width:90px" ${readOnly?"disabled":""}></td>
+      <td>${qtyCell}</td>
       <td>${unitCell}</td>
       <td>${costCell}</td>
       <td id="recIngSubtotal-${idx}">${money(subtotal)}</td>
       <td>${readOnly?"":invEditKebab(`removeIngredientRow(${idx})`,`recIngMenu-${idx}`)}</td>
     </tr>`
   }).join("")
+}
+function updateIngredientQtyDisplay(idx,value){
+  const ing=currentRecipe.ingredients[idx];
+  const n=num(value);
+  ing.qty=ing.qtyDisplayUnit==="oz"?n*OZ_TO_ML:n;
+  const subEl=document.getElementById(`recIngSubtotal-${idx}`);
+  if(subEl)subEl.textContent=money(num(ing.qty)*num(ing.cost));
+  renderRecipeTotals()
+}
+function updateIngredientQtyUnit(idx,unit){
+  currentRecipe.ingredients[idx].qtyDisplayUnit=unit;
+  renderIngredientRows()
 }
 function addIngredientRow(){
   if(!canManageRecipes())return;
