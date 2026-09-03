@@ -3683,7 +3683,7 @@ async function importInventoryPdf(){
     const meta=sectionMeta(activeSection);
     const nota=kind==="mermas"?" (se tomó la columna de salida/merma como cantidad)":kind==="consumo"?" (se tomó la existencia consumida como cantidad)":"";
     if(!confirm(`Se detectaron ${items.length} productos en el archivo${nota}. ¿Deseas importarlos a "${meta.name}" de "${b}"? Esto reemplaza los productos que tengas ahorita en esta sección (no afecta inventarios ya guardados) y también actualiza el catálogo de este negocio para la próxima vez.`))return;
-    rows[activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,theo:it.theo,phys:it.phys,cost:it.cost,reason:"",comment:"",cxc:"",justification:"",responsible:""}));
+    rows[activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,theo:(meta.waste?(num(it.theo)||num(it.phys)):it.theo),phys:it.phys,cost:it.cost,reason:"",comment:"",cxc:"",justification:"",responsible:""}));
     if(!catalogs[b])catalogs[b]={};
     catalogs[b][activeSection]=items.map(it=>({code:it.code,product:it.product,unit:it.unit,cost:it.cost}));
     await pushCatalogsToCloud(b);
