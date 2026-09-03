@@ -618,7 +618,7 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="recipes" class="view">
         <div id="recipeListView">
-          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="cleanupRecipeYieldUnits()" id="btnCleanupYieldUnits" style="display:none">🧹 Corregir unidades de rendimiento</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
           <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select>
@@ -1883,6 +1883,32 @@ async function pushRecipesToCloud(business){
   const{error}=await sb.from("business_recipes").upsert({business,data:recipesByBusiness[business]||[],updated_at:new Date().toISOString()});
   if(error)console.error("Error al guardar recetas de "+business+":",error)
 }
+async function cleanupRecipeYieldUnits(){
+  if(!currentUser.isAdmin)return;
+  await ensureAllRecipesLoaded();
+  const affectedByBusiness={};
+  visibleBusinessNames().forEach(b=>{
+    (recipesByBusiness[b]||[]).forEach(r=>{
+      const m=String(r.yieldUnit||"").match(/^(.*[a-záéíóúñ])(\d+)$/i);
+      if(m){
+        if(!affectedByBusiness[b])affectedByBusiness[b]=[];
+        affectedByBusiness[b].push({recipe:r,before:r.yieldUnit,after:m[1].trim()})
+      }
+    })
+  });
+  const allAffected=Object.values(affectedByBusiness).flat();
+  if(!allAffected.length){alert('No se encontró ninguna receta con la unidad de rendimiento pegada a un número (ej. "porciones1"). Todo está limpio.');return}
+  const preview=allAffected.slice(0,15).map(a=>`• ${a.recipe.name||"Sin nombre"}: "${a.before}" → "${a.after}"`).join("\n");
+  const more=allAffected.length>15?`\n...y ${allAffected.length-15} más.`:"";
+  if(!confirm(`Se encontraron ${allAffected.length} receta(s) con la unidad de rendimiento mal capturada:\n\n${preview}${more}\n\n¿Corregirlas ahora? Esto solo ajusta el texto de la unidad (ej. "porciones1" → "porciones"), no toca cantidades, costos ni ingredientes.`))return;
+  for(const business of Object.keys(affectedByBusiness)){
+    affectedByBusiness[business].forEach(a=>{a.recipe.yieldUnit=a.after});
+    await pushRecipesToCloud(business);
+    await logRecipeAudit(business,"Corrección automática de unidad de rendimiento",affectedByBusiness[business].map(a=>`${a.recipe.name}: "${a.before}"→"${a.after}"`).join("; "))
+  }
+  alert(`Listo, se corrigieron ${allAffected.length} receta(s).`);
+  renderRecipeList()
+}
 function recipeTotals(r){
   const totalCost=(r.ingredients||[]).reduce((s,i)=>s+(num(i.qty)*num(i.cost)),0);
   const costPerYield=num(r.yieldQty)>0?totalCost/num(r.yieldQty):totalCost;
@@ -1900,6 +1926,7 @@ async function bootRecipes(){
   document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
   document.getElementById("recipeSearch").oninput=renderRecipeList;
   document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
+  document.getElementById("btnCleanupYieldUnits").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("recipeAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("recipeAuditBox").style.display="none";
   await ensureAllRecipesLoaded();
@@ -1931,15 +1958,23 @@ function renderRecipeList(){
     const badge=r.type==="menu"?'<span class="badge green">Menú</span>':'<span class="badge">Producción</span>';
     const areaBadge=`<span class="badge">${esc(r.area||"Cocina")}</span>`;
     const statusBadge=recipeStatusBadge(r.status);
-    const costPctHtml=num(r.salePrice)>0?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
+    const numIngredientes=(r.ingredients||[]).length;
+    const ingredientesHtml=`<div class="line"><span>Ingredientes</span><strong class="${numIngredientes===0?"redtxt":""}">${numIngredientes}</strong></div>`;
+    const hasSale=num(r.salePrice)>0;
+    const salePriceHtml=`<div class="line"><span>Precio de venta</span><strong>${hasSale?money(num(r.salePrice)):"—"}</strong></div>`;
+    const costPctHtml=hasSale?`<div class="line"><span>% costo</span><strong>${t.costPct.toFixed(1)}%</strong></div>`:"";
+    const marginHtml=hasSale?`<div class="line"><span>Margen</span><strong class="${t.marginAmt<0?"redtxt":"greentxt"}">${money(t.marginAmt)} (${t.marginPct.toFixed(1)}%)</strong></div>`:"";
     return `<div class="card business">
       ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
       <div class="business-head"><h4>${esc(r.name||"Sin nombre")}</h4></div>
       <div class="line"><span>Negocio</span><strong>${esc(r.business)}</strong></div>
       <div class="line"><span>Área</span><span>${areaBadge}</span></div>
       <div class="line"><span>Tipo</span><span>${badge} ${statusBadge}</span></div>
+      ${ingredientesHtml}
       <div class="line"><span>Costo por ${esc(r.yieldUnit||"unidad")}</span><strong>${money(t.costPerYield)}</strong></div>
+      ${salePriceHtml}
       ${costPctHtml}
+      ${marginHtml}
       <button class="btn" onclick="openRecipeEditor('${escJs(r.business)}',${r.id})">${canManageRecipes()?"Editar":"Ver"}</button>
     </div>`
   }).join("")
