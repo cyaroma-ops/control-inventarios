@@ -791,13 +791,15 @@ textarea{min-height:76px;resize:vertical}
             <div id="costIvaSettings" style="margin-top:10px"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Resumen del periodo</h3></div>
-            <p class="empty" style="margin:0 0 10px">Vista ejecutiva combinada de Alimentos + Bebidas para este periodo.</p>
+            <div class="table-head"><h3 style="margin:0">Resumen del periodo <span style="font-weight:400;color:var(--muted);font-size:12px">— Alimentos + Bebidas</span></h3></div>
             <div id="costPeriodSummary"></div>
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Resumen por departamento</h3></div>
-            <div class="notice" style="margin-bottom:14px">Captura el <b>costo real en pesos o en %</b>, tal cual lo ves en tu P&amp;L — el sistema calcula la <b>desviación</b> (diferencia en puntos porcentuales contra el costo teórico) y su <b>impacto económico</b> en pesos: <span class="redtxt"><b>positiva y en rojo</b></span> = gastaste más de lo previsto; <span class="greentxt"><b>negativa y en verde</b></span> = gastaste menos. Los renglones "Sin receta (paquete/menú)" o sin estatus no se incluyen aquí — sí aparecen abajo, en el detalle.</div>
+            <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:8px" onclick="toggleCostSummaryHelp()">
+              <span style="font-size:12.5px;color:var(--blue)" id="costSummaryHelpToggle">¿Cómo se calcula esto? ▾</span>
+            </div>
+            <div class="notice" id="costSummaryHelpText" style="display:none;margin-bottom:14px">Captura el <b>costo real en pesos o en %</b>, tal cual lo ves en tu P&amp;L — el sistema calcula la <b>desviación</b> (diferencia en puntos porcentuales contra el costo teórico) y su <b>impacto económico</b> en pesos: <span class="redtxt"><b>positiva y en rojo</b></span> = gastaste más de lo previsto; <span class="greentxt"><b>negativa y en verde</b></span> = gastaste menos. Los renglones "Sin receta (paquete/menú)" o sin estatus no se incluyen aquí — sí aparecen abajo, en el detalle.</div>
             <div id="costSummaryCards" class="costing-grid"></div>
           </div>
           <div class="card table-card">
@@ -3220,6 +3222,7 @@ function openCostingEditorForm(){
   document.getElementById("costingEditorView").style.display="block";
   document.getElementById("costingEditorTitle").textContent=editingCostingId?"Editar análisis":"Nuevo análisis";
   costDeptActive="";
+  costOnlySinReceta=false;
   document.getElementById("costDetailSearch").value="";
   document.getElementById("costPeriodicidad").value=currentCosting.periodicidad||"Mensual";
   document.getElementById("costStartDate").value=currentCosting.startDate||"";
@@ -3430,6 +3433,12 @@ function toggleCostIvaHelp(){
   el.style.display=show?"block":"none";
   tog.textContent=show?"¿Cómo funciona? ▴":"¿Cómo funciona? ▾"
 }
+function toggleCostSummaryHelp(){
+  const el=document.getElementById("costSummaryHelpText"),tog=document.getElementById("costSummaryHelpToggle");
+  const show=el.style.display==="none";
+  el.style.display=show?"block":"none";
+  tog.textContent=show?"¿Cómo se calcula esto? ▴":"¿Cómo se calcula esto? ▾"
+}
 function toggleCostUploadHelp(){
   const el=document.getElementById("costUploadHelpText"),tog=document.getElementById("costUploadHelpToggle");
   const show=el.style.display==="none";
@@ -3555,6 +3564,11 @@ function setCostoRealModo(dept,modo){
   renderCostPeriodSummary();renderCostingSummary()
 }
 let costDeptActive="";
+let costOnlySinReceta=false;
+function toggleSinRecetaFilter(){
+  costOnlySinReceta=!costOnlySinReceta;
+  renderCostingDetail()
+}
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
   const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
@@ -3575,24 +3589,26 @@ function renderCostingDetail(){
   let list=(currentCosting.items||[]).map((it,idx)=>({it,idx}));
   if(costDeptActive)list=list.filter(x=>x.it.departamento===costDeptActive);
   if(q)list=list.filter(x=>(x.it.producto||"").toLowerCase().includes(q)||(x.it.clave||"").toLowerCase().includes(q));
+  const sinCostoEnVista=list.filter(x=>sinCosto(x.it)).length;
+  if(costOnlySinReceta)list=list.filter(x=>sinCosto(x.it));
   const totalsBox=document.getElementById("costDetailTotals");
-  if(list.length){
-    let cant=0,ventaSin=0,ventaCon=0,costoSin=0,costoCon=0,sinCostoN=0;
+  if(list.length||sinCostoEnVista){
+    let cant=0,ventaSin=0,ventaCon=0,costoSin=0,costoCon=0;
     list.forEach(({it})=>{
       const{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
-      cant+=num(it.cantidadVendida);ventaSin+=ventaSinIVA;ventaCon+=ventaConIVA;costoSin+=costoSinIVA;costoCon+=costoConIVA;
-      if(sinCosto(it))sinCostoN++
+      cant+=num(it.cantidadVendida);ventaSin+=ventaSinIVA;ventaCon+=ventaConIVA;costoSin+=costoSinIVA;costoCon+=costoConIVA
     });
-    totalsBox.innerHTML=`<div class="notice" style="background:#f4f6fb;color:var(--text);border-color:var(--line);display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px">`+
+    const sinRecetaBtn=sinCostoEnVista||costOnlySinReceta?`<button type="button" onclick="toggleSinRecetaFilter()" class="redtxt" style="background:none;border:1px solid var(--red);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12.5px">${costOnlySinReceta?`✕ quitar filtro (viendo solo sin receta)`:`👁 ver los ${sinCostoEnVista} sin costo de receta`}</button>`:"";
+    totalsBox.innerHTML=`<div class="notice" style="background:#f4f6fb;color:var(--text);border-color:var(--line);display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:12.5px">`+
       `<div><b>${list.length}</b> platillo(s) · <b>${cant.toLocaleString("es-MX")}</b> unidades vendidas</div>`+
       `<div>Venta: <b>${money(ventaSin)}</b> sin IVA / <b>${money(ventaCon)}</b> con IVA</div>`+
       `<div>Costo teórico: <b>${money(costoSin)}</b> sin IVA / <b>${money(costoCon)}</b> con IVA</div>`+
-      (sinCostoN?`<div class="redtxt"><b>${sinCostoN}</b> sin costo de receta</div>`:"")+
+      sinRecetaBtn+
       `</div>`
   } else {
     totalsBox.innerHTML=""
   }
-  if(!list.length){body.innerHTML='<tr><td colspan="11" class="empty">Sin platillos capturados.</td></tr>';return}
+  if(!list.length){body.innerHTML=`<tr><td colspan="11" class="empty">${costOnlySinReceta?'Ningún platillo en esta vista está sin costo de receta.':'Sin platillos capturados.'}</td></tr>`;return}
   body.innerHTML=list.map(({it,idx})=>{
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
     const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
