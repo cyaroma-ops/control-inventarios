@@ -764,6 +764,7 @@ textarea{min-height:76px;resize:vertical}
               <div><label>Periodicidad</label><select id="costPeriodicidad"><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Personalizado</option></select></div>
               <div><label>Fecha inicial</label><input type="date" id="costStartDate"></div>
               <div><label>Fecha final</label><input type="date" id="costEndDate"></div>
+              <div><label>Las ventas del archivo de popularidad, ¿ya incluyen IVA?</label><select id="costVentaConIva" onchange="updateVentaConIva(this.value)"><option value="1">Sí, ya incluyen IVA</option><option value="0">No, son antes de IVA</option></select></div>
             </div>
             <div class="flex" style="align-items:flex-end;gap:14px;margin-top:14px;flex-wrap:wrap">
               <div><label>Archivo de popularidad o costo por receta (.xlsx, .csv o .pdf)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv,.pdf"></div>
@@ -774,7 +775,10 @@ textarea{min-height:76px;resize:vertical}
               <button class="btn" onclick="markAllCostingItemsConReceta()">Marcar todos como "Con receta"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
-            <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costo por receta primero) — se van completando entre sí. Ahora también aceptamos PDF: el reporte "Productos Vendidos" (popularidad, cantidad y venta) y el reporte "Receta de Productos" (costo teórico por platillo) de SoftRestaurant — este último se liga automáticamente por clave con los platillos que ya tengas cargados.</p>
+            <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin-top:8px" onclick="toggleCostUploadHelp()">
+              <span style="font-size:12.5px;color:var(--blue)" id="costUploadHelpToggle">¿Cómo subir los archivos? ▾</span>
+            </div>
+            <p class="empty" id="costUploadHelpText" style="display:none;margin:6px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costo por receta primero) — se van completando entre sí. Aceptamos PDF: el reporte "Productos Vendidos" (popularidad, cantidad y venta) y el reporte "Receta de Productos" (costo teórico por platillo) de SoftRestaurant — este último se liga automáticamente por clave con los platillos que ya tengas cargados.</p>
             <div id="costGrupoMapping"></div>
           </div>
           <div class="card form-card">
@@ -796,9 +800,12 @@ textarea{min-height:76px;resize:vertical}
             <div id="costSummaryCards" class="costing-grid"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"></div>
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">🖨️ Imprimir detalle</button></div></div>
             <div class="tabs" id="costDeptTabs"></div>
-            <p class="empty" style="margin:0 0 10px">Edita el <b>Estatus</b>, <b>¿Aplica IVA?</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo.</p>
+            <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 8px" onclick="toggleCostDetailHelp()">
+              <span style="font-size:12.5px;color:var(--blue)" id="costDetailHelpToggle">¿Cómo edito esta tabla? ▾</span>
+            </div>
+            <p class="empty" id="costDetailHelpText" style="display:none;margin:0 0 10px">Edita el <b>Estatus</b>, <b>¿Aplica IVA?</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo.</p>
             <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Aplica IVA?</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
@@ -3039,24 +3046,34 @@ function pruneCostingDeptSettings(record){
   Object.keys(record.ivaDefaults||{}).forEach(d=>{if(!depts.has(d))delete record.ivaDefaults[d]});
   Object.keys(record.costoReal||{}).forEach(d=>{if(!depts.has(d))delete record.costoReal[d]})
 }
-function computeItemCosting(it,ivaDefaults){
+function computeItemCosting(it,ivaDefaults,ventaYaConIVA){
   const costoUnitario=num(it.costoUnitario),cantidad=num(it.cantidadVendida);
   const costoSinIVA=(it.costoTeoricoSinIVA!==null&&it.costoTeoricoSinIVA!==undefined)?num(it.costoTeoricoSinIVA):costoUnitario*cantidad;
-  const ventaSinIVA=num(it.ventaTotal);
+  const ventaRaw=num(it.ventaTotal);
   const def=(ivaDefaults&&ivaDefaults[it.departamento])||{pct:95,tasa:16};
   // Costo con IVA: depende de si ESE insumo/receta llevó IVA al comprarlo (aplicaIVA por renglón, o el genérico si no se especifica)
   let costoConIVA;
+  const costoSinIVAforCalc=costoSinIVA;
   if(it.aplicaIVA===true){
-    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA*(1+num(def.tasa)/100)
+    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVAforCalc*(1+num(def.tasa)/100)
   } else if(it.aplicaIVA===false){
-    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVA
+    costoConIVA=(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined)?num(it.costoTeoricoConIVA):costoSinIVAforCalc
   } else if(it.costoTeoricoConIVA!==null&&it.costoTeoricoConIVA!==undefined){
     costoConIVA=num(it.costoTeoricoConIVA)
   } else {
-    costoConIVA=costoSinIVA*(1+(num(def.pct)/100)*(num(def.tasa)/100))
+    costoConIVA=costoSinIVAforCalc*(1+(num(def.pct)/100)*(num(def.tasa)/100))
   }
-  // Venta con IVA: al cliente SIEMPRE se le cobra IVA sobre el 100% de la venta — no depende de si la receta/insumo llevó IVA o no
-  const ventaConIVA=ventaSinIVA*(1+num(def.tasa)/100);
+  // Venta con IVA: al cliente SIEMPRE se le cobra IVA sobre el 100% de la venta — no depende de si la receta/insumo llevó IVA o no.
+  // Pero la venta que trae el archivo puede venir YA con IVA incluido o no, según cómo la exportaron — hay que declararlo (ver "Ventas del archivo") para no duplicarlo.
+  const tasa=num(def.tasa);
+  let ventaSinIVA,ventaConIVA;
+  if(ventaYaConIVA){
+    ventaConIVA=ventaRaw;
+    ventaSinIVA=tasa?ventaRaw/(1+tasa/100):ventaRaw
+  } else {
+    ventaSinIVA=ventaRaw;
+    ventaConIVA=ventaRaw*(1+tasa/100)
+  }
   return{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}
 }
 function costingSummary(record){
@@ -3065,7 +3082,7 @@ function costingSummary(record){
   (record.items||[]).forEach(it=>{
     if(normalizeKey(it.estatus||"").trim()!=="con receta")return;
     const d=it.departamento||"General";
-    const{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}=computeItemCosting(it,ivaDefaults);
+    const{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
     if(!byDept[d])byDept[d]={ventaSinIVA:0,ventaConIVA:0,costoSinIVA:0,costoConIVA:0};
     byDept[d].ventaSinIVA+=ventaSinIVA;
     byDept[d].ventaConIVA+=ventaConIVA;
@@ -3100,7 +3117,7 @@ function costingCoverage(record){
   let ventaTotal=0,ventaTotalConIVA=0,ventaConReceta=0;
   (record.items||[]).forEach(it=>{
     const v=num(it.ventaTotal);
-    const{ventaConIVA}=computeItemCosting(it,ivaDefaults);
+    const{ventaConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
     ventaTotal+=v;
     ventaTotalConIVA+=ventaConIVA;
     if(normalizeKey(it.estatus||"").trim()==="con receta")ventaConReceta+=v
@@ -3182,7 +3199,7 @@ async function startNewCosting(){
   if(!canManageCosting())return;
   await ensureCostingLoadedFor(currentBusiness);
   const prior=(costingByBusiness[currentBusiness]||[]).slice().sort((a,b)=>(b.id||0)-(a.id||0))[0];
-  currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},recipeCostByClave:{},grupoDeptMap:(prior&&prior.grupoDeptMap)?{...prior.grupoDeptMap}:{},status:"Borrador",history:[]};
+  currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},recipeCostByClave:{},grupoDeptMap:(prior&&prior.grupoDeptMap)?{...prior.grupoDeptMap}:{},ventaConIVA:(prior&&prior.ventaConIVA!==undefined)?prior.ventaConIVA:false,status:"Borrador",history:[]};
   editingCostingId=null;
   openCostingEditorForm()
 }
@@ -3193,6 +3210,7 @@ async function openCosting(id){
   currentCosting=JSON.parse(JSON.stringify(r));
   currentCosting.recipeCostByClave=currentCosting.recipeCostByClave||{};
   currentCosting.grupoDeptMap=currentCosting.grupoDeptMap||{};
+  currentCosting.ventaConIVA=currentCosting.ventaConIVA===undefined?false:currentCosting.ventaConIVA;
   editingCostingId=id;
   openCostingEditorForm()
 }
@@ -3205,9 +3223,10 @@ function openCostingEditorForm(){
   document.getElementById("costPeriodicidad").value=currentCosting.periodicidad||"Mensual";
   document.getElementById("costStartDate").value=currentCosting.startDate||"";
   document.getElementById("costEndDate").value=currentCosting.endDate||"";
+  document.getElementById("costVentaConIva").value=currentCosting.ventaConIVA?"1":"0";
   document.getElementById("costingUploadMsg").textContent="";
   const readOnly=!canManageCosting();
-  ["costPeriodicidad","costStartDate","costEndDate","costingFile"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  ["costPeriodicidad","costStartDate","costEndDate","costingFile","costVentaConIva"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnSaveCostingDraft").style.display=readOnly?"none":"";
   document.getElementById("btnFinishCosting").style.display=readOnly?"none":"";
   document.getElementById("btnDeleteCosting").style.display=(editingCostingId&&currentUser.isAdmin)?"":"none";
@@ -3399,6 +3418,65 @@ function toggleCostIvaHelp(){
   el.style.display=show?"block":"none";
   tog.textContent=show?"¿Cómo funciona? ▴":"¿Cómo funciona? ▾"
 }
+function toggleCostUploadHelp(){
+  const el=document.getElementById("costUploadHelpText"),tog=document.getElementById("costUploadHelpToggle");
+  const show=el.style.display==="none";
+  el.style.display=show?"block":"none";
+  tog.textContent=show?"¿Cómo subir los archivos? ▴":"¿Cómo subir los archivos? ▾"
+}
+function toggleCostDetailHelp(){
+  const el=document.getElementById("costDetailHelpText"),tog=document.getElementById("costDetailHelpToggle");
+  const show=el.style.display==="none";
+  el.style.display=show?"block":"none";
+  tog.textContent=show?"¿Cómo edito esta tabla? ▴":"¿Cómo edito esta tabla? ▾"
+}
+function updateVentaConIva(value){
+  if(!canManageCosting())return;
+  currentCosting.ventaConIVA=value==="1";
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+}
+function printCostingDetail(){
+  if(!currentCosting||!(currentCosting.items||[]).length){alert("No hay platillos cargados para imprimir.");return}
+  const ivaDefaults=costingIvaDefaultsFor(currentCosting);
+  const periodTotals=costingPeriodTotals(currentCosting);
+  const summary=costingSummary(currentCosting);
+  const items=(currentCosting.items||[]).slice().sort((a,b)=>(a.departamento||"").localeCompare(b.departamento||"","es")||(a.producto||"").localeCompare(b.producto||"","es"));
+  const rows=items.map(it=>{
+    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
+    const estatus=normalizeKey(it.estatus||"").trim()==="con receta"?"Con receta":"Sin receta (paquete/menú)";
+    return`<tr><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+  }).join("");
+  const deptRows=summary.map(d=>`<tr><td>${esc(d.departamento)}</td><td>${money(d.ventaTotal)}</td><td>${money(d.costoSinIVA)}</td><td>${d.pctSinIVA.toFixed(1)}%</td><td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td></tr>`).join("");
+  const w=window.open("","_blank");
+  if(!w){alert("Tu navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.");return}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Costeo — ${esc(currentCosting.business||"")}</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
+h1{font-size:18px;margin:0 0 4px}
+h2{font-size:14px;margin:22px 0 8px}
+p.meta{color:#555;margin:0 0 4px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px}
+th{background:#f2f2f2}
+</style></head><body>
+<h1>Costeo — ${esc(currentCosting.business||"")}</h1>
+<p class="meta">${esc(currentCosting.periodicidad||"")} — ${esc(currentCosting.startDate||"")} a ${esc(currentCosting.endDate||"")}</p>
+<p class="meta">Ventas del archivo: ${currentCosting.ventaConIVA?"ya incluían IVA":"antes de IVA"}</p>
+<h2>Resumen del periodo</h2>
+<table><tr><th></th><th>Sin IVA</th><th>Con IVA</th></tr>
+<tr><td>Venta analizada</td><td>${money(periodTotals.ventaAnalizada)}</td><td>${money(periodTotals.ventaAnalizadaConIVA)}</td></tr>
+<tr><td>Costo teórico A&amp;B</td><td>${money(periodTotals.costoTeoricoSinIVA)}</td><td>${money(periodTotals.costoTeoricoConIVA)}</td></tr>
+<tr><td>Cobertura del recetario</td><td colspan="2">${periodTotals.cobertura.toFixed(1)}%</td></tr>
+</table>
+<h2>Resumen por departamento</h2>
+<table><tr><th>Departamento</th><th>Venta (sin IVA)</th><th>Costo teórico (sin IVA)</th><th>Costo teórico %</th><th>Costo real %</th></tr>${deptRows}</table>
+<h2>Detalle por platillo (${items.length})</h2>
+<table><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant.</th><th>Venta total</th><th>Costo unitario</th><th>Estatus</th><th>Costo teórico sin IVA</th><th>Costo teórico con IVA</th></tr>${rows}</table>
+</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{w.print()},300)
+}
 function renderIvaSettings(){
   const box=document.getElementById("costIvaSettings");
   const readOnly=!canManageCosting();
@@ -3481,7 +3559,7 @@ function renderCostingDetail(){
   if(q)list=list.filter(x=>(x.it.producto||"").toLowerCase().includes(q)||(x.it.clave||"").toLowerCase().includes(q));
   if(!list.length){body.innerHTML='<tr><td colspan="11" class="empty">Sin platillos capturados.</td></tr>';return}
   body.innerHTML=list.map(({it,idx})=>{
-    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults);
+    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
     const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
     const rowStyle=excluded?' style="color:var(--muted)"':"";
     const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:110px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Sí</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No</option></select>`;
