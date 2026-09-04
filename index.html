@@ -773,7 +773,7 @@ textarea{min-height:76px;resize:vertical}
               <button class="btn" onclick="removeTotalRowsFromCosting()" style="color:#ae1d23">Quitar renglones de "TOTAL"</button>
               <button class="btn" onclick="reclassifyCostingDepartments()">Reclasificar departamentos (Alimentos/Bebidas)</button>
               <button class="btn" onclick="markAllCostingItemsConReceta()">Marcar "Con receta" los que ya tienen costo</button>
-              <button class="btn" onclick="markAllCostingItemsAplicaIVA()">Marcar todos como "Costo ya incluye IVA: Sí"</button>
+              <button class="btn" onclick="markAllCostingItemsAplicaIVA()">Marcar todos como "Normal (sin desglosar IVA)"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin-top:8px" onclick="toggleCostUploadHelp()">
@@ -787,7 +787,7 @@ textarea{min-height:76px;resize:vertical}
               <h3 style="margin:0">IVA genérico (solo para el costo)</h3>
               <span id="costIvaHelpToggle" style="font-size:12.5px;color:var(--blue);white-space:nowrap">¿Cómo funciona? ▾</span>
             </div>
-            <p class="empty" id="costIvaHelpText" style="display:none;margin:8px 0 0">Esto solo afecta el <b>costo de receta/insumo</b> cuando en la fila dejas "Genérico" en <b>¿Costo ya incluye IVA?</b> (por archivos que no distinguen fila por fila). Si esa columna dice "Sí" o "No", se usa ese dato tal cual, sin tocar el % de partidas. La <b>venta</b> es distinta: al cliente siempre se le cobra IVA sobre el 100% de lo que paga, así que "Venta con IVA" se calcula completa usando la "Tasa de IVA %" de abajo — sin importar si el costo ya traía IVA o no.</p>
+            <p class="empty" id="costIvaHelpText" style="display:none;margin:8px 0 0">Esto solo afecta el <b>costo de receta/insumo</b> cuando en la fila dejas "Genérico" en <b>Ajuste de IVA (costo)</b> (por archivos viejos que no distinguen fila por fila). Por default ("Normal") el costo se queda tal cual lo subiste, sin desglosar IVA — solo cuando marcas una fila como "No trae IVA, agregar" se le suma aquí. La <b>venta</b> es distinta: al cliente siempre se le cobra IVA sobre el 100% de lo que paga, así que "Venta con IVA" se calcula completa usando la "Tasa de IVA %" de abajo — sin importar el ajuste de IVA del costo.</p>
             <div id="costIvaSettings" style="margin-top:10px"></div>
           </div>
           <div class="card table-card">
@@ -809,8 +809,8 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 8px" onclick="toggleCostDetailHelp()">
               <span style="font-size:12.5px;color:var(--blue)" id="costDetailHelpToggle">¿Cómo edito esta tabla? ▾</span>
             </div>
-            <p class="empty" id="costDetailHelpText" style="display:none;margin:0 0 10px">Edita el <b>Estatus</b>, <b>¿Costo ya incluye IVA?</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo. "Sí" = el costo capturado ya trae IVA (no se le suma). "No" = hay que anexarle IVA. "Genérico" = usa el % ponderado de la tarjeta de arriba.</p>
-            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>¿Costo ya incluye IVA?</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
+            <p class="empty" id="costDetailHelpText" style="display:none;margin:0 0 10px">Edita el <b>Estatus</b>, el <b>Ajuste de IVA (costo)</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo. "Normal" (default) deja el costo tal cual lo subiste, sin desglosar IVA — muchas recetas de alimentos no lo llevan. "No trae IVA, agregar" se lo suma solo a esa fila. "Genérico" usa el % ponderado de la tarjeta de arriba.</p>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>Ajuste de IVA (costo)</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
@@ -3053,21 +3053,22 @@ function pruneCostingDeptSettings(record){
 }
 function computeItemCosting(it,ivaDefaults,ventaYaConIVA){
   const costoUnitario=num(it.costoUnitario),cantidad=num(it.cantidadVendida);
-  const baseCosto=costoUnitario*cantidad; // monto tal cual está capturado (puede ya incluir IVA o no, según "¿Costo ya incluye IVA?")
+  const baseCosto=costoUnitario*cantidad; // monto tal cual está capturado
   const def=(ivaDefaults&&ivaDefaults[it.departamento])||{pct:95,tasa:16};
   const tasa=num(def.tasa);
   const overrideSin=it.costoTeoricoSinIVA,overrideCon=it.costoTeoricoConIVA;
   let costoSinIVA,costoConIVA;
-  if(it.aplicaIVA===true){
-    // El costo capturado YA incluye IVA (caso típico de "Receta de Productos") — no se le vuelve a sumar.
-    costoConIVA=(overrideCon!==null&&overrideCon!==undefined)?num(overrideCon):baseCosto;
-    costoSinIVA=(overrideSin!==null&&overrideSin!==undefined)?num(overrideSin):(tasa?costoConIVA/(1+tasa/100):costoConIVA)
-  } else if(it.aplicaIVA===false){
-    // El costo capturado NO incluye IVA — se le anexa.
+  if(it.aplicaIVA===false){
+    // Este costo en particular NO trae IVA — se le agrega.
     costoSinIVA=(overrideSin!==null&&overrideSin!==undefined)?num(overrideSin):baseCosto;
     costoConIVA=(overrideCon!==null&&overrideCon!==undefined)?num(overrideCon):costoSinIVA*(1+tasa/100)
+  } else if(it.aplicaIVA===true){
+    // Normal: se mantiene el mismo importe capturado, sin desglosar ni suponer si lleva IVA o no
+    // (hay recetas, como muchos alimentos, que no llevan/desglosan IVA).
+    costoSinIVA=(overrideSin!==null&&overrideSin!==undefined)?num(overrideSin):baseCosto;
+    costoConIVA=(overrideCon!==null&&overrideCon!==undefined)?num(overrideCon):baseCosto
   } else {
-    // Genérico: fórmula ponderada (para archivos que no distinguen fila por fila si el costo ya trae IVA o no).
+    // Genérico: fórmula ponderada (para archivos viejos que no distinguen fila por fila).
     costoSinIVA=(overrideSin!==null&&overrideSin!==undefined)?num(overrideSin):baseCosto;
     costoConIVA=(overrideCon!==null&&overrideCon!==undefined)?num(overrideCon):costoSinIVA*(1+(num(def.pct)/100)*(tasa/100))
   }
@@ -3331,13 +3332,13 @@ function markAllCostingItemsConReceta(){
 function markAllCostingItemsAplicaIVA(){
   if(!canManageCosting())return;
   if(!(currentCosting.items||[]).length){alert("No hay platillos cargados en este análisis todavía.");return}
-  if(!confirm(`¿Marcar los ${currentCosting.items.length} platillos cargados con "¿Costo ya incluye IVA?" = Sí? Esto asume que el costo unitario capturado ya trae IVA (no se le vuelve a sumar). Después puedes cambiar a "No" los que en particular no lo traigan, para que se les anexe.`))return;
+  if(!confirm(`¿Marcar los ${currentCosting.items.length} platillos cargados como "Normal"? Esto deja el costo unitario tal cual lo subiste, sin desglosar IVA (útil para limpiar datos ya cargados). Después puedes marcar como "No trae IVA, agregar" solo los que en particular lo necesiten.`))return;
   currentCosting.items.forEach(it=>{it.aplicaIVA=true});
   costDeptActive="";
   renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
   const msg=document.getElementById("costingUploadMsg");
   msg.style.color="#15965a";
-  msg.textContent=`Listo — se marcó "Costo ya incluye IVA: Sí" en ${currentCosting.items.length} platillo(s). No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
+  msg.textContent=`Listo — se marcó "Normal" en ${currentCosting.items.length} platillo(s). No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
 }
 function reclassifyCostingDepartments(){
   if(!canManageCosting())return;
@@ -3619,7 +3620,7 @@ function renderCostingDetail(){
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
     const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
     const rowStyle=excluded?' style="color:var(--muted)"':"";
-    const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:150px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Sí (ya incluye)</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No (anexar IVA)</option></select>`;
+    const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:150px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Normal</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No trae IVA, agregar</option></select>`;
     const estatusSel=`<select onchange="updateCostingItem(${idx},'estatus',this.value)" ${readOnly?"disabled":""} style="max-width:170px"><option value="Con receta" ${!excluded?"selected":""}>Con receta</option><option value="Sin receta (paquete/menú)" ${excluded?"selected":""}>Sin receta (paquete/menú)</option></select>`;
     const costRowStyle=sinCosto(it)?' style="color:var(--red)"':"";
     return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td${costRowStyle}><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
