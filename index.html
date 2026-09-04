@@ -725,8 +725,7 @@ textarea{min-height:76px;resize:vertical}
             <div class="form-grid">
               <div><label>Negocio</label><select id="insBusiness"></select></div>
               <div><label>Nombre del insumo</label><input id="insName" placeholder="Ej. Tequila Don Julio"></div>
-              <div><label>Grupo</label><input id="insGrupo" placeholder="Ej. Tequila, Proteína..." list="insumoGroupOptions"></div>
-              <datalist id="insumoGroupOptions"></datalist>
+              <div><label>Grupo</label><select id="insGrupo" onchange="onInsGrupoChange(this.value)"></select><input id="insGrupoNew" placeholder="Nombre del nuevo grupo" style="display:none;margin-top:6px"></div>
             </div>
           </div>
           <div class="card table-card">
@@ -2653,11 +2652,23 @@ async function openInsumoEditor(business,id){
   openInsumoEditorForm()
 }
 function refreshInsumoGroupOptions(){
-  const dl=document.getElementById("insumoGroupOptions");
-  if(!dl)return;
+  const sel=document.getElementById("insGrupo");
+  if(!sel)return;
   const groups=new Set();
   Object.values(insumosByBusiness).flat().forEach(i=>{if(i.grupo)groups.add(i.grupo)});
-  dl.innerHTML=[...groups].sort((a,b)=>a.localeCompare(b,"es")).map(g=>`<option value="${esc(g)}">`).join("")
+  const current=currentInsumo.grupo||"";
+  if(current)groups.add(current);
+  const sortedGroups=[...groups].sort((a,b)=>a.localeCompare(b,"es"));
+  sel.innerHTML='<option value="">— Selecciona grupo —</option>'+sortedGroups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("")+'<option value="__new__">+ Agregar nuevo grupo...</option>';
+  sel.value=current;
+  const newBox=document.getElementById("insGrupoNew");
+  newBox.style.display="none";
+  newBox.value=""
+}
+function onInsGrupoChange(value){
+  const newBox=document.getElementById("insGrupoNew");
+  if(value==="__new__"){newBox.style.display="";newBox.focus()}
+  else{newBox.style.display="none";newBox.value=""}
 }
 function openInsumoEditorForm(){
   document.getElementById("insumoListView").style.display="none";
@@ -2667,7 +2678,6 @@ function openInsumoEditorForm(){
   bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
   bizSel.value=currentInsumo.business;
   document.getElementById("insName").value=currentInsumo.name||"";
-  document.getElementById("insGrupo").value=currentInsumo.grupo||"";
   refreshInsumoGroupOptions();
   renderInsumoPriceRows();
   const readOnly=!canManageRecipes();
@@ -2747,7 +2757,8 @@ async function saveInsumo(){
   if(!name){alert("Ponle un nombre al insumo.");return}
   currentInsumo.business=business;
   currentInsumo.name=name;
-  currentInsumo.grupo=document.getElementById("insGrupo").value.trim();
+  const grupoSelVal=document.getElementById("insGrupo").value;
+  currentInsumo.grupo=grupoSelVal==="__new__"?document.getElementById("insGrupoNew").value.trim():grupoSelVal;
   currentInsumo.history=currentInsumo.history||[];
   const isNew=!editingInsumoId;
   currentInsumo.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?"Creó el insumo":"Editó el insumo"});
