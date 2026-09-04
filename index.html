@@ -766,13 +766,13 @@ textarea{min-height:76px;resize:vertical}
               <div><label>Fecha final</label><input type="date" id="costEndDate"></div>
             </div>
             <div class="flex" style="align-items:flex-end;gap:14px;margin-top:14px;flex-wrap:wrap">
-              <div><label>Archivo de popularidad y costeo (.xlsx o .csv)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv"></div>
+              <div><label>Archivo de popularidad o costo por receta (.xlsx, .csv o .pdf)</label><input type="file" id="costingFile" accept=".xlsx,.xls,.csv,.pdf"></div>
               <button class="btn" onclick="uploadCostingFile()">Cargar archivo</button>
               <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
               <button class="btn" onclick="removeTotalRowsFromCosting()" style="color:#ae1d23">Quitar renglones de "TOTAL"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
-            <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costeo primero) — se van completando entre sí.</p>
+            <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costo por receta primero) — se van completando entre sí. Ahora también aceptamos PDF: el reporte "Productos Vendidos" (popularidad, cantidad y venta) y el reporte "Receta de Productos" (costo teórico por platillo) de SoftRestaurant — este último se liga automáticamente por clave con los platillos que ya tengas cargados.</p>
           </div>
           <div class="card form-card">
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleCostIvaHelp()">
@@ -2934,6 +2934,75 @@ async function parsePopularityFile(file){
   });
   return items
 }
+function detectCostingPdfKind(text){
+  if(/RECETA\s+DE\s+PRODUCTOS/i.test(text))return"recetaProductos";
+  if(/PRODUCTOS\s+VENDIDOS/i.test(text))return"popularidad";
+  return null
+}
+// Reporte "Productos Vendidos" (SoftRestaurant) — popularidad: clave, descripción, cantidad vendida, venta total.
+// El costo por platillo casi nunca viene lleno en este reporte; se completa aparte con "Receta de Productos".
+function parsePopularityPdfText(text){
+  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const items=[];
+  let grupo=null;
+  lines.forEach(line=>{
+    const gm=line.match(/^GRUPO:\s*(.+)$/i);
+    if(gm){grupo=gm[1].trim();return}
+    const m=line.match(/^(\d{3,7})\s+(.+)$/);
+    if(!m)return;
+    const clave=m[1];
+    const rest=m[2];
+    const dollars=[...rest.matchAll(/\$(-?[\d,]+\.\d{2})/g)].map(x=>parseFloat(x[1].replace(/,/g,"")));
+    if(dollars.length<4)return; // renglón de subtotal u otro formato — se ignora
+    const cleaned=rest.replace(/\$-?[\d,]+\.\d{2}/g," ").trim();
+    const numMatches=[...cleaned.matchAll(/-?[\d,]+\.\d{2,4}/g)];
+    if(!numMatches.length)return;
+    const cantidadVendida=parseFloat(numMatches[0][0].replace(/,/g,""));
+    const producto=(cleaned.slice(0,numMatches[0].index)+cleaned.slice(numMatches[0].index+numMatches[0][0].length)).replace(/%/g," ").trim();
+    if(!producto||!/[A-Za-zÁÉÍÓÚÑ]/.test(producto))return;
+    // Orden fijo de columnas en el reporte: precio promedio, venta total, precio catálogo, venta total catálogo
+    const ventaTotal=dollars[1];
+    items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave,producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:null,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null})
+  });
+  return items
+}
+// Reporte "Receta de Productos" (SoftRestaurant) — costo teórico por platillo final, ligado por clave.
+function parseRecipeCostPdfText(text){
+  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const headerRe=/^(\S+)\s*-\s*(.+?)\s+\$-?[\d,]+\.\d{2,4}/;
+  const soloDollarRe=/^\$(-?[\d,]+\.\d{2,4})$/;
+  const items=[];
+  let current=null;
+  const push=()=>{if(current&&/[A-Za-zÁÉÍÓÚÑ]/.test(current.producto))items.push(current);current=null};
+  lines.forEach(line=>{
+    if(/^GRUPO:/i.test(line))return;
+    const hm=line.match(headerRe);
+    if(hm){
+      push();
+      current={clave:hm[1].trim(),producto:hm[2].trim(),costoUnitario:0};
+      return
+    }
+    const dm=line.match(soloDollarRe);
+    if(dm&&current){current.costoUnitario=parseFloat(dm[1].replace(/,/g,""))||0}
+  });
+  push();
+  return items
+}
+// Guarda/actualiza el mapa de costos por clave (de "Receta de Productos") y lo aplica a los platillos ya cargados de popularidad.
+function applyRecipeCostsToCosting(record){
+  record.recipeCostByClave=record.recipeCostByClave||{};
+  let matched=0;
+  (record.items||[]).forEach(it=>{
+    const clave=(it.clave||"").toString().trim();
+    if(!clave||!(clave in record.recipeCostByClave))return;
+    if(it._costoManual)return; // no pisar un costo que la persona ya editó a mano
+    it.costoUnitario=record.recipeCostByClave[clave];
+    it.costoTeoricoSinIVA=null;it.costoTeoricoConIVA=null;
+    it._costoFromRecipe=true;
+    matched++
+  });
+  return matched
+}
 function costingItemKey(it){
   const clave=it.clave&&String(it.clave).trim()?String(it.clave).trim().toLowerCase():("__"+normalizeKey(it.producto||""));
   return (it.departamento||"")+"||"+clave
@@ -3102,7 +3171,7 @@ function renderCostingList(){
 }
 function startNewCosting(){
   if(!canManageCosting())return;
-  currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},status:"Borrador",history:[]};
+  currentCosting={id:Date.now(),business:currentBusiness,periodicidad:"Mensual",startDate:"",endDate:"",items:[],ivaDefaults:{},costoReal:{},recipeCostByClave:{},status:"Borrador",history:[]};
   editingCostingId=null;
   openCostingEditorForm()
 }
@@ -3111,6 +3180,7 @@ async function openCosting(id){
   const r=(costingByBusiness[currentBusiness]||[]).find(x=>x.id===id);
   if(!r)return;
   currentCosting=JSON.parse(JSON.stringify(r));
+  currentCosting.recipeCostByClave=currentCosting.recipeCostByClave||{};
   editingCostingId=id;
   openCostingEditorForm()
 }
@@ -3170,12 +3240,47 @@ async function uploadCostingFile(){
   if(!canManageCosting())return;
   const input=document.getElementById("costingFile");
   const msg=document.getElementById("costingUploadMsg");
-  if(!input.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo .xlsx o .csv.";return}
+  if(!input.files.length){msg.style.color="#dc2f34";msg.textContent="Selecciona un archivo .xlsx, .csv o .pdf.";return}
+  const file=input.files[0];
   try{
-    const items=await parsePopularityFile(input.files[0]);
+    if(file.name.toLowerCase().endsWith(".pdf")){
+      const text=await extractPdfText(file);
+      const kind=detectCostingPdfKind(text);
+      if(kind==="recetaProductos"){
+        const recipeItems=parseRecipeCostPdfText(text);
+        if(!recipeItems.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún platillo en este PDF de Receta de Productos.";return}
+        currentCosting.recipeCostByClave=currentCosting.recipeCostByClave||{};
+        recipeItems.forEach(r=>{currentCosting.recipeCostByClave[r.clave]=r.costoUnitario});
+        const matched=applyRecipeCostsToCosting(currentCosting);
+        msg.style.color="#15965a";
+        msg.textContent=`Listo — se leyeron ${recipeItems.length} receta(s) de costo. ${matched?`Se ligaron ${matched} platillo(s) ya cargados por clave.`:"Aún no hay platillos de popularidad cargados — en cuanto los subas, se ligará el costo automáticamente."}`;
+        costDeptActive="";
+        renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+        input.value="";
+        return
+      } else if(kind==="popularidad"){
+        const items=parsePopularityPdfText(text);
+        if(!items.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún platillo en este PDF de Productos Vendidos.";return}
+        const{items:merged,added,updated}=mergeCostingItems(currentCosting.items,items);
+        currentCosting.items=merged;
+        const matched=applyRecipeCostsToCosting(currentCosting);
+        costingIvaDefaultsFor(currentCosting);
+        msg.style.color="#15965a";
+        msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`+(matched?` Se completó el costo de ${matched} platillo(s) con la Receta de Productos ya cargada.`:" Este reporte no trae costo por platillo — sube también el PDF de \"Receta de Productos\" para completarlo, o captúralo a mano abajo.");
+        costDeptActive="";
+        renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+        input.value="";
+        return
+      } else {
+        msg.style.color="#dc2f34";msg.textContent="No reconocí el tipo de reporte en este PDF. Se esperaba \"Productos Vendidos\" (popularidad) o \"Receta de Productos\" (costo por platillo) de SoftRestaurant.";
+        return
+      }
+    }
+    const items=await parsePopularityFile(file);
     if(!items.length){msg.style.color="#dc2f34";msg.textContent="No se reconoció ningún platillo en este archivo.";return}
     const{items:merged,added,updated}=mergeCostingItems(currentCosting.items,items);
     currentCosting.items=merged;
+    applyRecipeCostsToCosting(currentCosting);
     costingIvaDefaultsFor(currentCosting);
     msg.style.color="#15965a";
     msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`;
@@ -3183,7 +3288,7 @@ async function uploadCostingFile(){
     renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
     input.value=""
   }catch(e){
-    console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un .xlsx o .csv válido."
+    console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un .xlsx, .csv o .pdf válido."
   }
 }
 function toggleCostIvaHelp(){
@@ -3297,7 +3402,9 @@ function updateCostingItem(idx,field,value){
   } else if(field==="costoUnitario"){
     it.costoUnitario=num(value);
     it.costoTeoricoSinIVA=null;
-    it.costoTeoricoConIVA=null
+    it.costoTeoricoConIVA=null;
+    it._costoManual=true;
+    it._costoFromRecipe=false
   }
   renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
 }
