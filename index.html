@@ -3116,11 +3116,10 @@ function costingCoverage(record){
   const ivaDefaults=costingIvaDefaultsFor(record);
   let ventaTotal=0,ventaTotalConIVA=0,ventaConReceta=0;
   (record.items||[]).forEach(it=>{
-    const v=num(it.ventaTotal);
-    const{ventaConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
-    ventaTotal+=v;
+    const{ventaSinIVA,ventaConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
+    ventaTotal+=ventaSinIVA;
     ventaTotalConIVA+=ventaConIVA;
-    if(normalizeKey(it.estatus||"").trim()==="con receta")ventaConReceta+=v
+    if(normalizeKey(it.estatus||"").trim()==="con receta")ventaConReceta+=ventaSinIVA
   });
   return{ventaTotal,ventaTotalConIVA,ventaConReceta,pct:ventaTotal>0?ventaConReceta/ventaTotal*100:0}
 }
