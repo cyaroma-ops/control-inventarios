@@ -770,6 +770,8 @@ textarea{min-height:76px;resize:vertical}
               <button class="btn" onclick="uploadCostingFile()">Cargar archivo</button>
               <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
               <button class="btn" onclick="removeTotalRowsFromCosting()" style="color:#ae1d23">Quitar renglones de "TOTAL"</button>
+              <button class="btn" onclick="reclassifyCostingDepartments()">Reclasificar departamentos (Alimentos/Bebidas)</button>
+              <button class="btn" onclick="markAllCostingItemsConReceta()">Marcar todos como "Con receta"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
             <p class="empty" style="margin:8px 0 0">Puedes subir varios archivos por separado, en cualquier orden (popularidad primero o costo por receta primero) — se van completando entre sí. Ahora también aceptamos PDF: el reporte "Productos Vendidos" (popularidad, cantidad y venta) y el reporte "Receta de Productos" (costo teórico por platillo) de SoftRestaurant — este último se liga automáticamente por clave con los platillos que ya tengas cargados.</p>
@@ -3031,6 +3033,12 @@ function costingIvaDefaultsFor(record){
   depts.forEach(d=>{if(!record.ivaDefaults[d])record.ivaDefaults[d]={pct:95,tasa:16}});
   return record.ivaDefaults
 }
+// Quita de ivaDefaults/costoReal los departamentos que ya no tiene ningún platillo (ej. tras reclasificar por Alimentos/Bebidas).
+function pruneCostingDeptSettings(record){
+  const depts=new Set((record.items||[]).map(it=>it.departamento));
+  Object.keys(record.ivaDefaults||{}).forEach(d=>{if(!depts.has(d))delete record.ivaDefaults[d]});
+  Object.keys(record.costoReal||{}).forEach(d=>{if(!depts.has(d))delete record.costoReal[d]})
+}
 function computeItemCosting(it,ivaDefaults){
   const costoUnitario=num(it.costoUnitario),cantidad=num(it.cantidadVendida);
   const costoSinIVA=(it.costoTeoricoSinIVA!==null&&it.costoTeoricoSinIVA!==undefined)?num(it.costoTeoricoSinIVA):costoUnitario*cantidad;
@@ -3246,26 +3254,74 @@ function guessDeptForGrupo(g){
   return"Alimentos"
 }
 let pendingCostingPdfImport=null;
+let pendingCostingReclassify=false;
 function renderCostingGrupoMappingForm(groups){
   const box=document.getElementById("costGrupoMapping");
-  box.innerHTML=`<div class="card form-card" style="margin-top:10px"><h3 style="margin:0 0 6px">¿Cada grupo de este PDF es Alimentos o Bebidas?</h3>`+
+  box.innerHTML=`<div class="card form-card" style="margin-top:10px"><h3 style="margin:0 0 6px">¿Cada grupo es Alimentos o Bebidas?</h3>`+
     `<p class="empty" style="margin:0 0 12px">Tu Costeo trabaja solo por Alimentos y Bebidas (como antes), no por estos grupos del reporte — dime a qué departamento va cada uno. Se recuerda para tus próximos análisis de este negocio.</p>`+
     groups.map((g,i)=>`<div class="flex" style="align-items:center;gap:10px;margin-bottom:8px"><div style="min-width:220px"><b>${esc(g)}</b></div><select id="grupoMap-${i}" data-group="${esc(g)}"><option value="Alimentos">Alimentos</option><option value="Bebidas">Bebidas</option></select></div>`).join("")+
     `<div class="flex" style="margin-top:12px"><button class="btn primary" onclick="confirmCostingGrupoMapping()">Confirmar y continuar</button><button class="btn" onclick="cancelCostingGrupoMapping()">Cancelar</button></div></div>`;
-  groups.forEach((g,i)=>{document.getElementById(`grupoMap-${i}`).value=guessDeptForGrupo(g)})
+  groups.forEach((g,i)=>{
+    const existing=(currentCosting.grupoDeptMap||{})[g];
+    document.getElementById(`grupoMap-${i}`).value=existing||guessDeptForGrupo(g)
+  })
 }
 function cancelCostingGrupoMapping(){
   pendingCostingPdfImport=null;
+  pendingCostingReclassify=false;
   document.getElementById("costGrupoMapping").innerHTML=""
 }
 function confirmCostingGrupoMapping(){
-  if(!pendingCostingPdfImport)return;
   currentCosting.grupoDeptMap=currentCosting.grupoDeptMap||{};
   document.querySelectorAll('#costGrupoMapping select[id^="grupoMap-"]').forEach(s=>{currentCosting.grupoDeptMap[s.dataset.group]=s.value});
-  const{rawItems}=pendingCostingPdfImport;
-  pendingCostingPdfImport=null;
   document.getElementById("costGrupoMapping").innerHTML="";
-  finalizeCostingPdfPopularityImport(rawItems)
+  if(pendingCostingPdfImport){
+    const{rawItems}=pendingCostingPdfImport;
+    pendingCostingPdfImport=null;
+    finalizeCostingPdfPopularityImport(rawItems);
+    return
+  }
+  if(pendingCostingReclassify){
+    pendingCostingReclassify=false;
+    applyGrupoMapToExistingItems();
+    return
+  }
+}
+// Reclasifica los platillos YA cargados (de un análisis existente) usando su campo "grupo" guardado — sin necesidad de volver a subir el archivo.
+function markAllCostingItemsConReceta(){
+  if(!canManageCosting())return;
+  if(!(currentCosting.items||[]).length){alert("No hay platillos cargados en este análisis todavía.");return}
+  if(!confirm(`¿Marcar los ${currentCosting.items.length} platillos cargados como "Con receta"? Después puedes marcar como "Sin receta (paquete/menú)" los que en realidad sean paquetes o combos sin una sola receta.`))return;
+  currentCosting.items.forEach(it=>{it.estatus="Con receta"});
+  costDeptActive="";
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  const msg=document.getElementById("costingUploadMsg");
+  msg.style.color="#15965a";
+  msg.textContent=`Listo — se marcaron ${currentCosting.items.length} platillo(s) como "Con receta". No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
+}
+function reclassifyCostingDepartments(){
+  if(!canManageCosting())return;
+  if(!(currentCosting.items||[]).length){alert("No hay platillos cargados en este análisis todavía.");return}
+  currentCosting.grupoDeptMap=currentCosting.grupoDeptMap||{};
+  const groups=[...new Set((currentCosting.items||[]).map(it=>it.grupo).filter(Boolean))].sort();
+  if(!groups.length){alert("Estos platillos no traen un \"grupo\" guardado para poder reclasificarlos automáticamente — puedes editar el Departamento fila por fila si hace falta.");return}
+  pendingCostingReclassify=true;
+  document.getElementById("costingUploadMsg").textContent="";
+  renderCostingGrupoMappingForm(groups)
+}
+function applyGrupoMapToExistingItems(){
+  let changed=0;
+  (currentCosting.items||[]).forEach(it=>{
+    const dept=currentCosting.grupoDeptMap[it.grupo];
+    if(dept&&it.departamento!==dept){it.departamento=dept;changed++}
+  });
+  costingIvaDefaultsFor(currentCosting);
+  pruneCostingDeptSettings(currentCosting);
+  costDeptActive="";
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  const msg=document.getElementById("costingUploadMsg");
+  msg.style.color="#15965a";
+  msg.textContent=`Listo — se reclasificaron ${changed} platillo(s) a Alimentos/Bebidas. No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
 }
 function finalizeCostingPdfPopularityImport(rawItems){
   const msg=document.getElementById("costingUploadMsg");
@@ -3274,6 +3330,7 @@ function finalizeCostingPdfPopularityImport(rawItems){
   currentCosting.items=merged;
   const matched=applyRecipeCostsToCosting(currentCosting);
   costingIvaDefaultsFor(currentCosting);
+  pruneCostingDeptSettings(currentCosting);
   msg.style.color="#15965a";
   msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`+(matched?` Se completó el costo de ${matched} platillo(s) con la Receta de Productos ya cargada.`:" Este reporte no trae costo por platillo — sube también el PDF de \"Receta de Productos\" para completarlo, o captúralo a mano abajo.");
   costDeptActive="";
