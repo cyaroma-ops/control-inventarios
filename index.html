@@ -603,6 +603,12 @@ textarea{min-height:76px;resize:vertical}
           </div>
           <div id="customAlmacenesList" style="margin-top:14px"></div>
         </div>
+        <div class="card form-card" style="margin-top:20px">
+          <h3 style="margin-top:0">Grupos de Insumos</h3>
+          <p class="empty" style="margin-top:-4px">Estos son los únicos grupos disponibles al capturar un insumo (Recetario → Insumos) — solo un administrador puede agregar o quitar uno de aquí, así se evita que cada quien invente su propio grupo.</p>
+          <div class="flex"><input id="newInsumoGroupName" placeholder="Nombre del grupo (ej. Whisky)" style="max-width:320px"><button class="btn primary" onclick="addInsumoGroup()">+ Agregar grupo</button></div>
+          <div id="insumoGroupsAdminList" style="margin-top:14px"></div>
+        </div>
       </section>
       <section id="products" class="view"><div class="page-title"><div><h2>Productos</h2><p>Catálogo de productos por negocio — cada negocio maneja el suyo, independiente de los demás</p></div></div>
         <div class="card form-card">
@@ -725,7 +731,7 @@ textarea{min-height:76px;resize:vertical}
             <div class="form-grid">
               <div><label>Negocio</label><select id="insBusiness"></select></div>
               <div><label>Nombre del insumo</label><input id="insName" placeholder="Ej. Tequila Don Julio"></div>
-              <div><label>Grupo</label><select id="insGrupo" onchange="onInsGrupoChange(this.value)"></select><input id="insGrupoNew" placeholder="Nombre del nuevo grupo" style="display:none;margin-top:6px"></div>
+              <div><label>Grupo</label><select id="insGrupo"></select></div>
             </div>
           </div>
           <div class="card table-card">
@@ -930,6 +936,39 @@ function renderTomaDepartmentsList(){
 function tomaDepartmentOptionsHtml(selected){
   return'<option value="">Sin especificar</option>'+tomaDepartmentsList.map(d=>`<option ${d===selected?"selected":""}>${esc(d)}</option>`).join("")
 }
+let insumoGroupsList=["Abarrotes","Agua","Bitters","Cerveza","Cerveza Artesanal","Cognac","Concentrados","Frutas y Verduras","Ginebra","Hielo","Jerez","Lacteos","Licores","Mariscos","Mezcal","Proteina","Refrescos","Ron","Suministros","Tequila","Vino Blanco","Vino Dulce","Vino Espumoso","Vino Tinto","Vinos Rosados","Vodka","Whisky"];
+async function loadInsumoGroupsFromCloud(){
+  const{data,error}=await sb.from("inventarios_data").select("data").eq("id",6).maybeSingle();
+  if(!error&&data&&Array.isArray(data.data)&&data.data.length)insumoGroupsList=data.data
+}
+async function pushInsumoGroupsToCloud(){
+  const{error}=await sb.from("inventarios_data").upsert({id:6,data:insumoGroupsList,updated_at:new Date().toISOString()});
+  if(error)console.error("Error al guardar grupos de insumos:",error)
+}
+async function addInsumoGroup(){
+  if(!currentUser.isAdmin){alert("Solo un administrador puede agregar grupos de insumos.");return}
+  const name=document.getElementById("newInsumoGroupName").value.trim();
+  if(!name){alert("Ponle un nombre al grupo.");return}
+  if(insumoGroupsList.some(g=>deptKeyLoose(g)===deptKeyLoose(name))){alert("Ese grupo ya existe (revisa mayúsculas o acentos).");return}
+  insumoGroupsList.push(name);
+  await pushInsumoGroupsToCloud();
+  document.getElementById("newInsumoGroupName").value="";
+  renderInsumoGroupsAdminList();
+  alert(`Listo, "${name}" ya está disponible como grupo de insumos.`)
+}
+async function removeInsumoGroup(name){
+  if(!currentUser.isAdmin)return;
+  if(!confirm(`¿Quitar el grupo "${name}"? Los insumos que ya lo tengan asignado lo conservan, solo deja de aparecer como opción para insumos nuevos.`))return;
+  insumoGroupsList=insumoGroupsList.filter(g=>g!==name);
+  await pushInsumoGroupsToCloud();
+  renderInsumoGroupsAdminList()
+}
+function renderInsumoGroupsAdminList(){
+  const box=document.getElementById("insumoGroupsAdminList");
+  if(!box)return;
+  if(!insumoGroupsList.length){box.innerHTML='<div class="empty">Todavía no hay grupos.</div>';return}
+  box.innerHTML=insumoGroupsList.slice().sort((a,b)=>a.localeCompare(b,"es")).map(g=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(g)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="grpMenu-${escJs(g)}"><button type="button" class="danger" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event);removeInsumoGroup('${escJs(g)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
+}
 const demo={
 kg:[["COC-001","Rib eye","kg",20,18,420],["COC-002","Queso manchego","kg",12,12,180]],
 kp:[["PRO-001","Salsa base","litro",15,14,95]],
@@ -1094,6 +1133,7 @@ async function onLoginSuccess(user){
   await loadBusinessesFromCloud();
   await loadCustomAlmacenesFromCloud();
   await loadTomaDepartmentsFromCloud();
+  await loadInsumoGroupsFromCloud();
   document.getElementById("loginOverlay").style.display = "none";
   document.getElementById("appRoot").style.display = "grid";
   init();
@@ -1291,7 +1331,7 @@ function init(){
   document.getElementById("fCount").value="2026-07-23";document.getElementById("fStart").value="2026-07-20";document.getElementById("fEnd").value="2026-07-26";
   document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>openView(b.dataset.view));
   document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeGroup=b.dataset.group;activeSection=sections[activeGroup][0].id;renderTabs();renderInventory()});
-  renderTabs();renderInventory();renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();bootDashboard()
+  renderTabs();renderInventory();renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList();bootDashboard()
 }
 function toggleMobileMenu(){
   document.getElementById("sidebar").classList.toggle("open");
@@ -1315,7 +1355,7 @@ async function openView(id){
   if(id==="recetario")await bootRecetario();
   if(id==="costing")await bootCosting();
   if(id==="capture")bootCapture();
-  if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
+  if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList()}
 }
 function bootCapture(){
   const el=document.getElementById("fBusiness");
@@ -1340,6 +1380,7 @@ async function manualRefresh(){
     await refreshFromCloud();
     await loadCustomAlmacenesFromCloud();
     await loadTomaDepartmentsFromCloud();
+  await loadInsumoGroupsFromCloud();
     recordsLoaded.clear();recordsByBusiness={};
     tomasLoaded.clear();tomasByBusiness={};
     currentBusiness=keepBusiness;
@@ -1351,7 +1392,7 @@ async function manualRefresh(){
     else if(id==="cxc")await bootCxc();
     else if(id==="waste")await bootWaste();
     else if(id==="reports")await bootReports();
-    else if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
+    else if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList()}
     else if(id==="tomafisica")await bootTomaList();
     else if(id==="recetario")await bootRecetario();
     else if(id==="costing")await bootCosting();
@@ -2523,7 +2564,8 @@ async function ensureInsumosLoadedFor(business){
 }
 async function pushInsumosToCloud(business){
   const{error}=await sb.from("business_insumos").upsert({business,data:insumosByBusiness[business]||[],updated_at:new Date().toISOString()});
-  if(error)console.error("Error al guardar insumos de "+business+":",error)
+  if(error){console.error("Error al guardar insumos de "+business+":",error);return false}
+  return true
 }
 function insumoCurrentPrice(insumo){
   const precios=insumo.precios||[];
@@ -2597,7 +2639,8 @@ async function migrateOldSupplierProducts(){
     history:[{at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:"Importado automáticamente desde el proveedor "+supplier.name}]
   }));
   insumosByBusiness[business]=[...existing,...newInsumos];
-  await pushInsumosToCloud(business);
+  const ok=await pushInsumosToCloud(business);
+  if(!ok){alert("⚠️ No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Los insumos NO quedaron guardados — pídele a soporte que revise esto antes de volver a intentar.");return}
   await logInsumoAudit(business,"Importó insumos antiguos por proveedor",`${newInsumos.length} insumo(s) importados`);
   alert(`Listo, se importaron ${newInsumos.length} insumo(s) al catálogo.`);
   renderInsumoMigrationBox();
@@ -2654,21 +2697,11 @@ async function openInsumoEditor(business,id){
 function refreshInsumoGroupOptions(){
   const sel=document.getElementById("insGrupo");
   if(!sel)return;
-  const groups=new Set();
-  Object.values(insumosByBusiness).flat().forEach(i=>{if(i.grupo)groups.add(i.grupo)});
   const current=currentInsumo.grupo||"";
-  if(current)groups.add(current);
-  const sortedGroups=[...groups].sort((a,b)=>a.localeCompare(b,"es"));
-  sel.innerHTML='<option value="">— Selecciona grupo —</option>'+sortedGroups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("")+'<option value="__new__">+ Agregar nuevo grupo...</option>';
-  sel.value=current;
-  const newBox=document.getElementById("insGrupoNew");
-  newBox.style.display="none";
-  newBox.value=""
-}
-function onInsGrupoChange(value){
-  const newBox=document.getElementById("insGrupoNew");
-  if(value==="__new__"){newBox.style.display="";newBox.focus()}
-  else{newBox.style.display="none";newBox.value=""}
+  const groups=insumoGroupsList.slice().sort((a,b)=>a.localeCompare(b,"es"));
+  if(current&&!groups.some(g=>g===current))groups.push(current);
+  sel.innerHTML='<option value="">— Selecciona grupo —</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  sel.value=current
 }
 function openInsumoEditorForm(){
   document.getElementById("insumoListView").style.display="none";
@@ -2757,8 +2790,7 @@ async function saveInsumo(){
   if(!name){alert("Ponle un nombre al insumo.");return}
   currentInsumo.business=business;
   currentInsumo.name=name;
-  const grupoSelVal=document.getElementById("insGrupo").value;
-  currentInsumo.grupo=grupoSelVal==="__new__"?document.getElementById("insGrupoNew").value.trim():grupoSelVal;
+  currentInsumo.grupo=document.getElementById("insGrupo").value;
   currentInsumo.history=currentInsumo.history||[];
   const isNew=!editingInsumoId;
   currentInsumo.history.push({at:new Date().toISOString(),by:currentUser.name||currentUser.email,action:isNew?"Creó el insumo":"Editó el insumo"});
@@ -2766,7 +2798,8 @@ async function saveInsumo(){
   let list=insumosByBusiness[business]||[];
   if(editingInsumoId){list=list.map(i=>i.id===editingInsumoId?currentInsumo:i)} else {list=[...list,currentInsumo]}
   insumosByBusiness[business]=list;
-  await pushInsumosToCloud(business);
+  const ok=await pushInsumosToCloud(business);
+  if(!ok){alert("⚠️ No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Revisa eso antes de seguir capturando, o tus insumos se van a perder al recargar la página.");return}
   await logInsumoAudit(business,isNew?"Creó el insumo":"Editó el insumo",`"${currentInsumo.name}" (${currentInsumo.grupo||"Sin grupo"}) — ${(currentInsumo.precios||[]).length} precio(s)`);
   alert("Insumo guardado.");
   closeInsumoEditor()
@@ -4221,7 +4254,7 @@ async function onGlobalBusinessChange(){
   else if(id==="cxc")await bootCxc();
   else if(id==="waste")await bootWaste();
   else if(id==="reports")await bootReports();
-  else if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList()}
+  else if(id==="businesses"){renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList()}
   else if(id==="tomafisica")await bootTomaList();
   else if(id==="recetario")await bootRecetario();
   else if(id==="costing")await bootCosting();
