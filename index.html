@@ -722,6 +722,7 @@ textarea{min-height:76px;resize:vertical}
             <select id="insumoGroupFilter" style="max-width:200px"><option value="">Todos los grupos</option></select>
           </div></div>
           <div id="insumoMigrationBox" class="notice" style="display:none;margin-bottom:14px"></div>
+          <div id="insumoSummaryBox" style="display:none;margin-bottom:14px;font-size:13px;color:var(--muted)"></div>
           <div id="insumoCards" class="business-grid"></div>
         </div>
         <div id="insumoEditorView" style="display:none">
@@ -2659,6 +2660,15 @@ function renderInsumoList(){
     groupSel.value=groupFilter||"";
     groupSel.dataset.built=groups.join("|")
   }
+  const sinGrupoCount=list.filter(i=>!i.grupo).length;
+  const sinCostoCount=list.filter(i=>insumoCostPerUnit(i)<=0).length;
+  const summaryBox=document.getElementById("insumoSummaryBox");
+  if(summaryBox){
+    if(sinGrupoCount||sinCostoCount){
+      summaryBox.style.display="block";
+      summaryBox.innerHTML=`<b>Pendientes:</b> ${sinGrupoCount} insumo(s) sin grupo asignado, ${sinCostoCount} insumo(s) sin costo capturado.`
+    } else summaryBox.style.display="none"
+  }
   if(groupFilter)list=list.filter(i=>(i.grupo||"Sin grupo")===groupFilter);
   if(q)list=list.filter(i=>(i.name||"").toLowerCase().includes(q));
   list.sort((a,b)=>((a.grupo||"Sin grupo")+(a.name||"")).localeCompare((b.grupo||"Sin grupo")+(b.name||""),"es"));
@@ -2667,14 +2677,15 @@ function renderInsumoList(){
   box.innerHTML=list.map(i=>{
     const cur=insumoCurrentPrice(i);
     const nProv=new Set((i.precios||[]).map(p=>p.supplierId)).size;
+    const costoVal=insumoCostPerUnit(i);
     return `<div class="card business">
       <div class="business-head"><h4>${esc(i.name||"Sin nombre")}</h4></div>
       <div class="line"><span>Negocio</span><strong>${esc(i.business)}</strong></div>
-      <div class="line"><span>Grupo</span><span class="badge">${esc(i.grupo||"Sin grupo")}</span></div>
+      <div class="line"><span>Grupo</span><span class="badge${i.grupo?"":" redtxt"}">${esc(i.grupo||"Sin grupo")}</span></div>
       <div class="line"><span>Proveedores</span><strong>${nProv}</strong></div>
-      ${cur?`<div class="line"><span>Precio vigente</span><strong>${money(insumoCostPerUnit(i))} / ${insumoBaseUnit(i).replace(/s$/,"")}</strong></div>
+      ${cur?`<div class="line"><span>Precio vigente</span><strong class="${costoVal<=0?"redtxt":""}">${money(costoVal)} / ${insumoBaseUnit(i).replace(/s$/,"")}</strong></div>
       <div class="line" style="font-size:11.5px"><span>De</span><span>${esc(cur.supplierName||"—")} — ${esc(cur.capturedAt||"")}</span></div>`
-      :'<div class="empty" style="font-size:11.5px;margin-top:4px">Sin precio capturado todavía.</div>'}
+      :'<div class="empty redtxt" style="font-size:11.5px;margin-top:4px">Sin precio capturado todavía.</div>'}
       <button class="btn" onclick="openInsumoEditor('${escJs(i.business)}',${i.id})">${canManageRecipes()?"Editar":"Ver detalle"}</button>
     </div>`
   }).join("")
@@ -2743,8 +2754,8 @@ function renderInsumoPriceRows(){
     return `<tr${isVigente?' style="background:#f0f7ff"':""}>
       <td><select onchange="updateInsumoPrice(${idx},'supplierId',this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona proveedor —</option>${suppliers.map(s=>`<option value="${s.id}" ${String(p.supplierId)===String(s.id)?"selected":""}>${esc(s.name)}</option>`).join("")}</select>${isVigente?'<div style="font-size:10px;color:var(--nav);font-weight:700;margin-top:2px">● VIGENTE</div>':""}</td>
       <td><select onchange="onInsumoPriceUnitChange(${idx},this.value)" ${readOnly?"disabled":""}>${Object.entries(PURCHASE_UNITS).map(([k,v])=>`<option value="${k}" ${p.purchaseUnit===k?"selected":""}>${v.label}</option>`).join("")}</select></td>
-      <td><input type="number" step="any" value="${p.purchasePrice??""}" oninput="updateInsumoPrice(${idx},'purchasePrice',this.value)" style="max-width:100px" placeholder="$" ${readOnly?"disabled":""}></td>
-      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateInsumoPrice(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>${(p.purchaseUnit==="litro")&&!readOnly?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${[["750","750 ml"],["700","700 ml"],["1000","1 L"]].map(([val,lbl])=>`<button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="updateInsumoPrice(${idx},'baseQty','${val}');renderInsumoPriceRows()">${lbl}</button>`).join("")}</div>`:""}`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td><input type="number" step="any" lang="en" value="${p.purchasePrice??""}" oninput="updateInsumoPrice(${idx},'purchasePrice',this.value)" style="max-width:100px" placeholder="$" ${readOnly?"disabled":""}></td>
+      <td>${showEq?`<input type="number" step="any" lang="en" value="${p.baseQty??""}" oninput="updateInsumoPrice(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>${(p.purchaseUnit==="litro")&&!readOnly?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${[["750","750 ml"],["700","700 ml"],["1000","1 L"]].map(([val,lbl])=>`<button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="updateInsumoPrice(${idx},'baseQty','${val}');renderInsumoPriceRows()">${lbl}</button>`).join("")}</div>`:""}`:'<span style="color:var(--muted)">—</span>'}</td>
       <td><input type="date" value="${p.capturedAt||""}" onchange="updateInsumoPrice(${idx},'capturedAt',this.value)" style="max-width:150px" ${readOnly?"disabled":""}></td>
       <td id="insCostCell-${idx}">${money(costPerUnit)} / ${cfg.baseLabel.replace(/s$/,"")}</td>
       <td>${readOnly?"":invEditKebab(`removeInsumoPriceRow(${idx})`,`insRowMenu-${idx}`)}</td>
