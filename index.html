@@ -689,7 +689,8 @@ textarea{min-height:76px;resize:vertical}
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Insumos que vende</h3><button class="btn" id="btnAddSupplierProduct" onclick="addSupplierProductRow()">+ Agregar insumo</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Insumo</th><th>Se compra por</th><th>Precio de compra</th><th>Equivalencia</th><th>Costo por unidad</th><th></th></tr></thead><tbody id="supProductsBody"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Insumo</th><th>Grupo</th><th>Se compra por</th><th>Precio de compra</th><th>Equivalencia</th><th>Costo por unidad</th><th></th></tr></thead><tbody id="supProductsBody"></tbody></table></div>
+            <datalist id="supplierGroupOptions"></datalist>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
@@ -2045,7 +2046,15 @@ function closeRecipeEditor(){
 }
 function getSupplierProductOptions(business){
   const suppliers=suppliersByBusiness[business]||[];
-  return suppliers.flatMap(s=>(s.products||[]).map(p=>({id:p.id,supplierName:s.name,name:p.name,unit:(PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg).baseLabel,cost:supplierProductCostPerUnit(p)})))
+  return suppliers.flatMap(s=>(s.products||[]).map(p=>({id:p.id,supplierName:s.name,name:p.name,grupo:p.grupo||"Sin grupo",unit:(PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg).baseLabel,cost:supplierProductCostPerUnit(p)})))
+}
+function groupedSupplierOptionsHtml(opts,selectedId){
+  const byGroup={};
+  opts.forEach(o=>{(byGroup[o.grupo]=byGroup[o.grupo]||[]).push(o)});
+  return Object.keys(byGroup).sort((a,b)=>a.localeCompare(b,"es")).map(g=>{
+    const items=byGroup[g].map(o=>`<option value="${o.id}" ${String(selectedId)===String(o.id)?"selected":""}>${esc(o.supplierName)}: ${esc(o.name)}</option>`).join("");
+    return `<optgroup label="${esc(g)}">${items}</optgroup>`
+  }).join("")
 }
 function getProductionRecipeOptions(business,excludeId){
   return (recipesByBusiness[business]||[]).filter(r=>r.type==="produccion"&&r.id!==excludeId).map(r=>({id:r.id,name:r.name,unit:r.yieldUnit||"unidad",cost:recipeTotals(r).costPerYield}))
@@ -2064,7 +2073,7 @@ function renderIngredientRows(){
     const subtotal=num(ing.qty)*num(ing.cost);
     let nameCell;
     if(type==="insumo"){
-      nameCell=`<select onchange="onIngredientRefChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona insumo —</option>${supplierOpts.map(o=>`<option value="${o.id}" ${String(ing.refId)===String(o.id)?"selected":""}>${esc(o.supplierName)}: ${esc(o.name)}</option>`).join("")}</select>`
+      nameCell=`<select onchange="onIngredientRefChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona insumo —</option>${groupedSupplierOptionsHtml(supplierOpts,ing.refId)}</select>`
     } else if(type==="receta"){
       nameCell=`<select onchange="onIngredientRefChange(${idx},this.value)" ${readOnly?"disabled":""}><option value="">— Selecciona receta —</option>${recipeOpts.map(o=>`<option value="${o.id}" ${String(ing.refId)===String(o.id)?"selected":""}>${esc(o.name)}</option>`).join("")}</select>`
     } else {
@@ -2275,7 +2284,8 @@ const PURCHASE_UNITS={
   kg:{label:"Kilogramo",baseLabel:"gramos",eqLabel:"¿Cuántos gramos trae?",defaultEq:1000},
   litro:{label:"Litro",baseLabel:"mililitros",eqLabel:"¿Cuántos mililitros trae? (revisa la etiqueta: la mayoría de botellas de licor son de 750 ml, no de 1 litro)",defaultEq:1000},
   pieza:{label:"Pieza",baseLabel:"piezas",eqLabel:null,defaultEq:1},
-  lote:{label:"Lote/Paquete",baseLabel:"piezas",eqLabel:"¿Cuántas piezas trae el lote?",defaultEq:1}
+  lote:{label:"Lote/Paquete",baseLabel:"piezas",eqLabel:"¿Cuántas piezas trae el lote?",defaultEq:1},
+  copas:{label:"Copas (vino por copa)",baseLabel:"copas",eqLabel:"¿Cuántas copas rinde esta botella?",defaultEq:5}
 };
 function supplierProductPresentation(p){
   const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
@@ -2283,6 +2293,7 @@ function supplierProductPresentation(p){
   if(p.purchaseUnit==="kg")return`${(eq/1000).toLocaleString("es-MX",{maximumFractionDigits:2})} kg`;
   if(p.purchaseUnit==="litro")return`${(eq/1000).toLocaleString("es-MX",{maximumFractionDigits:2})} L`;
   if(p.purchaseUnit==="lote")return`${eq.toLocaleString("es-MX",{maximumFractionDigits:2})} ${eq===1?"pieza":"piezas"} (lote)`;
+  if(p.purchaseUnit==="copas")return`${eq.toLocaleString("es-MX",{maximumFractionDigits:2})} ${eq===1?"copa":"copas"} (por botella)`;
   return`${eq.toLocaleString("es-MX",{maximumFractionDigits:2})} ${eq===1?"pieza":"piezas"}`
 }
 function supplierProductCostPerUnit(p){
@@ -2334,11 +2345,16 @@ function renderSupplierList(){
   box.innerHTML=list.map(s=>{
     const products=s.products||[];
     const n=products.length;
-    const pricedProducts=products.filter(p=>supplierProductCostPerUnit(p)>0).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+    const pricedProducts=products.filter(p=>supplierProductCostPerUnit(p)>0).slice().sort((a,b)=>((a.grupo||"Sin grupo")+(a.name||"")).localeCompare((b.grupo||"Sin grupo")+(b.name||""),"es"));
     const zeroCount=products.length-pricedProducts.length;
+    let lastGroup=null;
     const productsHtml=n?`<div id="supPreview-${s.id}" style="display:none;margin:8px 0;border-top:1px solid var(--line);padding-top:8px">${pricedProducts.map(p=>{
       const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
-      return `<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${esc(supplierProductPresentation(p))}&nbsp;—&nbsp;${money(num(p.purchasePrice))}</span></div>
+      const g=p.grupo||"Sin grupo";
+      const isNewGroup=g!==lastGroup;
+      lastGroup=g;
+      const groupHeader=isNewGroup?`<div style="font-size:10.5px;font-weight:700;color:var(--nav);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px">${esc(g)}</div>`:"";
+      return `${groupHeader}<div class="line"><span>${esc(p.name||"Sin nombre")}</span><span>${esc(supplierProductPresentation(p))}&nbsp;—&nbsp;${money(num(p.purchasePrice))}</span></div>
       <div style="font-size:11px;color:var(--muted);text-align:right;margin:-6px 0 8px">${money(supplierProductCostPerUnit(p))} / ${cfg.baseLabel.replace(/s$/,"")}</div>`
     }).join("")}${zeroCount?`<div class="empty" style="font-size:11.5px;margin-top:6px">${zeroCount} insumo(s) sin costo capturado (no se muestran aquí).</div>`:""}</div>`:"";
     return `<div class="card business">
@@ -2397,25 +2413,34 @@ function renderSupplierProductRows(){
   const readOnly=!canManageRecipes();
   const body=document.getElementById("supProductsBody");
   const list=currentSupplier.products||[];
-  if(!list.length){body.innerHTML='<tr><td colspan="6" class="empty">Sin insumos todavía</td></tr>';return}
+  refreshSupplierGroupOptions();
+  if(!list.length){body.innerHTML='<tr><td colspan="7" class="empty">Sin insumos todavía</td></tr>';return}
   body.innerHTML=list.map((p,idx)=>{
     const cfg=PURCHASE_UNITS[p.purchaseUnit]||PURCHASE_UNITS.kg;
     const costPerUnit=supplierProductCostPerUnit(p);
     const showEq=cfg.eqLabel!==null;
     return `<tr>
       <td><input value="${esc(p.name||"")}" oninput="updateSupplierProduct(${idx},'name',this.value)" placeholder="Ej. Sal de mesa" ${readOnly?"disabled":""}></td>
+      <td><input value="${esc(p.grupo||"")}" oninput="updateSupplierProduct(${idx},'grupo',this.value)" placeholder="Ej. Proteína, Tequila..." list="supplierGroupOptions" style="max-width:130px" ${readOnly?"disabled":""}></td>
       <td><select onchange="onSupplierUnitChange(${idx},this.value)" ${readOnly?"disabled":""}>${Object.entries(PURCHASE_UNITS).map(([k,v])=>`<option value="${k}" ${p.purchaseUnit===k?"selected":""}>${v.label}</option>`).join("")}</select></td>
       <td><input type="number" step="any" value="${p.purchasePrice??""}" oninput="updateSupplierProduct(${idx},'purchasePrice',this.value)" style="max-width:100px" placeholder="$" ${readOnly?"disabled":""}></td>
-      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateSupplierProduct(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>${p.purchaseUnit==="litro"&&!readOnly?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${[["750","750 ml"],["700","700 ml"],["1000","1 L"]].map(([val,lbl])=>`<button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="updateSupplierProduct(${idx},'baseQty','${val}');renderSupplierProductRows()">${lbl}</button>`).join("")}</div>`:""}`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${showEq?`<input type="number" step="any" value="${p.baseQty??""}" oninput="updateSupplierProduct(${idx},'baseQty',this.value)" style="max-width:120px" placeholder="${esc(cfg.eqLabel)}" title="${esc(cfg.eqLabel)}" ${readOnly?"disabled":""}>${(p.purchaseUnit==="litro")&&!readOnly?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${[["750","750 ml"],["700","700 ml"],["1000","1 L"]].map(([val,lbl])=>`<button type="button" class="btn" style="padding:2px 7px;font-size:10.5px" onclick="updateSupplierProduct(${idx},'baseQty','${val}');renderSupplierProductRows()">${lbl}</button>`).join("")}</div>`:""}`:'<span style="color:var(--muted)">—</span>'}</td>
       <td id="supCostCell-${idx}">${money(costPerUnit)} / ${cfg.baseLabel.replace(/s$/,"")}</td>
       <td>${readOnly?"":invEditKebab(`removeSupplierProductRow(${idx})`,`supRowMenu-${idx}`)}</td>
     </tr>`
   }).join("")
 }
+function refreshSupplierGroupOptions(){
+  const dl=document.getElementById("supplierGroupOptions");
+  if(!dl)return;
+  const groups=new Set();
+  Object.values(suppliersByBusiness).flat().forEach(s=>(s.products||[]).forEach(p=>{if(p.grupo)groups.add(p.grupo)}));
+  dl.innerHTML=[...groups].sort((a,b)=>a.localeCompare(b,"es")).map(g=>`<option value="${esc(g)}">`).join("")
+}
 function addSupplierProductRow(){
   if(!canManageRecipes())return;
   currentSupplier.products=currentSupplier.products||[];
-  currentSupplier.products.push({id:Date.now()+Math.random(),name:"",purchaseUnit:"kg",purchasePrice:"",baseQty:1000});
+  currentSupplier.products.push({id:Date.now()+Math.random(),name:"",grupo:"",purchaseUnit:"kg",purchasePrice:"",baseQty:1000});
   renderSupplierProductRows()
 }
 function removeSupplierProductRow(idx){
