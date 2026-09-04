@@ -772,7 +772,7 @@ textarea{min-height:76px;resize:vertical}
               <button class="btn" onclick="clearCostingItems()" style="color:#ae1d23">Vaciar platillos cargados</button>
               <button class="btn" onclick="removeTotalRowsFromCosting()" style="color:#ae1d23">Quitar renglones de "TOTAL"</button>
               <button class="btn" onclick="reclassifyCostingDepartments()">Reclasificar departamentos (Alimentos/Bebidas)</button>
-              <button class="btn" onclick="markAllCostingItemsConReceta()">Marcar todos como "Con receta"</button>
+              <button class="btn" onclick="markAllCostingItemsConReceta()">Marcar "Con receta" los que ya tienen costo</button>
               <button class="btn" onclick="markAllCostingItemsAplicaIVA()">Marcar todos como "Aplica IVA: Sí"</button>
               <span id="costingUploadMsg" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
@@ -3013,6 +3013,7 @@ function applyRecipeCostsToCosting(record){
     it.costoUnitario=record.recipeCostByClave[clave];
     it.costoTeoricoSinIVA=null;it.costoTeoricoConIVA=null;
     it._costoFromRecipe=true;
+    if(it.costoUnitario>0&&!it._estatusManual)it.estatus="Con receta";
     matched++
   });
   return matched
@@ -3314,13 +3315,15 @@ function confirmCostingGrupoMapping(){
 function markAllCostingItemsConReceta(){
   if(!canManageCosting())return;
   if(!(currentCosting.items||[]).length){alert("No hay platillos cargados en este análisis todavía.");return}
-  if(!confirm(`¿Marcar los ${currentCosting.items.length} platillos cargados como "Con receta"? Después puedes marcar como "Sin receta (paquete/menú)" los que en realidad sean paquetes o combos sin una sola receta.`))return;
-  currentCosting.items.forEach(it=>{it.estatus="Con receta"});
+  const candidatos=currentCosting.items.filter(it=>num(it.costoUnitario)>0&&normalizeKey(it.estatus||"").trim()!=="con receta");
+  if(!candidatos.length){alert('No hay platillos pendientes: los que ya tienen costo unitario ya están marcados como "Con receta".');return}
+  if(!confirm(`¿Marcar como "Con receta" los ${candidatos.length} platillo(s) que ya tienen un costo unitario capturado? Los que siguen en $0 (sin costo) se quedan como están — puedes marcarlos a mano si corresponde.`))return;
+  candidatos.forEach(it=>{it.estatus="Con receta"});
   costDeptActive="";
   renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
   const msg=document.getElementById("costingUploadMsg");
   msg.style.color="#15965a";
-  msg.textContent=`Listo — se marcaron ${currentCosting.items.length} platillo(s) como "Con receta". No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
+  msg.textContent=`Listo — se marcaron ${candidatos.length} platillo(s) como "Con receta" (los que ya traían costo). No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
 }
 function markAllCostingItemsAplicaIVA(){
   if(!canManageCosting())return;
@@ -3630,7 +3633,8 @@ function updateCostingItem(idx,field,value){
     it.aplicaIVA=value===""?null:value==="si";
     it.costoTeoricoConIVA=null
   } else if(field==="estatus"){
-    it.estatus=value
+    it.estatus=value;
+    it._estatusManual=true
   } else if(field==="costoUnitario"){
     it.costoUnitario=num(value);
     it.costoTeoricoSinIVA=null;
