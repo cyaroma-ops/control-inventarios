@@ -869,7 +869,7 @@ textarea{min-height:76px;resize:vertical}
 </div>
 
 <script>
-let businesses=["Mestixa Tulum","Arca Tulum","Taquería Tulum","Sipalitos Tulum","Nah Alux"].map(name=>({name,active:true}));
+let businesses=[]; // Se carga desde Supabase tras iniciar sesión (loadBusinessesFromCloud) — nunca hardcodear nombres reales de clientes aquí, el código fuente es visible sin necesidad de iniciar sesión.
 const businessNames=(activeOnly=false)=>businesses.filter(b=>!activeOnly||b.active).map(b=>b.name);
 const visibleBusinessNames=(activeOnly=false)=>businessNames(activeOnly).filter(userCanSee);
 const BASE_SECTIONS={
