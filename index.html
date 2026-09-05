@@ -185,7 +185,9 @@ button{cursor:pointer}
 .section-title{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px}
 .section-title h3{margin:0;font-size:20px}
 .business-grid{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:14px}
-.dash-trend-chart{grid-column:2/-1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px 10px;min-width:0}
+.dash-trend-chart{grid-column:span 2;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px 14px;min-width:0;display:flex;flex-direction:column}
+.dash-trend-bars{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:18px;min-height:120px}
+.dash-trend-col{width:52px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .costing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(430px,100%),1fr));gap:16px}
 .costing-grid>.card{min-width:0}
 .costing-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;font-size:13px}
@@ -1896,6 +1898,7 @@ async function bootDashboard(){
   box.style.display="block";
   msg.textContent=val?"Cargando "+val+"…":"Cargando todos los negocios (puede tardar más)…";
   await ensureRecordsFor(val);
+  if(val)await ensureTomasLoadedFor(val);
   msg.textContent="";
   box.style.display="none";
   renderDashboard()
@@ -1912,29 +1915,62 @@ function renderDashboard(){
     const ratio=phys?100*f.loss/phys:0,cls=f.count?(ratio<1?"green":ratio<=3?"yellow":"red"):"yellow",progress=f.count?100:0;
     grid.innerHTML+=`<div class="card business"><div class="business-head"><h4>${esc(b)}</h4><span class="dot ${cls}"></span></div><div class="line"><span>Inventario físico</span><strong>${money(phys)}</strong></div><div class="line"><span>Faltantes</span><strong class="redtxt">${money(f.short)}</strong></div><div class="line"><span>Sobrantes</span><strong class="greentxt">${money(f.over)}</strong></div><div class="line"><span>Mermas</span><strong class="orangetxt">${money(f.mermas)}</strong></div><div class="line"><span>Alimento de personal</span><strong class="orangetxt">${money(f.staffFood)}</strong></div><div class="line total"><span>Pérdida total</span><strong class="redtxt">${money(f.loss)}</strong></div><span class="badge ${cls}">${f.count?ratio.toFixed(2)+"% pérdida":"Sin capturar"}</span><div class="progress"><span style="width:${progress}%"></span></div><small style="color:var(--muted)">${f.count?f.count+" conteo"+(f.count===1?"":"s")+" este mes":"Aún no hay inventario capturado"}</small><button class="btn" onclick="openBusiness('${escJs(b)}')">Ver detalle →</button></div>`
   });
-  if(names.length===1)grid.innerHTML+=renderLossTrendChartHtml(names[0]);
+  if(names.length===1)grid.innerHTML+=renderDashTrendCharts(names[0]);
   kInventory.textContent=money(g.phys);kShort.textContent=money(g.short);kOver.textContent=money(g.over);kWaste.textContent=money(g.mermas);kLoss.textContent=money(g.loss);
   const body=document.getElementById("recentBody");body.innerHTML="";
   if(!recent.length)body.innerHTML='<tr><td colspan="10" class="empty">Aún no hay inventarios guardados para este periodo.</td></tr>';
   recent.slice(-5).reverse().forEach(r=>{const t=calcRecord(r);body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.theo)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td class="redtxt">${money(t.loss)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td></tr>`})
 }
 function distinctMonthsFor(b){return[...new Set(getRecords().filter(r=>r.business===b).map(monthOf).filter(Boolean))].sort()}
+function renderDashTrendCharts(business){
+  const lossHtml=renderLossTrendChartHtml(business);
+  const tomaHtml=renderTomaComplianceChartHtml(business);
+  const count=(lossHtml?1:0)+(tomaHtml?1:0);
+  if(!count)return"";
+  const span=count===1?4:2;
+  return[lossHtml,tomaHtml].filter(Boolean).map(h=>h.replace('class="dash-trend-chart"',`class="dash-trend-chart" style="grid-column:span ${span}"`)).join("")
+}
 function renderLossTrendChartHtml(business){
   const months=distinctMonthsFor(business).slice(-6);
   if(months.length<2)return""; // no hay suficiente historial todavía para una tendencia
   const data=months.map(m=>({m,loss:monthFlowTotals(business,m).loss}));
   const maxAbs=Math.max(1,...data.map(d=>Math.abs(d.loss)));
-  const maxBarPx=110;
+  const maxBarPx=100;
   const bars=data.map(d=>{
     const h=Math.max(3,Math.round(Math.abs(d.loss)/maxAbs*maxBarPx));
     const neg=d.loss<0;
-    return`<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px">
+    return`<div class="dash-trend-col">
       <div style="font-size:11px;font-weight:600;color:${neg?"var(--green)":"var(--red)"};white-space:nowrap">${money(d.loss)}</div>
-      <div style="width:60%;height:${h}px;background:${neg?"var(--green)":"var(--red)"};border-radius:4px 4px 0 0"></div>
+      <div style="width:34px;height:${h}px;background:${neg?"var(--green)":"var(--red)"};border-radius:4px 4px 0 0"></div>
       <div style="font-size:11px;color:var(--muted)">${esc(monthLabel(d.m))}</div>
     </div>`
   }).join("");
-  return`<div class="dash-trend-chart"><h4 style="margin:0 0 14px;font-size:14px">Tendencia de pérdida — últimos ${data.length} meses</h4><div style="display:flex;align-items:flex-end;gap:8px;height:${maxBarPx+40}px">${bars}</div></div>`
+  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">Tendencia de pérdida — últimos ${data.length} meses</h4><div class="dash-trend-bars">${bars}</div></div>`
+}
+function tomaComplianceForMonth(business,month){
+  const list=(tomasByBusiness[business]||[]).filter(t=>monthOf({countDate:t.countDate})===month);
+  if(!list.length)return null;
+  let total=0,captured=0;
+  list.forEach(t=>{total+=(t.catalog||[]).length;captured+=Object.keys(t.quantities||{}).length});
+  return total?Math.round(captured/total*100):null
+}
+function distinctTomaMonthsFor(business){return[...new Set((tomasByBusiness[business]||[]).map(t=>monthOf({countDate:t.countDate})).filter(Boolean))].sort()}
+function renderTomaComplianceChartHtml(business){
+  const months=distinctTomaMonthsFor(business).slice(-6);
+  if(months.length<2)return""; // no hay suficiente historial de tomas físicas todavía
+  const data=months.map(m=>({m,pct:tomaComplianceForMonth(business,m)})).filter(d=>d.pct!==null);
+  if(data.length<2)return"";
+  const maxBarPx=100;
+  const bars=data.map(d=>{
+    const h=Math.max(3,Math.round(d.pct/100*maxBarPx));
+    const cls=d.pct>=90?"var(--green)":d.pct>=70?"var(--orange)":"var(--red)";
+    return`<div class="dash-trend-col">
+      <div style="font-size:11px;font-weight:600;color:${cls};white-space:nowrap">${d.pct}%</div>
+      <div style="width:34px;height:${h}px;background:${cls};border-radius:4px 4px 0 0"></div>
+      <div style="font-size:11px;color:var(--muted)">${esc(monthLabel(d.m))}</div>
+    </div>`
+  }).join("");
+  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">Tomas físicas capturadas — últimos ${data.length} meses</h4><div class="dash-trend-bars">${bars}</div></div>`
 }
 function startNewInventory(){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
