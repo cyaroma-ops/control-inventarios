@@ -96,7 +96,9 @@
   .login-restricted{margin-top:16px}
 }
 #appRoot{display:none}
-.userbox .logout{margin-left:auto;background:transparent;border:0;color:#8fa3c2;font-size:11px;text-decoration:underline}
+.userbox .logout{margin-left:0;flex-shrink:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#c7d3e8;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;padding:0;transition:background .15s,border-color .15s,color .15s}
+.userbox .logout svg{width:16px;height:16px}
+.userbox .logout:hover{background:rgba(220,47,52,.22);border-color:rgba(220,47,52,.4);color:#ff9da0}
 :root{
   --nav:#0d1f66;--nav2:#132b7a;--bg:#f4f7fb;--card:#fff;--text:#172033;
   --gold:#c9a35a;
@@ -139,12 +141,16 @@ button{cursor:pointer}
 .nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px}
 .nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3)}
 .nav{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
-.userbox{margin-top:auto;border-top:1px solid #23314c;padding-top:17px;display:flex;gap:10px;align-items:center;flex-shrink:0}
-.avatar{width:36px;height:36px;min-width:36px;min-height:36px;flex-shrink:0;border-radius:50%;background:var(--purple);display:grid;place-items:center;overflow:hidden;font-size:13px;font-weight:700}
-.userbox small{display:block;color:#aab7ca}
-.userbox{min-width:0}
-.userbox>div:not(.avatar){min-width:0;flex:1;overflow:hidden}
-.userbox>div:not(.avatar)>small,.userbox>div:not(.avatar){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.userbox{margin-top:auto;padding:11px 12px;display:flex;gap:10px;align-items:center;flex-shrink:0;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:12px}
+.avatar{width:38px;height:38px;min-width:38px;min-height:38px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--purple),#9c8cf0);display:grid;place-items:center;overflow:hidden;font-size:13px;font-weight:700;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.userbox-info{min-width:0;flex:1;overflow:hidden}
+.userbox-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.userbox-email{font-size:11px;color:#8fa3c2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.userbox-role{margin:3px 0 1px}
+.role-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.role-pill.admin{background:rgba(21,150,90,.22);color:#5be8a3}
+.role-pill.standard{background:rgba(143,180,255,.2);color:#8fb4ff}
+.role-pill.readonly{background:rgba(232,135,25,.22);color:#f5b350}
 .main{min-width:0}
 .topbar{
   height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
@@ -446,8 +452,14 @@ textarea{min-height:76px;resize:vertical}
     </nav>
     <div class="userbox">
       <div class="avatar" id="userAvatar">--</div>
-      <div id="userLabel">Cargando...<small>&nbsp;</small></div>
-      <button class="logout" onclick="doLogout()">Salir</button>
+      <div class="userbox-info">
+        <div class="userbox-name" id="userName">Cargando...</div>
+        <div class="userbox-role" id="userRoleBadge"></div>
+        <div class="userbox-email" id="userEmail"></div>
+      </div>
+      <button class="logout" onclick="doLogout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
     </div>
     <div style="text-align:center;font-size:11px;color:#5b6b8c;margin-top:12px;padding-top:12px;border-top:1px solid #23314c">© <span id="footerYear"></span> CYAroma / Roma & Associates<br>Todos los derechos reservados.</div>
   </aside>
@@ -824,7 +836,7 @@ textarea{min-height:76px;resize:vertical}
       <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div id="wasteCards" class="business-grid"></div></section>
       <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
-      <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersPanel"></div></section>
+      <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersSummary" style="margin:4px 0 12px"></div><input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="renderUsersPanel()" style="max-width:340px;margin-bottom:14px"><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div>
         <div class="card form-card">
           <h3 style="margin-top:0">Cambiar mi contraseña</h3>
@@ -1133,6 +1145,21 @@ async function doLogin(){
   if (error){ errBox.textContent = "Credenciales incorrectas o usuario no autorizado."; return; }
   await onLoginSuccess(data.session.user);
 }
+function initialsFor(name){
+  const parts=(name||"").trim().split(/\s+/).filter(Boolean);
+  if(parts.length>=2)return(parts[0][0]+parts[1][0]).toUpperCase();
+  if(parts.length===1)return parts[0].slice(0,2).toUpperCase();
+  return"--"
+}
+function updateUserBoxUI(){
+  const shownName=currentUser.name||(currentUser.email||"Usuario").split("@")[0];
+  document.getElementById("userAvatar").textContent=initialsFor(shownName);
+  document.getElementById("userName").textContent=shownName;
+  document.getElementById("userEmail").textContent=currentUser.email||"";
+  const roleCls=currentUser.isAdmin?"admin":(currentUser.viewOnly?"readonly":"standard");
+  const roleTxt=currentUser.isAdmin?"Administrador":(currentUser.viewOnly?"Solo lectura":"Estándar");
+  document.getElementById("userRoleBadge").innerHTML=`<span class="role-pill ${roleCls}">${roleTxt}</span>`
+}
 async function doLogout(){
   await sb.auth.signOut();
   location.reload();
@@ -1141,10 +1168,7 @@ async function onLoginSuccess(user){
   document.getElementById("loginBtn").style.display="none";
   document.getElementById("loginLoading").style.display="block";
   await ensureUserProfile(user);
-  const label = document.getElementById("userLabel"), avatar = document.getElementById("userAvatar");
-  const name = currentUser.name || (user.email||"Usuario").split("@")[0];
-  label.innerHTML = `${esc(name)}<small>${esc(user.email)}</small>`;
-  avatar.textContent = name.slice(0,2).toUpperCase();
+  updateUserBoxUI();
   await loadBusinessesFromCloud();
   await loadCustomAlmacenesFromCloud();
   await loadTomaDepartmentsFromCloud();
@@ -4192,10 +4216,30 @@ async function pushBusinessesToCloud(){
 }
 async function renderUsersPanel(){
   const panel = document.getElementById("usersPanel");
-  if (!currentUser.isAdmin){ panel.innerHTML = ""; return; }
+  const summaryBox = document.getElementById("usersSummary");
+  if (!currentUser.isAdmin){ panel.innerHTML = ""; summaryBox.innerHTML=""; return; }
   const allUsers = await loadAllUserAccess();
-  const users = allUsers.filter(u=>u.id!==currentUser.id).sort((a,b)=>(a.display_name||a.email).localeCompare(b.display_name||b.email,"es"));
-  if (!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Todavía no hay otros usuarios registrados. En cuanto alguien más entre por primera vez, aparecerá aquí. Tu propia cuenta no se muestra en esta lista.</div></div>`; return; }
+  const all = allUsers.filter(u=>u.id!==currentUser.id).sort((a,b)=>(a.display_name||a.email).localeCompare(b.display_name||b.email,"es"));
+  if (!all.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Todavía no hay otros usuarios registrados. En cuanto alguien más entre por primera vez, aparecerá aquí. Tu propia cuenta no se muestra en esta lista.</div></div>`; summaryBox.innerHTML=""; return; }
+  const nAdmin=all.filter(u=>u.is_admin).length;
+  const nReadOnly=all.filter(u=>!u.is_admin&&u.view_only).length;
+  const nStandard=all.length-nAdmin-nReadOnly;
+  const nSinNegocio=all.filter(u=>!u.is_admin&&!(u.businesses&&u.businesses.length)).length;
+  summaryBox.innerHTML=`<div class="notice" style="background:#f4f6fb;color:var(--text);border-color:var(--line);display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px">`+
+    `<div><b>${all.length}</b> usuario(s)</div>`+
+    `<div><span class="badge green">Administrador</span> <b>${nAdmin}</b></div>`+
+    `<div><span class="badge">Estándar</span> <b>${nStandard}</b></div>`+
+    `<div><span class="badge yellow">Solo lectura</span> <b>${nReadOnly}</b></div>`+
+    (nSinNegocio?`<div class="redtxt"><b>${nSinNegocio}</b> sin negocio asignado</div>`:"")+
+    `</div>`;
+  const q=(document.getElementById("usersSearch").value||"").toLowerCase().trim();
+  const users=q?all.filter(u=>{
+    const name=(u.display_name||"").toLowerCase();
+    const email=(u.email||"").toLowerCase();
+    const biz=(u.businesses||[]).join(" ").toLowerCase();
+    return name.includes(q)||email.includes(q)||biz.includes(q)
+  }):all;
+  if(!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Ningún usuario coincide con "${esc(q)}".</div></div>`; return }
   panel.innerHTML = `<div class="empty" style="margin-bottom:10px">Tu propia cuenta no aparece aquí — ya tienes acceso completo como administrador. Da clic en "Editar" para cambiar el acceso de alguien.</div>` + users.map(u=>{
     const name = u.display_name || u.email.split("@")[0];
     const roleBadge = u.is_admin?'<span class="badge green">Administrador</span>':(u.view_only?'<span class="badge yellow">Solo lectura</span>':'<span class="badge">Estándar</span>');
@@ -4270,10 +4314,7 @@ async function saveUserAccess(userId){
   if (userId === currentUser.id){
     currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.canManageRecipes = canManageRecipesFlag; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
     applyViewOnlyUI();
-    const label=document.getElementById("userLabel"),avatar=document.getElementById("userAvatar");
-    const shownName=name||currentUser.email.split("@")[0];
-    label.innerHTML=`${esc(shownName)}<small>${esc(currentUser.email)}</small>`;
-    avatar.textContent=shownName.slice(0,2).toUpperCase()
+    updateUserBoxUI();
   }
   alert("Acceso actualizado.");
   renderUsersPanel();
