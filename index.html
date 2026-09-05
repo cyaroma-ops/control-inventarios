@@ -287,6 +287,10 @@ textarea{min-height:76px;resize:vertical}
   #mobileCloseBtn{display:flex}
   #mobileBackdrop.open{display:block}
   .topbar{position:relative;height:auto;flex-wrap:wrap;gap:10px;padding:12px 16px 12px 62px}.form-grid,.summary-grid{grid-template-columns:1fr}.business-grid,.kpis{grid-template-columns:1fr}.content{padding:16px}
+  .sidebar .nav{gap:5px}
+  .sidebar .nav button{padding:12px 14px;font-size:14.5px}
+  .sidebar .nav-section-label{padding:14px 13px 4px;font-size:10.5px}
+  .sidebar .nav button svg{width:19px;height:19px}
 }
 @media print{
   body{background:#fff}
@@ -853,7 +857,7 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
       <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersSummary" style="margin:4px 0 12px"></div><input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="renderUsersPanel()" style="max-width:340px;margin-bottom:14px"><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div>
         <div class="card form-card">
@@ -4920,26 +4924,26 @@ function renderReports(){
   const stockTotal=cats.reduce((a,c)=>a+c.phys,0),shortTotal=cats.reduce((a,c)=>a+c.short,0),overTotal=cats.reduce((a,c)=>a+c.over,0),netTotal=shortTotal-overTotal;
   let html=`<div style="margin-bottom:14px;font-weight:700">${esc(label)}</div>`;
   html+=`<div style="font-size:13px;color:var(--muted);margin-bottom:8px">Inventario físico: del último conteo capturado en el mes, por categoría. Faltantes y sobrantes: acumulados de todos los conteos del mes (${flow.count} conteo${flow.count===1?"":"s"}). La "Diferencia neta" (faltantes menos sobrantes) suele ser menor al faltante bruto — buena parte del faltante ya se compensa con sobrante en otro producto, casi siempre por mala clasificación o por usar un insumo distinto al de la receta.</div>`;
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Inventario físico</th><th style="padding:8px 6px">Faltantes</th><th style="padding:8px 6px">Sobrantes</th><th style="padding:8px 6px">Diferencia neta</th></tr></thead><tbody>`;
+  html+=`<div class="table-wrap"><table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Inventario físico</th><th style="padding:8px 6px">Faltantes</th><th style="padding:8px 6px">Sobrantes</th><th style="padding:8px 6px">Diferencia neta</th></tr></thead><tbody>`;
   cats.forEach(c=>{const net=c.short-c.over;html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 6px">${esc(c.name)}</td><td style="padding:8px 6px">${money(c.phys)}</td><td style="padding:8px 6px" class="redtxt">${money(c.short)}</td><td style="padding:8px 6px" class="greentxt">${money(c.over)}</td><td style="padding:8px 6px" class="${net<0?"greentxt":"redtxt"}">${money(net)}</td></tr>`});
   html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px">${money(stockTotal)}</td><td style="padding:8px 6px" class="redtxt">${money(shortTotal)}</td><td style="padding:8px 6px" class="greentxt">${money(overTotal)}</td><td style="padding:8px 6px" class="${netTotal<0?"greentxt":"redtxt"}">${money(netTotal)}</td></tr>`;
-  html+=`</tbody></table>`;
+  html+=`</tbody></table></div>`;
   html+=`<div style="margin-bottom:6px;font-weight:700">Mermas y alimento de personal — acumulado del mes (${flow.count} conteo${flow.count===1?"":"s"} capturado${flow.count===1?"":"s"})</div>`;
   const{waste,cxc}=monthFlowByCategory(businessesList,month);
   const wasteCats=Object.values(sections).flat().filter(s=>s.waste);
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Importe</th></tr></thead><tbody>`;
+  html+=`<div class="table-wrap"><table style="width:100%;border-collapse:collapse;margin-bottom:20px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">Importe</th></tr></thead><tbody>`;
   wasteCats.forEach(s=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 6px">${esc(s.name)}</td><td style="padding:8px 6px" class="orangetxt">${money(waste[s.id]||0)}</td></tr>`});
-  html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px" class="orangetxt">${money(flow.mermas+flow.staffFood)}</td></tr></tbody></table>`;
+  html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px" class="orangetxt">${money(flow.mermas+flow.staffFood)}</td></tr></tbody></table></div>`;
   html+=`<div style="margin-bottom:6px;font-weight:700">CxC — acumulado del mes, por categoría</div>`;
   const nonWasteCats=Object.values(sections).flat().filter(s=>!s.waste);
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">CxC aplicado</th><th style="padding:8px 6px">CxC no aplicado</th><th style="padding:8px 6px">CxC pendiente</th></tr></thead><tbody>`;
+  html+=`<div class="table-wrap"><table style="width:100%;border-collapse:collapse;margin-bottom:16px"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:8px 6px">Categoría</th><th style="padding:8px 6px">CxC aplicado</th><th style="padding:8px 6px">CxC no aplicado</th><th style="padding:8px 6px">CxC pendiente</th></tr></thead><tbody>`;
   nonWasteCats.forEach(s=>{const c=cxc[s.id]||{si:0,no:0,pend:0};html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:8px 6px">${esc(s.name)}</td><td style="padding:8px 6px" class="redtxt">${money(c.si)}</td><td style="padding:8px 6px">${money(c.no)}</td><td style="padding:8px 6px" class="orangetxt">${money(c.pend)}</td></tr>`});
-  html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px" class="redtxt">${money(flow.cxcSi)}</td><td style="padding:8px 6px">${money(flow.cxcNo)}</td><td style="padding:8px 6px" class="orangetxt">${money(flow.cxcPend)}</td></tr></tbody></table>`;
+  html+=`<tr style="font-weight:700"><td style="padding:8px 6px">Total</td><td style="padding:8px 6px" class="redtxt">${money(flow.cxcSi)}</td><td style="padding:8px 6px">${money(flow.cxcNo)}</td><td style="padding:8px 6px" class="orangetxt">${money(flow.cxcPend)}</td></tr></tbody></table></div>`;
   const allInMonth=businessesList.flatMap(b=>recordsInMonth(b,month)).sort((a,b)=>a.countDate.localeCompare(b.countDate));
   if(allInMonth.length){
-    html+=`<div style="font-weight:700;margin-bottom:6px">Conteos incluidos este mes</div><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:6px">Fecha de conteo</th><th style="padding:6px">Negocio</th><th style="padding:6px">Estatus</th></tr></thead><tbody>`;
+    html+=`<div style="font-weight:700;margin-bottom:6px">Conteos incluidos este mes</div><div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:2px solid #e2e8f0"><th style="padding:6px">Fecha de conteo</th><th style="padding:6px">Negocio</th><th style="padding:6px">Estatus</th></tr></thead><tbody>`;
     allInMonth.forEach(r=>{html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(r.countDate)}</td><td style="padding:6px">${esc(r.business)}</td><td style="padding:6px"><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td></tr>`});
-    html+="</tbody></table>"
+    html+="</tbody></table></div>"
   }
   reportText.innerHTML=html
 }
