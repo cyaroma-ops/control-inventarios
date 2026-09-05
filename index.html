@@ -496,7 +496,7 @@ textarea{min-height:76px;resize:vertical}
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
           <div class="actions"><button class="btn" onclick="window.print()">Imprimir</button><button class="btn primary" id="btnNewInventory" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
-        <div class="card form-card no-print"><div class="flex"><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
+        <div class="card form-card no-print" id="dashLoadingBox"><div class="flex"><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
         <div class="kpis">
           <div class="card kpi"><div><small>Inventario físico total</small><strong id="kInventory">$0</strong><small>Valor disponible</small></div><div class="ico">▱</div></div>
           <div class="card kpi"><div><small>Faltantes totales</small><strong id="kShort" class="redtxt">$0</strong><small>Diferencias negativas</small></div><div class="ico">⌁</div></div>
@@ -1890,10 +1890,13 @@ function latestForMonth(b,month){
 function latestFor(b){return latestForMonth(b,"")}
 async function bootDashboard(){
   const val=ensureCurrentBusiness();
+  const box=document.getElementById("dashLoadingBox");
   const msg=document.getElementById("dashLoadingMsg");
+  box.style.display="block";
   msg.textContent=val?"Cargando "+val+"…":"Cargando todos los negocios (puede tardar más)…";
   await ensureRecordsFor(val);
   msg.textContent="";
+  box.style.display="none";
   renderDashboard()
 }
 function renderDashboard(){
