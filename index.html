@@ -1936,7 +1936,7 @@ function renderDashTrendCharts(business){
 }
 function renderLossTrendChartHtml(business){
   const months=distinctMonthsFor(business).slice(-6);
-  if(months.length<2)return""; // no hay suficiente historial todavía para una tendencia
+  if(months.length<1)return""; // aún no hay ningún inventario guardado
   const data=months.map(m=>({m,loss:monthFlowTotals(business,m).loss}));
   const maxAbs=Math.max(1,...data.map(d=>Math.abs(d.loss)));
   const bars=data.map(d=>{
@@ -1948,7 +1948,8 @@ function renderLossTrendChartHtml(business){
       <div style="font-size:11px;color:var(--muted)">${esc(monthLabel(d.m))}</div>
     </div>`
   }).join("");
-  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">Tendencia de pérdida — últimos ${data.length} meses</h4><div class="dash-trend-bars">${bars}</div></div>`
+  const title=data.length>1?`Tendencia de pérdida — últimos ${data.length} meses`:"Pérdida — mes actual";
+  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">${title}</h4><div class="dash-trend-bars">${bars}</div></div>`
 }
 function tomaComplianceForMonth(business,month){
   const list=(tomasByBusiness[business]||[]).filter(t=>monthOf({countDate:t.countDate})===month);
@@ -1960,9 +1961,9 @@ function tomaComplianceForMonth(business,month){
 function distinctTomaMonthsFor(business){return[...new Set((tomasByBusiness[business]||[]).map(t=>monthOf({countDate:t.countDate})).filter(Boolean))].sort()}
 function renderTomaComplianceChartHtml(business){
   const months=distinctTomaMonthsFor(business).slice(-6);
-  if(months.length<2)return""; // no hay suficiente historial de tomas físicas todavía
+  if(months.length<1)return""; // todavía no hay ninguna toma física capturada
   const data=months.map(m=>({m,pct:tomaComplianceForMonth(business,m)})).filter(d=>d.pct!==null);
-  if(data.length<2)return"";
+  if(!data.length)return"";
   const bars=data.map(d=>{
     const cls=d.pct>=90?"var(--green)":d.pct>=70?"var(--orange)":"var(--red)";
     return`<div class="dash-trend-col">
@@ -1972,7 +1973,8 @@ function renderTomaComplianceChartHtml(business){
       <div style="font-size:11px;color:var(--muted)">${esc(monthLabel(d.m))}</div>
     </div>`
   }).join("");
-  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">Tomas físicas capturadas — últimos ${data.length} meses</h4><div class="dash-trend-bars">${bars}</div></div>`
+  const title=data.length>1?`Tomas físicas capturadas — últimos ${data.length} meses`:"Tomas físicas capturadas — mes actual";
+  return`<div class="dash-trend-chart"><h4 style="margin:0 0 12px;font-size:14px">${title}</h4><div class="dash-trend-bars">${bars}</div></div>`
 }
 function startNewInventory(){
   if(editingRecordId){editingRecordId=null;document.getElementById("editBanner").style.display="none"}
