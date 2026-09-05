@@ -643,7 +643,7 @@ textarea{min-height:76px;resize:vertical}
         </div>
       <div id="recipes" class="recetario-tab">
         <div id="recipeListView">
-          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="cleanupRecipeYieldUnits()" id="btnCleanupYieldUnits" style="display:none">🧹 Corregir unidades de rendimiento</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="printRecipesList()">🖨️ Imprimir</button><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="cleanupRecipeYieldUnits()" id="btnCleanupYieldUnits" style="display:none">🧹 Corregir unidades de rendimiento</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
           <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select>
@@ -695,7 +695,7 @@ textarea{min-height:76px;resize:vertical}
       </div>
       <div id="suppliers" class="recetario-tab" style="display:none">
         <div id="supplierListView">
-          <div class="page-title"><div><h2>Proveedores</h2><p>Datos de contacto de cada proveedor — el precio de sus insumos se captura en el catálogo de Insumos</p></div><div class="actions"><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
+          <div class="page-title"><div><h2>Proveedores</h2><p>Datos de contacto de cada proveedor — el precio de sus insumos se captura en el catálogo de Insumos</p></div><div class="actions"><button class="btn" onclick="printSuppliersList()">🖨️ Imprimir</button><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
           <div id="supplierAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <input type="text" id="supplierSearch" placeholder="Buscar proveedor..." style="max-width:240px">
@@ -727,7 +727,7 @@ textarea{min-height:76px;resize:vertical}
       </div>
       <div id="insumos" class="recetario-tab" style="display:none">
         <div id="insumoListView">
-          <div class="page-title"><div><h2>Insumos</h2><p>Catálogo maestro de insumos — cada uno puede tener precio de varios proveedores; las recetas usan el más reciente</p></div><div class="actions"><button class="btn" onclick="toggleInsumoAuditPanel()" id="insumoAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewInsumo" onclick="startNewInsumo()">+ Nuevo insumo</button></div></div>
+          <div class="page-title"><div><h2>Insumos</h2><p>Catálogo maestro de insumos — cada uno puede tener precio de varios proveedores; las recetas usan el más reciente</p></div><div class="actions"><button class="btn" onclick="printInsumosList()">🖨️ Imprimir</button><button class="btn" onclick="toggleInsumoAuditPanel()" id="insumoAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewInsumo" onclick="startNewInsumo()">+ Nuevo insumo</button></div></div>
           <div id="insumoAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <input type="text" id="insumoSearch" placeholder="Buscar insumo..." style="max-width:240px">
@@ -2103,7 +2103,6 @@ function renderRecipeList(){
     return `<div class="card business">
       ${r.photo?`<img src="${r.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:""}
       <div class="business-head"><h4>${esc(r.name||"Sin nombre")}</h4></div>
-      <div class="line"><span>Negocio</span><strong>${esc(r.business)}</strong></div>
       <div class="line"><span>Área</span><span>${areaBadge}</span></div>
       <div class="line"><span>Tipo</span><span>${badge} ${statusBadge}</span></div>
       ${ingredientesHtml}
@@ -2475,7 +2474,6 @@ function renderSupplierList(){
     const usedIn=(insumosByBusiness[s.business]||[]).filter(ins=>(ins.precios||[]).some(pr=>String(pr.supplierId)===String(s.id))).length;
     return `<div class="card business">
       <div class="business-head"><h4>${esc(s.name||"Sin nombre")}</h4></div>
-      <div class="line"><span>Negocio</span><strong>${esc(s.business)}</strong></div>
       ${s.contact?`<div class="line"><span>Contacto</span><span>${esc(s.contact)}</span></div>`:""}
       <div class="line"><span>Insumos que surte</span><strong>${usedIn}</strong></div>
       <button class="btn" onclick="openSupplierEditor('${escJs(s.business)}',${s.id})">${canManageRecipes()?"Editar":"Ver detalle"}</button>
@@ -2718,7 +2716,6 @@ function renderInsumoList(){
     const costoVal=insumoCostPerUnit(i);
     return `<div class="card business">
       <div class="business-head"><h4>${esc(i.name||"Sin nombre")}</h4></div>
-      <div class="line"><span>Negocio</span><strong>${esc(i.business)}</strong></div>
       <div class="line"><span>Grupo</span><span class="badge${i.grupo?"":" redtxt"}">${esc(i.grupo||"Sin grupo")}</span></div>
       <div class="line"><span>Proveedores</span><strong>${nProv}</strong></div>
       ${cur?`<div class="line"><span>Precio vigente</span><strong class="${costoVal<=0?"redtxt":""}">${money(costoVal)} / ${insumoBaseUnit(i).replace(/s$/,"")}</strong></div>
@@ -3224,6 +3221,7 @@ function renderCostingList(){
       <div style="margin-top:12px">${periodSummaryTableHtml(totals)}</div>
       ${deptBlocks||'<div style="font-size:12px;color:var(--muted);margin-top:6px">Sube un archivo para ver el desglose.</div>'}
       <button class="btn" style="margin-top:14px" onclick="openCosting(${r.id})">Ver detalle</button>
+      <button class="btn" style="margin-top:14px" onclick="printCostingRecordById(${r.id})">🖨️ Imprimir</button>
     </div>`
   }).join("")
 }
@@ -3487,15 +3485,88 @@ function updateVentaConIva(value){
   currentCosting.ventaConIVA=value==="1";
   renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
 }
-function printCostingDetail(){
-  if(!currentCosting||!(currentCosting.items||[]).length){alert("No hay platillos cargados para imprimir.");return}
-  const ivaDefaults=costingIvaDefaultsFor(currentCosting);
-  const periodTotals=costingPeriodTotals(currentCosting);
-  const summary=costingSummary(currentCosting);
-  const items=(currentCosting.items||[]).slice().sort((a,b)=>(a.departamento||"").localeCompare(b.departamento||"","es")||(a.producto||"").localeCompare(b.producto||"","es"));
+function openPrintWindow(title,bodyHtml){
+  const w=window.open("","_blank");
+  if(!w){alert("Tu navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.");return}
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
+h1{font-size:18px;margin:0 0 4px}
+h2{font-size:14px;margin:22px 0 8px}
+p.meta{color:#555;margin:0 0 4px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px}
+th{background:#f2f2f2}
+</style></head><body>${bodyHtml}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{w.print()},300)
+}
+function printRecipesList(){
+  const bizFilter=currentBusiness;
+  const areaFilter=document.getElementById("recipeAreaFilter").value;
+  const typeFilter=document.getElementById("recipeTypeFilter").value;
+  const q=(document.getElementById("recipeSearch").value||"").toLowerCase().trim();
+  let list=allRecipesFlat();
+  if(bizFilter)list=list.filter(r=>r.business===bizFilter);
+  if(areaFilter)list=list.filter(r=>(r.area||"Cocina")===areaFilter);
+  if(typeFilter)list=list.filter(r=>r.type===typeFilter);
+  if(q)list=list.filter(r=>(r.name||"").toLowerCase().includes(q));
+  list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+  if(!list.length){alert("No hay recetas para imprimir con este filtro.");return}
+  const rows=list.map(r=>{
+    const t=recipeTotals(r);
+    const hasSale=num(r.salePrice)>0;
+    return`<tr><td>${esc(r.name||"")}</td><td>${esc(r.area||"Cocina")}</td><td>${r.type==="menu"?"Menú":"Producción"}</td><td>${esc(r.status||"Borrador")}</td><td>${(r.ingredients||[]).length}</td><td>${money(t.costPerYield)}</td><td>${hasSale?money(num(r.salePrice)):"—"}</td><td>${hasSale?t.costPct.toFixed(1)+"%":"—"}</td><td>${hasSale?money(t.marginAmt)+" ("+t.marginPct.toFixed(1)+"%)":"—"}</td></tr>`
+  }).join("");
+  openPrintWindow(`Recetario — ${bizFilter||""}`,`<h1>Recetario — ${esc(bizFilter||"")}</h1><p class="meta">${list.length} receta(s)</p><table><tr><th>Nombre</th><th>Área</th><th>Tipo</th><th>Estatus</th><th>Ingredientes</th><th>Costo/unidad</th><th>Precio venta</th><th>% costo</th><th>Margen</th></tr>${rows}</table>`)
+}
+function printSuppliersList(){
+  const bizFilter=currentBusiness;
+  const q=(document.getElementById("supplierSearch").value||"").toLowerCase().trim();
+  let list=allSuppliersFlat();
+  if(bizFilter)list=list.filter(s=>s.business===bizFilter);
+  if(q)list=list.filter(s=>(s.name||"").toLowerCase().includes(q));
+  list.sort((a,b)=>(a.name||"").localeCompare(b.name||"","es"));
+  if(!list.length){alert("No hay proveedores para imprimir con este filtro.");return}
+  const rows=list.map(s=>{
+    const usedIn=(insumosByBusiness[s.business]||[]).filter(ins=>(ins.precios||[]).some(pr=>String(pr.supplierId)===String(s.id))).length;
+    return`<tr><td>${esc(s.name||"")}</td><td>${esc(s.contact||"")}</td><td>${usedIn}</td></tr>`
+  }).join("");
+  openPrintWindow(`Proveedores — ${bizFilter||""}`,`<h1>Proveedores — ${esc(bizFilter||"")}</h1><p class="meta">${list.length} proveedor(es)</p><table><tr><th>Nombre</th><th>Contacto</th><th>Insumos que surte</th></tr>${rows}</table>`)
+}
+function printInsumosList(){
+  const bizFilter=currentBusiness;
+  const q=(document.getElementById("insumoSearch").value||"").toLowerCase().trim();
+  const groupFilter=document.getElementById("insumoGroupFilter").value;
+  let list=allInsumosFlat();
+  if(bizFilter)list=list.filter(i=>i.business===bizFilter);
+  if(groupFilter)list=list.filter(i=>(i.grupo||"Sin grupo")===groupFilter);
+  if(q)list=list.filter(i=>(i.name||"").toLowerCase().includes(q));
+  list.sort((a,b)=>((a.grupo||"Sin grupo")+(a.name||"")).localeCompare((b.grupo||"Sin grupo")+(b.name||""),"es"));
+  if(!list.length){alert("No hay insumos para imprimir con este filtro.");return}
+  const rows=list.map(i=>{
+    const cur=insumoCurrentPrice(i);
+    const nProv=new Set((i.precios||[]).map(p=>p.supplierId)).size;
+    const costoVal=insumoCostPerUnit(i);
+    return`<tr><td>${esc(i.name||"")}</td><td>${esc(i.grupo||"Sin grupo")}</td><td>${nProv}</td><td>${cur?money(costoVal)+" / "+insumoBaseUnit(i).replace(/s$/,""):"—"}</td><td>${cur?esc(cur.supplierName||"—")+" — "+esc(cur.capturedAt||""):"—"}</td></tr>`
+  }).join("");
+  openPrintWindow(`Insumos — ${bizFilter||""}`,`<h1>Insumos — ${esc(bizFilter||"")}</h1><p class="meta">${list.length} insumo(s)</p><table><tr><th>Nombre</th><th>Grupo</th><th>Proveedores</th><th>Precio vigente</th><th>De</th></tr>${rows}</table>`)
+}
+function printCostingRecordById(id){
+  const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===id);
+  if(record)printCostingDetail(record)
+}
+function printCostingDetail(record){
+  record=record||currentCosting;
+  if(!record||!(record.items||[]).length){alert("No hay platillos cargados para imprimir.");return}
+  const ivaDefaults=costingIvaDefaultsFor(record);
+  const periodTotals=costingPeriodTotals(record);
+  const summary=costingSummary(record);
+  const items=(record.items||[]).slice().sort((a,b)=>(a.departamento||"").localeCompare(b.departamento||"","es")||(a.producto||"").localeCompare(b.producto||"","es"));
   const sinCostoTotal=items.filter(it=>!(num(it.costoUnitario)>0)).length;
   const rows=items.map(it=>{
-    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
+    const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
     const estatus=normalizeKey(it.estatus||"").trim()==="con receta"?"Con receta":"Sin receta (paquete/menú)";
     const sinCosto=!(num(it.costoUnitario)>0);
     return`<tr${sinCosto?' style="color:#ae1d23"':""}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
@@ -3503,7 +3574,7 @@ function printCostingDetail(){
   const deptRows=summary.map(d=>`<tr><td>${esc(d.departamento)}</td><td>${money(d.ventaTotal)}</td><td>${money(d.costoSinIVA)}</td><td>${d.pctSinIVA.toFixed(1)}%</td><td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td></tr>`).join("");
   const w=window.open("","_blank");
   if(!w){alert("Tu navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.");return}
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Costeo — ${esc(currentCosting.business||"")}</title>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Costeo — ${esc(record.business||"")}</title>
 <style>
 body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
 h1{font-size:18px;margin:0 0 4px}
@@ -3513,9 +3584,9 @@ table{width:100%;border-collapse:collapse;margin-bottom:8px}
 th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px}
 th{background:#f2f2f2}
 </style></head><body>
-<h1>Costeo — ${esc(currentCosting.business||"")}</h1>
-<p class="meta">${esc(currentCosting.periodicidad||"")} — ${esc(currentCosting.startDate||"")} a ${esc(currentCosting.endDate||"")}</p>
-<p class="meta">Ventas del archivo: ${currentCosting.ventaConIVA?"ya incluían IVA":"antes de IVA"}</p>
+<h1>Costeo — ${esc(record.business||"")}</h1>
+<p class="meta">${esc(record.periodicidad||"")} — ${esc(record.startDate||"")} a ${esc(record.endDate||"")}</p>
+<p class="meta">Ventas del archivo: ${record.ventaConIVA?"ya incluían IVA":"antes de IVA"}</p>
 <h2>Resumen del periodo</h2>
 <table><tr><th></th><th>Sin IVA</th><th>Con IVA</th></tr>
 <tr><td>Venta analizada</td><td>${money(periodTotals.ventaAnalizada)}</td><td>${money(periodTotals.ventaAnalizadaConIVA)}</td></tr>
