@@ -396,7 +396,7 @@ textarea{min-height:76px;resize:vertical}
         <div id="loginError" class="login-error"></div>
         <button class="login-submit" id="loginBtn" onclick="doLogin()">ENTRAR</button>
         <div class="login-link-row"><a href="#" onclick="toggleForgotPassword();return false">¿Olvidaste tu contraseña?</a></div>
-        <div class="login-restricted">🔒 Acceso restringido al personal autorizado</div>
+        <div class="login-restricted">Acceso restringido al personal autorizado</div>
         <div class="login-copyright">© <span id="footerYearLogin"></span> CYA Roma &amp; Associates. Todos los derechos reservados.</div>
         <div id="loginLoading" style="display:none;margin-top:14px;font-size:13px;color:#70809a;text-align:center">Cargando tus datos…</div>
       </div>
@@ -467,7 +467,7 @@ textarea{min-height:76px;resize:vertical}
   <main class="main">
     <div class="topbar">
       <div class="period-control">▣ <select id="globalPeriod" onchange="onGlobalPeriodChange()" style="border:0;padding:0"></select></div>
-      <div class="top-actions"><button class="btn" id="refreshBtn" onclick="manualRefresh()" style="padding:8px 12px;font-size:13px">🔄 Actualizar</button> ♧ ⇥</div>
+      <div class="top-actions"><button class="btn" id="refreshBtn" onclick="manualRefresh()" style="padding:8px 12px;font-size:13px">Actualizar</button></div>
     </div>
 
     <div class="content">
@@ -479,7 +479,7 @@ textarea{min-height:76px;resize:vertical}
       <section id="dashboard" class="view active">
         <div class="page-title">
           <div><h2>Dashboard general</h2><p>Resumen ejecutivo de inventarios por negocio</p></div>
-          <div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewInventory" onclick="startNewInventory()">+ Nuevo inventario</button></div>
+          <div class="actions"><button class="btn" onclick="window.print()">Imprimir</button><button class="btn primary" id="btnNewInventory" onclick="startNewInventory()">+ Nuevo inventario</button></div>
         </div>
         <div class="card form-card no-print"><div class="flex"><span id="dashLoadingMsg" style="font-size:13px;color:var(--muted)"></span></div></div>
         <div class="kpis">
@@ -500,7 +500,7 @@ textarea{min-height:76px;resize:vertical}
       <section id="capture" class="view">
         <div class="page-title">
           <div><h2>Inventario operativo</h2><p>Captura teórico, físico, diferencias, mermas y decisión de CxC</p></div>
-          <div class="actions" id="captureTopActions"><button class="btn" id="btnInvHistory" style="display:none" onclick="toggleInventoryHistory()">🕘 Historial de cambios</button><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
+          <div class="actions" id="captureTopActions"><button class="btn" id="btnInvHistory" style="display:none" onclick="toggleInventoryHistory()">Historial de cambios</button><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
         </div>
         <div id="editBanner" class="card form-card" style="display:none;margin-bottom:14px;background:#fff7e6;border-color:#f0c869"></div>
         <div id="invHistoryBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
@@ -560,7 +560,7 @@ textarea{min-height:76px;resize:vertical}
       </section>
 
       <section id="history" class="view">
-        <div class="page-title"><div><h2>Inventarios</h2><p>Consulta, edita o inicia un nuevo inventario por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="toggleInventoryAuditPanel()" id="invAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="printHistory()">🖨️ Imprimir</button><button class="btn primary" id="btnNewInventory2" onclick="startNewInventory()">+ Nuevo inventario</button></div></div>
+        <div class="page-title"><div><h2>Inventarios</h2><p>Consulta, edita o inicia un nuevo inventario por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="toggleInventoryAuditPanel()" id="invAuditBtn">Auditoría</button><button class="btn" onclick="printHistory()">Imprimir</button><button class="btn primary" id="btnNewInventory2" onclick="startNewInventory()">+ Nuevo inventario</button></div></div>
         <div id="invAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
         <div class="card form-card no-print"><div class="flex"><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
@@ -569,13 +569,13 @@ textarea{min-height:76px;resize:vertical}
 
       <section id="tomafisica" class="view">
         <div id="tomaListView">
-          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="toggleTomaAuditPanel()" id="tomaAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
+          <div class="page-title"><div><h2>Toma física</h2><p>Captura directa de existencias contadas, sin pasar por papel</p></div><div class="actions"><button class="btn" onclick="toggleTomaAuditPanel()" id="tomaAuditBtn">Auditoría</button><button class="btn" onclick="window.print()">Imprimir</button><button class="btn primary" id="btnNewToma" onclick="startNewToma()">+ Nueva toma</button></div></div>
           <div id="tomaAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
 
           <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha de toma</th><th>Negocio</th><th>Departamento</th><th>Productos</th><th>Capturados</th><th>Estatus</th><th>Última edición</th><th>Acción</th></tr></thead><tbody id="tomaListBody"></tbody></table></div></div>
         </div>
         <div id="tomaCaptureView" style="display:none">
-          <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button><button class="btn" onclick="toggleTomaHistory()" id="tomaHistoryBtn" style="display:none">Ver historial</button><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="tomaCaptureTitle">Nueva toma física</h2><p>El catálogo que cargues aquí se usa solo para esta toma — no afecta el catálogo general del negocio.</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button><button class="btn" onclick="toggleTomaHistory()" id="tomaHistoryBtn" style="display:none">Ver historial</button><button class="btn" onclick="closeTomaCapture()">← Volver al listado</button></div></div>
           <div id="tomaPrintHeader" style="display:none">
             <h2 id="tomaPrintBusiness"></h2>
             <div id="tomaPrintSubtitle"></div>
@@ -643,7 +643,7 @@ textarea{min-height:76px;resize:vertical}
         </div>
       <div id="recipes" class="recetario-tab">
         <div id="recipeListView">
-          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="printRecipesList()">🖨️ Imprimir</button><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">🛡️ Auditoría</button><button class="btn" onclick="cleanupRecipeYieldUnits()" id="btnCleanupYieldUnits" style="display:none">🧹 Corregir unidades de rendimiento</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
+          <div class="page-title"><div><h2>Recetas</h2><p>Recetario de menú y producción por negocio, con costeo y margen</p></div><div class="actions"><button class="btn" onclick="printRecipesList()">Imprimir</button><button class="btn" onclick="toggleRecipeAuditPanel()" id="recipeAuditBtn">Auditoría</button><button class="btn" onclick="cleanupRecipeYieldUnits()" id="btnCleanupYieldUnits" style="display:none">Corregir unidades de rendimiento</button><button class="btn primary" id="btnNewRecipe" onclick="startNewRecipe()">+ Nueva receta</button></div></div>
           <div id="recipeAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <select id="recipeAreaFilter" style="max-width:160px"><option value="">Todas las áreas</option><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select>
@@ -653,7 +653,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="recipeCards" class="business-grid"></div>
         </div>
         <div id="recipeEditorView" style="display:none">
-          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" id="btnRecipeHistory" onclick="toggleRecipeHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="recipeEditorTitle">Nueva receta</h2><p>Los ingredientes se capturan libres — no están ligados al catálogo de inventario.</p></div><div class="actions"><button class="btn" id="btnRecipeHistory" onclick="toggleRecipeHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeRecipeEditor()">← Volver al listado</button></div></div>
           <div id="recipeHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
@@ -686,8 +686,8 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="flex-wrap:wrap;gap:10px;align-items:center">
               <button class="btn" id="btnSaveDraftRecipe" onclick="saveRecipe('Borrador')">Guardar borrador</button>
               <button class="btn" id="btnSendForReview" onclick="saveRecipe('Pendiente de revisión')">Enviar a revisión</button>
-              <button class="btn green" id="btnMarkRecipeReady" style="display:none" onclick="markRecipeReady()">✅ Marcar como Listo</button>
-              <div class="toma-kebab-wrap" id="btnDeleteRecipe" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('recDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="recDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('recDelMenu',event);deleteCurrentRecipe()">🗑 Eliminar receta</button></div></div>
+              <button class="btn green" id="btnMarkRecipeReady" style="display:none" onclick="markRecipeReady()">Marcar como Listo</button>
+              <div class="toma-kebab-wrap" id="btnDeleteRecipe" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('recDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="recDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('recDelMenu',event);deleteCurrentRecipe()">Eliminar receta</button></div></div>
               <span id="recStatusHint" style="font-size:12.5px;color:var(--muted)"></span>
             </div>
           </div>
@@ -695,7 +695,7 @@ textarea{min-height:76px;resize:vertical}
       </div>
       <div id="suppliers" class="recetario-tab" style="display:none">
         <div id="supplierListView">
-          <div class="page-title"><div><h2>Proveedores</h2><p>Datos de contacto de cada proveedor — el precio de sus insumos se captura en el catálogo de Insumos</p></div><div class="actions"><button class="btn" onclick="printSuppliersList()">🖨️ Imprimir</button><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
+          <div class="page-title"><div><h2>Proveedores</h2><p>Datos de contacto de cada proveedor — el precio de sus insumos se captura en el catálogo de Insumos</p></div><div class="actions"><button class="btn" onclick="printSuppliersList()">Imprimir</button><button class="btn" onclick="toggleSupplierAuditPanel()" id="supplierAuditBtn">Auditoría</button><button class="btn primary" id="btnNewSupplier" onclick="startNewSupplier()">+ Nuevo proveedor</button></div></div>
           <div id="supplierAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <input type="text" id="supplierSearch" placeholder="Buscar proveedor..." style="max-width:240px">
@@ -703,7 +703,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="supplierCards" class="business-grid"></div>
         </div>
         <div id="supplierEditorView" style="display:none">
-          <div class="page-title"><div><h2 id="supplierEditorTitle">Nuevo proveedor</h2><p>Los datos de contacto de este proveedor. Para capturar qué te vende y a qué precio, ve al catálogo de Insumos.</p></div><div class="actions"><button class="btn" id="btnSupplierHistory" onclick="toggleSupplierHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeSupplierEditor()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="supplierEditorTitle">Nuevo proveedor</h2><p>Los datos de contacto de este proveedor. Para capturar qué te vende y a qué precio, ve al catálogo de Insumos.</p></div><div class="actions"><button class="btn" id="btnSupplierHistory" onclick="toggleSupplierHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeSupplierEditor()">← Volver al listado</button></div></div>
           <div id="supplierHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
@@ -720,14 +720,14 @@ textarea{min-height:76px;resize:vertical}
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
               <button class="btn primary" id="btnSaveSupplier" onclick="saveSupplier()">Guardar proveedor</button>
-              <div class="toma-kebab-wrap" id="btnDeleteSupplier" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('supDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="supDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('supDelMenu',event);deleteCurrentSupplier()">🗑 Eliminar proveedor</button></div></div>
+              <div class="toma-kebab-wrap" id="btnDeleteSupplier" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('supDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="supDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('supDelMenu',event);deleteCurrentSupplier()">Eliminar proveedor</button></div></div>
             </div>
           </div>
         </div>
       </div>
       <div id="insumos" class="recetario-tab" style="display:none">
         <div id="insumoListView">
-          <div class="page-title"><div><h2>Insumos</h2><p>Catálogo maestro de insumos — cada uno puede tener precio de varios proveedores; las recetas usan el más reciente</p></div><div class="actions"><button class="btn" onclick="printInsumosList()">🖨️ Imprimir</button><button class="btn" onclick="toggleInsumoAuditPanel()" id="insumoAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewInsumo" onclick="startNewInsumo()">+ Nuevo insumo</button></div></div>
+          <div class="page-title"><div><h2>Insumos</h2><p>Catálogo maestro de insumos — cada uno puede tener precio de varios proveedores; las recetas usan el más reciente</p></div><div class="actions"><button class="btn" onclick="printInsumosList()">Imprimir</button><button class="btn" onclick="toggleInsumoAuditPanel()" id="insumoAuditBtn">Auditoría</button><button class="btn primary" id="btnNewInsumo" onclick="startNewInsumo()">+ Nuevo insumo</button></div></div>
           <div id="insumoAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <input type="text" id="insumoSearch" placeholder="Buscar insumo..." style="max-width:240px">
@@ -738,7 +738,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="insumoCards" class="business-grid"></div>
         </div>
         <div id="insumoEditorView" style="display:none">
-          <div class="page-title"><div><h2 id="insumoEditorTitle">Nuevo insumo</h2><p>Agrega el precio de cada proveedor que te lo vende — el sistema usa el más reciente para costear recetas.</p></div><div class="actions"><button class="btn" id="btnInsumoHistory" onclick="toggleInsumoHistory()" style="display:none">🕘 Historial de cambios</button><button class="btn" onclick="closeInsumoEditor()">← Volver al listado</button></div></div>
+          <div class="page-title"><div><h2 id="insumoEditorTitle">Nuevo insumo</h2><p>Agrega el precio de cada proveedor que te lo vende — el sistema usa el más reciente para costear recetas.</p></div><div class="actions"><button class="btn" id="btnInsumoHistory" onclick="toggleInsumoHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeInsumoEditor()">← Volver al listado</button></div></div>
           <div id="insumoHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
@@ -755,7 +755,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
               <button class="btn primary" id="btnSaveInsumo" onclick="saveInsumo()">Guardar insumo</button>
-              <div class="toma-kebab-wrap" id="btnDeleteInsumo" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('insDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="insDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('insDelMenu',event);deleteCurrentInsumo()">🗑 Eliminar insumo</button></div></div>
+              <div class="toma-kebab-wrap" id="btnDeleteInsumo" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('insDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="insDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('insDelMenu',event);deleteCurrentInsumo()">Eliminar insumo</button></div></div>
             </div>
           </div>
         </div>
@@ -763,7 +763,7 @@ textarea{min-height:76px;resize:vertical}
       </section>
       <section id="costing" class="view">
         <div id="costingListView">
-          <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">🛡️ Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
+          <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
 
           <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div id="costingCards" class="costing-grid"></div>
@@ -815,7 +815,7 @@ textarea{min-height:76px;resize:vertical}
             <div id="costSummaryCards" class="costing-grid"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">🖨️ Imprimir detalle</button></div></div>
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
             <div class="tabs" id="costDeptTabs"></div>
             <div id="costDetailTotals" style="margin:2px 0 12px"></div>
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 8px" onclick="toggleCostDetailHelp()">
@@ -828,14 +828,14 @@ textarea{min-height:76px;resize:vertical}
             <div class="flex" style="flex-wrap:wrap;gap:10px">
               <button class="btn" id="btnSaveCostingDraft" onclick="saveCosting('Borrador')">Guardar borrador</button>
               <button class="btn green" id="btnFinishCosting" onclick="saveCosting('Terminado')">Marcar como terminado</button>
-              <div class="toma-kebab-wrap" id="btnDeleteCosting" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('costDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="costDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('costDelMenu',event);deleteCurrentCosting()">🗑 Eliminar análisis</button></div></div>
+              <div class="toma-kebab-wrap" id="btnDeleteCosting" style="display:none"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('costDelMenu',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="costDelMenu"><button type="button" class="danger" onclick="toggleKebabMenu('costDelMenu',event);deleteCurrentCosting()">Eliminar análisis</button></div></div>
             </div>
           </div>
         </div>
       </section>
-      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
-      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div id="wasteCards" class="business-grid"></div></section>
-      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">🖨️ Imprimir</button></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
+      <section id="cxc" class="view"><div class="page-title"><div><h2>CxC por inventarios</h2><p>Seguimiento de faltantes autorizados para recuperación</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div class="kpis" style="grid-template-columns:repeat(3,1fr)"><div class="card kpi"><div><small>Pendiente de decidir</small><strong id="cPending">$0</strong></div></div><div class="card kpi"><div><small>Aplicado a CxC</small><strong id="cApplied" class="redtxt">$0</strong></div></div><div class="card kpi"><div><small>No aplicado</small><strong id="cRejected">$0</strong></div></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Negocio</th><th>Producto</th><th>Faltante</th><th>Decisión</th><th>Justificación</th><th>Responsable</th></tr></thead><tbody id="cxcBody"></tbody></table></div></div></section>
+      <section id="waste" class="view"><div class="page-title"><div><h2>Mermas</h2><p>Concentrado separado del inventario disponible</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div id="wasteCards" class="business-grid"></div></section>
+      <section id="reports" class="view"><div class="page-title"><div><h2>Reportes</h2><p>Indicadores ejecutivos del periodo</p></div><div class="actions"><button class="btn" onclick="window.print()">Imprimir</button></div></div><div class="card form-card"><h3>Principales indicadores</h3><div id="reportText" class="notice"></div></div></section>
       <section id="users" class="view"><div class="page-title"><div><h2>Usuarios</h2><p>Administración de acceso para supervisores, gerentes y dirección</p></div></div><div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div><div id="usersSummary" style="margin:4px 0 12px"></div><input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="renderUsersPanel()" style="max-width:340px;margin-bottom:14px"><div id="usersPanel"></div></section>
       <section id="settings" class="view"><div class="page-title"><div><h2>Configuración</h2><p>Reglas de semáforo y flujo de autorización</p></div></div><div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div>
         <div class="card form-card">
@@ -923,7 +923,7 @@ function renderCustomAlmacenesList(){
   const box=document.getElementById("customAlmacenesList");
   if(!box)return;
   if(!customAlmacenes.length){box.innerHTML='<div class="empty">Todavía no has agregado ningún almacén adicional.</div>';return}
-  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('almMenu-${a.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="almMenu-${a.id}"><button type="button" class="danger" onclick="toggleKebabMenu('almMenu-${a.id}',event);removeCustomAlmacen('${escJs(a.id)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
+  box.innerHTML=customAlmacenes.map(a=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(a.name)} <small style="color:var(--muted)">(${esc(a.group)}${a.waste?" — mermas":""})</small></span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('almMenu-${a.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="almMenu-${a.id}"><button type="button" class="danger" onclick="toggleKebabMenu('almMenu-${a.id}',event);removeCustomAlmacen('${escJs(a.id)}')">Quitar</button></div></div>`:""}</div>`).join("")
 }
 let tomaDepartmentsList=["Cocina","Barra","Vinos","Almacén General"];
 function deptKeyLoose(s){return normalizeKey(s||"").replace(/\s+/g," ").trim()}
@@ -958,7 +958,7 @@ function renderTomaDepartmentsList(){
   const box=document.getElementById("tomaDepartmentsList");
   if(!box)return;
   if(!tomaDepartmentsList.length){box.innerHTML='<div class="empty">Todavía no hay departamentos.</div>';return}
-  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="deptMenu-${escJs(d)}"><button type="button" class="danger" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event);removeTomaDepartment('${escJs(d)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
+  box.innerHTML=tomaDepartmentsList.map(d=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(d)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="deptMenu-${escJs(d)}"><button type="button" class="danger" onclick="toggleKebabMenu('deptMenu-${escJs(d)}',event);removeTomaDepartment('${escJs(d)}')">Quitar</button></div></div>`:""}</div>`).join("")
 }
 function tomaDepartmentOptionsHtml(selected){
   return'<option value="">Sin especificar</option>'+tomaDepartmentsList.map(d=>`<option ${d===selected?"selected":""}>${esc(d)}</option>`).join("")
@@ -994,7 +994,7 @@ function renderInsumoGroupsAdminList(){
   const box=document.getElementById("insumoGroupsAdminList");
   if(!box)return;
   if(!insumoGroupsList.length){box.innerHTML='<div class="empty">Todavía no hay grupos.</div>';return}
-  box.innerHTML=insumoGroupsList.slice().sort((a,b)=>a.localeCompare(b,"es")).map(g=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(g)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="grpMenu-${escJs(g)}"><button type="button" class="danger" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event);removeInsumoGroup('${escJs(g)}')">🗑 Quitar</button></div></div>`:""}</div>`).join("")
+  box.innerHTML=insumoGroupsList.slice().sort((a,b)=>a.localeCompare(b,"es")).map(g=>`<div class="flex" style="justify-content:space-between;align-items:center;border-bottom:1px solid #f1f5f9;padding:8px 0"><span>${esc(g)}</span>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="grpMenu-${escJs(g)}"><button type="button" class="danger" onclick="toggleKebabMenu('grpMenu-${escJs(g)}',event);removeInsumoGroup('${escJs(g)}')">Quitar</button></div></div>`:""}</div>`).join("")
 }
 const demo={
 kg:[["COC-001","Rib eye","kg",20,18,420],["COC-002","Queso manchego","kg",12,12,180]],
@@ -1438,7 +1438,7 @@ async function manualRefresh(){
     currentBusiness=keepBusiness;
     refreshGlobalBusinessSelect();
   } finally {
-    btn.disabled=false;btn.textContent="🔄 Actualizar"
+    btn.disabled=false;btn.textContent="Actualizar"
   }
 }
 function renderTabs(){
@@ -1493,7 +1493,7 @@ function delRow(i){
 }
 function invRowKebabHtml(i){
   const id=`invRowMenu-${activeSection}-${i}`;
-  return `<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('${id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="${id}"><button type="button" class="danger" onclick="toggleKebabMenu('${id}',event);delRow(${i})">🗑 Eliminar</button></div></div>`
+  return `<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('${id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="${id}"><button type="button" class="danger" onclick="toggleKebabMenu('${id}',event);delRow(${i})">Eliminar</button></div></div>`
 }
 function buildCapturePrintView(){
   const box=document.getElementById("capturePrintView");
@@ -1896,9 +1896,9 @@ function renderHistory(){
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
   list.forEach(r=>{const t=calcRecord(r);
     const menuItems=[
-      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);toggleFullRow(${r.id})">📋 Ver inventario completo</button>`,
-      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);editRecord(${r.id})">${currentUser.viewOnly?"👁️ Ver detalle":"✏️ Editar"}</button>`,
-      currentUser.isAdmin?`<button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">🗑 Eliminar</button>`:""
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);toggleFullRow(${r.id})">Ver inventario completo</button>`,
+      `<button type="button" onclick="toggleKebabMenu('histMenu-${r.id}',event);editRecord(${r.id})">${currentUser.viewOnly?"Ver detalle":"Editar"}</button>`,
+      currentUser.isAdmin?`<button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">Eliminar</button>`:""
     ].filter(Boolean).join("");
     const actions=`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button><div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}">${menuItems}</div></div></div>`;
     body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`;
@@ -2677,7 +2677,7 @@ async function migrateOldSupplierProducts(){
   }));
   insumosByBusiness[business]=[...existing,...newInsumos];
   const ok=await pushInsumosToCloud(business);
-  if(!ok){alert("⚠️ No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Los insumos NO quedaron guardados — pídele a soporte que revise esto antes de volver a intentar.");return}
+  if(!ok){alert("No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Los insumos NO quedaron guardados — pídele a soporte que revise esto antes de volver a intentar.");return}
   await logInsumoAudit(business,"Importó insumos antiguos por proveedor",`${newInsumos.length} insumo(s) importados`);
   alert(`Listo, se importaron ${newInsumos.length} insumo(s) al catálogo.`);
   renderInsumoMigrationBox();
@@ -2845,7 +2845,7 @@ async function saveInsumo(){
   if(editingInsumoId){list=list.map(i=>i.id===editingInsumoId?currentInsumo:i)} else {list=[...list,currentInsumo]}
   insumosByBusiness[business]=list;
   const ok=await pushInsumosToCloud(business);
-  if(!ok){alert("⚠️ No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Revisa eso antes de seguir capturando, o tus insumos se van a perder al recargar la página.");return}
+  if(!ok){alert("No se pudo guardar en la nube (probablemente falta correr el SQL de la tabla \"business_insumos\" en Supabase). Revisa eso antes de seguir capturando, o tus insumos se van a perder al recargar la página.");return}
   await logInsumoAudit(business,isNew?"Creó el insumo":"Editó el insumo",`"${currentInsumo.name}" (${currentInsumo.grupo||"Sin grupo"}) — ${(currentInsumo.precios||[]).length} precio(s)`);
   alert("Insumo guardado.");
   closeInsumoEditor()
@@ -3221,7 +3221,7 @@ function renderCostingList(){
       <div style="margin-top:12px">${periodSummaryTableHtml(totals)}</div>
       ${deptBlocks||'<div style="font-size:12px;color:var(--muted);margin-top:6px">Sube un archivo para ver el desglose.</div>'}
       <button class="btn" style="margin-top:14px" onclick="openCosting(${r.id})">Ver detalle</button>
-      <button class="btn" style="margin-top:14px" onclick="printCostingRecordById(${r.id})">🖨️ Imprimir</button>
+      <button class="btn" style="margin-top:14px" onclick="printCostingRecordById(${r.id})">Imprimir</button>
     </div>`
   }).join("")
 }
@@ -3700,7 +3700,7 @@ function renderCostingDetail(){
       const{costoSinIVA,costoConIVA,ventaSinIVA,ventaConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
       cant+=num(it.cantidadVendida);ventaSin+=ventaSinIVA;ventaCon+=ventaConIVA;costoSin+=costoSinIVA;costoCon+=costoConIVA
     });
-    const sinRecetaBtn=sinCostoEnVista||costOnlySinReceta?`<button type="button" onclick="toggleSinRecetaFilter()" class="redtxt" style="background:none;border:1px solid var(--red);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12.5px">${costOnlySinReceta?`✕ quitar filtro (viendo solo sin receta)`:`👁 ver los ${sinCostoEnVista} sin costo de receta`}</button>`:"";
+    const sinRecetaBtn=sinCostoEnVista||costOnlySinReceta?`<button type="button" onclick="toggleSinRecetaFilter()" class="redtxt" style="background:none;border:1px solid var(--red);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12.5px">${costOnlySinReceta?`✕ quitar filtro (viendo solo sin receta)`:`ver los ${sinCostoEnVista} sin costo de receta`}</button>`:"";
     totalsBox.innerHTML=`<div class="notice" style="background:#f4f6fb;color:var(--text);border-color:var(--line);display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:12.5px">`+
       `<div><b>${list.length}</b> platillo(s) · <b>${cant.toLocaleString("es-MX")}</b> unidades vendidas</div>`+
       `<div>Venta: <b>${money(ventaSin)}</b> sin IVA / <b>${money(ventaCon)}</b> con IVA</div>`+
@@ -3917,7 +3917,7 @@ function renderTomaList(){
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
     const managerLabel=captured===0?"Iniciar captura":(t.status==="Terminado"?"Editar":"Continuar captura");
-    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="tomaListMenu-${t.id}"><button type="button" class="danger" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event);deleteToma('${escJs(b)}','${t.id}')">🗑 Eliminar</button></div></div>`:""}</div>`;
+    const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="tomaListMenu-${t.id}"><button type="button" class="danger" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event);deleteToma('${escJs(b)}','${t.id}')">Eliminar</button></div></div>`:""}</div>`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
       ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px">${tomaDepartmentOptionsHtml(t.department||"")}</select>`
@@ -4090,7 +4090,7 @@ function renderTomaGroups(){
   const readOnly=!canCaptureTomas();
   const canMan=canManageTomas();
   let html=`<div class="card form-card" style="margin-top:14px">
-    <input type="search" id="tomaSearch" placeholder="🔎 Buscar producto o código…" style="font-size:16px">
+    <input type="search" id="tomaSearch" placeholder="Buscar producto o código…" style="font-size:16px">
   </div>`;
   html+=`<div class="card table-card toma-group-card" style="margin-top:14px">`;
   if(canMan)html+=`<div class="flex" style="margin-bottom:10px"><button type="button" class="btn" onclick="addTomaProduct()">+ Agregar producto</button><span style="font-size:12.5px;color:var(--muted);align-self:center;margin-left:10px">Úsalo si el catálogo cargado no trae algún producto, o si algún renglón salió mal al leer el archivo.</span></div>`;
@@ -4108,8 +4108,8 @@ function renderTomaGroups(){
       const kebabHtml=(canMan&&!editing)?`<div class="toma-kebab-wrap">
           <button type="button" class="toma-kebab-btn" onclick="toggleTomaRowMenu(event,${idx})" title="Más opciones">⋮</button>
           <div class="toma-kebab-dropdown" id="tomaMenu-${idx}">
-            <button type="button" onclick="startEditTomaProduct(${idx})">✏️ Editar producto</button>
-            <button type="button" class="danger" onclick="toggleTomaRowMenu(event,${idx});deleteTomaProduct(${idx})">🗑 Eliminar</button>
+            <button type="button" onclick="startEditTomaProduct(${idx})">Editar producto</button>
+            <button type="button" class="danger" onclick="toggleTomaRowMenu(event,${idx});deleteTomaProduct(${idx})">Eliminar</button>
           </div>
         </div>`:"";
       return`<div class="toma-row${hasVal?" toma-row-filled":""}" data-code="${esc(it.code)}" data-search="${esc((it.code+" "+it.product).toLowerCase())}">
@@ -4150,7 +4150,7 @@ function toggleKebabMenu(id,e){
   if(el){const willOpen=!el.classList.contains("open");if(willOpen&&e)positionKebabDropdown(e.currentTarget,el);el.classList.toggle("open")}
 }
 function invEditKebab(onclickCall,menuId){
-  return `<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('${menuId}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="${menuId}"><button type="button" class="danger" onclick="toggleKebabMenu('${menuId}',event);${onclickCall}">🗑 Eliminar</button></div></div>`
+  return `<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('${menuId}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="${menuId}"><button type="button" class="danger" onclick="toggleKebabMenu('${menuId}',event);${onclickCall}">Eliminar</button></div></div>`
 }
 document.addEventListener("click",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")));
 document.addEventListener("scroll",()=>document.querySelectorAll(".toma-kebab-dropdown.open").forEach(d=>d.classList.remove("open")),true);
