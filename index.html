@@ -1927,12 +1927,37 @@ function renderDashboard(){
 }
 function distinctMonthsFor(b){return[...new Set(getRecords().filter(r=>r.business===b).map(monthOf).filter(Boolean))].sort()}
 function renderDashTrendCharts(business){
-  const lossHtml=renderLossTrendChartHtml(business);
-  const tomaHtml=renderTomaComplianceChartHtml(business);
-  const count=(lossHtml?1:0)+(tomaHtml?1:0);
-  if(!count)return"";
-  const span=count===1?4:2;
-  return[lossHtml,tomaHtml].filter(Boolean).map(h=>h.replace('class="dash-trend-chart"',`class="dash-trend-chart" style="grid-column:span ${span}"`)).join("")
+  const htmls=[renderLossTrendChartHtml(business),renderShortOverChartHtml(business),renderTomaComplianceChartHtml(business)].filter(Boolean);
+  if(!htmls.length)return"";
+  return htmls.map((h,i)=>{
+    const lastOdd=i===htmls.length-1&&htmls.length%2===1;
+    const span=lastOdd?4:2;
+    return h.replace('class="dash-trend-chart"',`class="dash-trend-chart" style="grid-column:span ${span}"`)
+  }).join("")
+}
+function renderShortOverChartHtml(business){
+  const months=distinctMonthsFor(business).slice(-6);
+  if(!months.length)return"";
+  const data=months.map(m=>{const f=monthFlowTotals(business,m);return{m,short:f.short,over:f.over}});
+  const maxVal=Math.max(1,...data.flatMap(d=>[d.short,d.over]));
+  const cols=data.map(d=>{
+    return`<div class="dash-trend-col" style="width:64px">
+      <div style="flex:1;display:flex;align-items:flex-end;justify-content:center;gap:5px;width:100%">
+        <div style="height:100%;display:flex;flex-direction:column;align-items:center;width:16px">
+          <div style="flex:${(maxVal-d.short).toFixed(2)} 0 0"></div>
+          <div style="width:16px;flex:${d.short.toFixed(2)} 0 0;min-height:3px;background:var(--red);border-radius:3px 3px 0 0"></div>
+        </div>
+        <div style="height:100%;display:flex;flex-direction:column;align-items:center;width:16px">
+          <div style="flex:${(maxVal-d.over).toFixed(2)} 0 0"></div>
+          <div style="width:16px;flex:${d.over.toFixed(2)} 0 0;min-height:3px;background:var(--green);border-radius:3px 3px 0 0"></div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${esc(monthLabel(d.m))}</div>
+    </div>`
+  }).join("");
+  const title=data.length>1?`Faltantes vs. sobrantes — últimos ${data.length} meses`:"Faltantes vs. sobrantes — mes actual";
+  const legend=`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:var(--red);display:inline-block"></span>Faltante</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:9px;height:9px;border-radius:2px;background:var(--green);display:inline-block"></span>Sobrante</span>`;
+  return`<div class="dash-trend-chart"><div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><h4 style="margin:0;font-size:14px">${title}</h4>${legend}</div><div class="dash-trend-bars">${cols}</div></div>`
 }
 function renderLossTrendChartHtml(business){
   const months=distinctMonthsFor(business).slice(-6);
