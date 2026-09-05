@@ -131,11 +131,18 @@ button{cursor:pointer}
 }
 .sidebar-business-field select:focus{outline:none}
 .sidebar-business-field select option{color:#172033;background:#fff}
-.nav{display:grid;gap:7px;overflow-y:auto;flex:1;min-height:0;margin:0 -18px;padding:0 18px 4px}.nav button{
-  border:0;background:transparent;color:#dbe5f4;text-align:left;padding:12px 13px;border-radius:9px
+.nav-wrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.nav{display:grid;gap:2px;overflow-y:auto;flex:1;min-height:0;margin:0 -18px;padding:0 18px 4px}.nav button{
+  border:0;background:transparent;color:#dbe5f4;text-align:left;padding:9px 13px;border-radius:9px
 }
+.nav-section-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5f77a8;padding:12px 13px 3px}
+.nav-section-label:first-child{padding-top:2px}
 .nav button.active,.nav button:hover{background:var(--nav2);color:#fff}
 .nav button span{display:inline-flex;width:26px;align-items:center;justify-content:center}.nav button svg{width:17px;height:17px;flex-shrink:0}
+.nav-fade{position:absolute;left:0;right:0;height:22px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:1}
+.nav-fade-top{top:0;background:linear-gradient(180deg,var(--nav),rgba(13,31,102,0))}
+.nav-fade-bottom{bottom:4px;background:linear-gradient(0deg,var(--nav),rgba(13,31,102,0))}
+.nav-fade.show{opacity:1}
 .nav::-webkit-scrollbar{width:6px}
 .nav::-webkit-scrollbar-track{background:transparent}
 .nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:10px}
@@ -436,20 +443,28 @@ textarea{min-height:76px;resize:vertical}
         <select id="globalBusiness" onchange="onGlobalBusinessChange()"></select>
       </div>
     </div>
-    <nav class="nav">
+    <div class="nav-wrap">
+    <nav class="nav" id="navList">
+      <div class="nav-section-label">Operación</div>
       <button class="active" data-view="dashboard"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>Dashboard</button>
       <button data-view="history"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 12h6M9 16h4"/></svg></span>Inventarios</button>
       <button data-view="tomafisica"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="m9 13 2 2 4-4"/></svg></span>Toma física</button>
       <button data-view="cxc"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg></span>CxC por inventarios</button>
       <button data-view="waste"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M10 11v6M14 11v6"/></svg></span>Mermas</button>
+      <div class="nav-section-label">Análisis</div>
       <button data-view="reports"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/></svg></span>Reportes</button>
+      <button data-view="costing"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M5 7 2 13a3 3 0 0 0 6 0L5 7ZM19 7l-3 6a3 3 0 0 0 6 0l-3-6Z"/><path d="M9 21h6"/></svg></span>Costeo</button>
+      <div class="nav-section-label">Catálogos</div>
       <button data-view="businesses"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6M4 21h16"/></svg></span>Negocios</button>
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
       <button data-view="recetario"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetario</button>
-      <button data-view="costing"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M5 7 2 13a3 3 0 0 0 6 0L5 7ZM19 7l-3 6a3 3 0 0 0 6 0l-3-6Z"/><path d="M9 21h6"/></svg></span>Costeo</button>
+      <div class="nav-section-label">Cuenta</div>
       <button data-view="users"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.7 14.3c2.6.3 4.6 2.5 4.8 5.2"/></svg></span>Usuarios</button>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
+    <div class="nav-fade nav-fade-top" id="navFadeTop"></div>
+    <div class="nav-fade nav-fade-bottom" id="navFadeBottom"></div>
+    </div>
     <div class="userbox">
       <div class="avatar" id="userAvatar">--</div>
       <div class="userbox-info">
@@ -1209,6 +1224,18 @@ function applyNavVisibility(){
     if(showToma)openView("tomafisica");
     else if(showRecipes)openView("recetario")
   }
+  updateNavSectionLabels();
+  updateNavFade()
+}
+function updateNavSectionLabels(){
+  document.querySelectorAll(".nav-section-label").forEach(label=>{
+    let el=label.nextElementSibling,anyVisible=false;
+    while(el&&!el.classList.contains("nav-section-label")){
+      if(el.tagName==="BUTTON"&&el.style.display!=="none")anyVisible=true;
+      el=el.nextElementSibling
+    }
+    label.style.display=anyVisible?"":"none"
+  })
 }
 async function checkSession(){
   if(inRecoveryMode)return;
@@ -1369,6 +1396,8 @@ function init(){
   refreshGlobalBusinessSelect();
   document.getElementById("fCount").value="2026-07-23";document.getElementById("fStart").value="2026-07-20";document.getElementById("fEnd").value="2026-07-26";
   document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>openView(b.dataset.view));
+  document.getElementById("navList").addEventListener("scroll",updateNavFade);
+  updateNavFade();
   document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeGroup=b.dataset.group;activeSection=sections[activeGroup][0].id;renderTabs();renderInventory()});
   renderTabs();renderInventory();renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList();bootDashboard()
 }
@@ -1380,10 +1409,21 @@ function closeMobileMenu(){
   document.getElementById("sidebar").classList.remove("open");
   document.getElementById("mobileBackdrop").classList.remove("open")
 }
+function updateNavFade(){
+  const nav=document.getElementById("navList");
+  if(!nav)return;
+  const top=document.getElementById("navFadeTop"),bottom=document.getElementById("navFadeBottom");
+  if(!top||!bottom)return;
+  top.classList.toggle("show",nav.scrollTop>2);
+  bottom.classList.toggle("show",nav.scrollTop+nav.clientHeight<nav.scrollHeight-2)
+}
 async function openView(id){
   closeMobileMenu();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById(id).classList.add("active");
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id||(id==="capture"&&b.dataset.view==="history")));
+  const activeBtn=document.querySelector(".nav button.active");
+  if(activeBtn)activeBtn.scrollIntoView({block:"nearest"});
+  updateNavFade();
   if(id==="dashboard")await bootDashboard();
   if(id==="history")await bootHistory();
   if(id==="products")await bootProducts();
