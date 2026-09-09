@@ -1310,7 +1310,9 @@ window.addEventListener("beforeprint",()=>{
     const biz=currentBusiness||"Todos los negocios";
     const monthEl=document.getElementById("globalPeriod");
     const month=monthEl&&monthEl.selectedOptions[0]?monthEl.selectedOptions[0].textContent:"";
-    ctx.textContent=`${name||""} — ${biz}${month?" — "+month:""}`
+    const rz=currentBusiness?businessRazonSocial(currentBusiness):"";
+    ctx.innerHTML=`${esc(name||"")} — ${esc(biz)}${month?" — "+esc(month):""}`+
+      (currentBusiness?`<div style="font-size:11.5px;font-weight:400;margin-top:2px">Razón social: ${esc(rz||"No especificada")}</div>`:"")
   }
   if(active&&active.id==="capture")buildCapturePrintView();
   if(active&&active.id==="history")buildHistoryPrintView()
@@ -4403,7 +4405,8 @@ function updateTomaPrintHeader(){
   document.getElementById("tomaPrintBusiness").textContent=currentToma.business;
   const dept=currentToma.department?" — "+currentToma.department:"";
   const dateLabel=currentToma.countDate?new Date(currentToma.countDate+"T00:00:00").toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"}):"";
-  document.getElementById("tomaPrintSubtitle").innerHTML=`Catálogo de toma de inventario físico${dept}<br>Fecha de la toma: ${esc(dateLabel)}`
+  const rz=businessRazonSocial(currentToma.business);
+  document.getElementById("tomaPrintSubtitle").innerHTML=`Razón social: ${esc(rz||"No especificada")}<br>Catálogo de toma de inventario físico${dept}<br>Fecha de la toma: ${esc(dateLabel)}`
 }
 function openToma(business,id){
   const t=(tomasByBusiness[business]||[]).find(x=>String(x.id)===String(id));
