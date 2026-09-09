@@ -2125,9 +2125,31 @@ async function clearHistory(){
 }
 function renderBusinessCatalog(){
   const list = currentUser.isAdmin ? businesses : businesses.filter(b=>currentUser.businesses.includes(b.name));
-  businessCatalog.innerHTML=list.map(b=>`<div class="card business"><div class="business-head"><h4>${esc(b.name)}</h4><span class="dot ${b.active?"green":"red"}"></span></div><div class="line"><span>Áreas</span><strong>Cocina y Barra</strong></div><div class="line"><span>Estado</span><strong>${b.active?"Activo":"Inactivo"}</strong></div>${currentUser.isAdmin?`<div class="line" style="align-items:center"><span>Razón social</span><input type="text" value="${esc(b.razonSocial||"")}" placeholder="Razón social (opcional)" style="max-width:220px" onchange="updateBusinessRazonSocial('${escJs(b.name)}',this.value)"></div>`:(b.razonSocial?`<div class="line"><span>Razón social</span><strong>${esc(b.razonSocial)}</strong></div>`:"")}${b.active&&!currentUser.viewOnly?`<button class="btn" onclick="openBusiness('${escJs(b.name)}')">Capturar inventario</button>`:""}${currentUser.isAdmin?`<button class="btn ${b.active?"":"green"}" onclick="toggleBusiness('${escJs(b.name)}')">${b.active?"Desactivar":"Activar"}</button>`:""}</div>`).join("");
+  businessCatalog.innerHTML=list.map((b,idx)=>{
+    const rzLine=currentUser.isAdmin
+      ?`<div class="line" style="align-items:center"><span>Razón social</span><span style="display:flex;align-items:center;gap:6px;min-width:0"><strong id="rzText-${idx}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px" title="${esc(b.razonSocial||"")}">${esc(b.razonSocial||"No especificada")}</strong><button type="button" class="btn" style="padding:1px 8px;font-size:12px;line-height:1.4" title="Editar razón social" onclick="toggleRazonSocialEdit(${idx})">⋯</button></span></div>
+       <div class="line" id="rzEdit-${idx}" style="display:none;align-items:center;gap:6px"><span></span><span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0"><input type="text" id="rzInput-${idx}" value="${esc(b.razonSocial||"")}" placeholder="Razón social" style="max-width:220px" onkeydown="if(event.key==='Enter')saveRazonSocialEdit(${idx},'${escJs(b.name)}')"><button type="button" class="btn primary" style="padding:2px 10px;font-size:12px" onclick="saveRazonSocialEdit(${idx},'${escJs(b.name)}')">Guardar</button></span></div>`
+      :(b.razonSocial?`<div class="line"><span>Razón social</span><strong>${esc(b.razonSocial)}</strong></div>`:"");
+    return`<div class="card business"><div class="business-head"><h4>${esc(b.name)}</h4><span class="dot ${b.active?"green":"red"}"></span></div><div class="line"><span>Áreas</span><strong>Cocina y Barra</strong></div><div class="line"><span>Estado</span><strong>${b.active?"Activo":"Inactivo"}</strong></div>${rzLine}${b.active&&!currentUser.viewOnly?`<button class="btn" onclick="openBusiness('${escJs(b.name)}')">Capturar inventario</button>`:""}${currentUser.isAdmin?`<button class="btn ${b.active?"":"green"}" onclick="toggleBusiness('${escJs(b.name)}')">${b.active?"Desactivar":"Activar"}</button>`:""}</div>`
+  }).join("");
   const addForm = document.getElementById("newBusinessName");
   if (addForm) addForm.closest(".form-card").style.display = currentUser.isAdmin ? "" : "none";
+}
+function toggleRazonSocialEdit(idx){
+  const box=document.getElementById(`rzEdit-${idx}`);
+  if(!box)return;
+  const opening=box.style.display==="none";
+  box.style.display=opening?"flex":"none";
+  if(opening){
+    const inp=document.getElementById(`rzInput-${idx}`);
+    if(inp){inp.focus();inp.select()}
+  }
+}
+async function saveRazonSocialEdit(idx,name){
+  const inp=document.getElementById(`rzInput-${idx}`);
+  if(!inp)return;
+  await updateBusinessRazonSocial(name,inp.value);
+  renderBusinessCatalog()
 }
 async function loadBusinessesFromCloud(){
   const { data, error } = await sb.from("inventarios_data").select("data").eq("id", 2).maybeSingle();
