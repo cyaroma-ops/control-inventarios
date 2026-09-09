@@ -250,6 +250,8 @@ textarea{min-height:76px;resize:vertical}
 .tab{border:1px solid #d7dfeb;background:#fff;padding:9px 13px;border-radius:999px}
 .tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .rtab{border:1px solid #d7dfeb;background:#fff;padding:9px 13px;border-radius:999px;cursor:pointer}
+.costtab{border:1px solid #d7dfeb;background:#fff;padding:9px 13px;border-radius:999px;cursor:pointer}
+.costtab.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .rtab.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .subtab{border:1px solid #d7dfeb;background:#fff;padding:8px 12px;border-radius:8px}
@@ -760,8 +762,8 @@ textarea{min-height:76px;resize:vertical}
           <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
 
           <div class="tabs" id="costingTopTabs">
-            <button type="button" class="tab active" id="costingTopTabAnalisis" onclick="setCostingTopTab('analisis')">Análisis</button>
-            <button type="button" class="tab" id="costingTopTabPopularidad" onclick="setCostingTopTab('popularidad')">Popularidad de platillos</button>
+            <button type="button" class="costtab active" id="costingTopTabAnalisis" onclick="setCostingTopTab('analisis')">Análisis</button>
+            <button type="button" class="costtab" id="costingTopTabPopularidad" onclick="setCostingTopTab('popularidad')">Popularidad de platillos</button>
           </div>
 
           <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
