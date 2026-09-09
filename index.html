@@ -3131,28 +3131,68 @@ function detectCostingPdfKind(text){
 // Reporte "Productos Vendidos" (SoftRestaurant) — popularidad: clave, descripción, cantidad vendida, venta total.
 // El costo por platillo casi nunca viene lleno en este reporte; se completa aparte con "Receta de Productos".
 function parsePopularityPdfText(text){
-  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  // Soporta dos formatos del reporte "Productos Vendidos" de SoftRestaurant:
+  // 1) Formato clásico: cada platillo en un solo renglón de texto (clave, descripción y montos juntos).
+  // 2) Formato con columnas de catálogo: al agregar "VENTA TOTAL (PRECIO CATÁLOGO)" y "PRECIO CATÁLOGO
+  //    INCLUYE IVA", el PDF ya no trae cada platillo en un renglón — cada celda (clave, descripción,
+  //    cantidad, montos) queda en su propia línea. En este formato se usa la columna de catálogo
+  //    (precio de lista, sin descuentos) como venta total, que es la que corresponde para Costeo.
+  const lines=text.split("\n").map(l=>l.trim());
   const items=[];
   let grupo=null;
-  lines.forEach(line=>{
+  const isBlank=l=>l===""||l==="\u00A0";
+  const isClaveLine=l=>/^\d{3,8}$/.test(l);
+  const isMoneyLine=l=>/^-?\$-?[\d,]+\.\d{2,4}$/.test(l);
+  const isQtyLine=l=>/^-?[\d,]+\.\d{2,4}$/.test(l);
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    if(isBlank(line))continue;
     const gm=line.match(/^GRUPO:\s*(.+)$/i);
-    if(gm){grupo=gm[1].trim();return}
-    const m=line.match(/^(\d{3,7})\s+(.+)$/);
-    if(!m)return;
-    const clave=m[1];
-    const rest=m[2];
-    const dollars=[...rest.matchAll(/\$(-?[\d,]+\.\d{2})/g)].map(x=>parseFloat(x[1].replace(/,/g,"")));
-    if(dollars.length<4)return; // renglón de subtotal u otro formato — se ignora
-    const cleaned=rest.replace(/\$-?[\d,]+\.\d{2}/g," ").trim();
-    const numMatches=[...cleaned.matchAll(/-?[\d,]+\.\d{2,4}/g)];
-    if(!numMatches.length)return;
-    const cantidadVendida=parseFloat(numMatches[0][0].replace(/,/g,""));
-    const producto=(cleaned.slice(0,numMatches[0].index)+cleaned.slice(numMatches[0].index+numMatches[0][0].length)).replace(/%/g," ").trim();
-    if(!producto||!/[A-Za-zÁÉÍÓÚÑ]/.test(producto))return;
-    // Orden fijo de columnas en el reporte: precio promedio, venta total, precio catálogo, venta total catálogo
-    const ventaTotal=dollars[1];
-    items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave,producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:true,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null})
-  });
+    if(gm){grupo=gm[1].trim();continue}
+    // --- Formato clásico: todo el renglón junto ---
+    const mOld=line.match(/^(\d{3,7})\s+(.+)$/);
+    if(mOld){
+      const rest=mOld[2];
+      const dollars=[...rest.matchAll(/\$(-?[\d,]+\.\d{2})/g)].map(x=>parseFloat(x[1].replace(/,/g,"")));
+      if(dollars.length>=4){
+        const cleaned=rest.replace(/\$-?[\d,]+\.\d{2}/g," ").trim();
+        const numMatches=[...cleaned.matchAll(/-?[\d,]+\.\d{2,4}/g)];
+        if(numMatches.length){
+          const cantidadVendida=parseFloat(numMatches[0][0].replace(/,/g,""));
+          const producto=(cleaned.slice(0,numMatches[0].index)+cleaned.slice(numMatches[0].index+numMatches[0][0].length)).replace(/%/g," ").trim();
+          if(producto&&/[A-Za-zÁÉÍÓÚÑ]/.test(producto)){
+            const ventaTotal=dollars[1];
+            items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave:mOld[1],producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:true,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null});
+            continue
+          }
+        }
+      }
+    }
+    // --- Formato con columnas de catálogo: cada dato en su propia línea ---
+    if(!isClaveLine(line))continue;
+    const clave=line;
+    let j=i+1;
+    while(j<lines.length&&isBlank(lines[j]))j++;
+    if(j>=lines.length)break;
+    const producto=lines[j];
+    if(!producto||!/[A-Za-zÁÉÍÓÚÑ]/.test(producto)||/^[\d$.,%\-\s]+$/.test(producto))continue;
+    j++;
+    while(j<lines.length&&isBlank(lines[j]))j++;
+    if(j>=lines.length)break;
+    if(!isQtyLine(lines[j]))continue;
+    const cantidadVendida=parseFloat(lines[j].replace(/,/g,""));
+    j++;
+    while(j<lines.length&&isBlank(lines[j]))j++;
+    if(j>=lines.length)break;
+    if(!isMoneyLine(lines[j]))continue; // precio de venta promedio — no se usa
+    j++;
+    while(j<lines.length&&isBlank(lines[j]))j++;
+    if(j>=lines.length)break;
+    if(!isMoneyLine(lines[j]))continue;
+    const ventaTotal=parseFloat(lines[j].replace(/[$,]/g,"")); // VENTA TOTAL (PRECIO CATÁLOGO), sin descuento
+    items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave,producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:true,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null});
+    i=j
+  }
   return items
 }
 // Reporte "Receta de Productos" (SoftRestaurant) — costo teórico por platillo final, ligado por clave.
