@@ -760,6 +760,10 @@ textarea{min-height:76px;resize:vertical}
           <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
 
           <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+          <div id="topSellersModalBox" class="card form-card" style="display:none;margin-bottom:14px">
+            <div class="table-head"><h3 style="margin:0" id="topSellersModalTitle">Top platillos más vendidos</h3><div class="flex" style="gap:8px;align-items:center"><label style="font-size:12.5px;color:var(--muted)">Mostrar</label><select id="topSellersModalCount" onchange="onTopSellersModalCountChange()" style="max-width:130px"><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option><option value="9999">Todos</option><option value="custom">Otro número…</option></select><input type="number" min="1" step="1" id="topSellersModalCustom" placeholder="Cantidad" style="max-width:90px;display:none" onchange="renderTopSellersModal()"><button class="btn" onclick="closeTopSellersModal()">Cerrar</button></div></div>
+            <div id="topSellersModalContent" class="costing-grid"></div>
+          </div>
           <div id="costingCards" class="costing-grid"></div>
         </div>
         <div id="costingEditorView" style="display:none">
@@ -3370,6 +3374,7 @@ async function bootCosting(){
   document.getElementById("btnNewCosting").style.display=canManageCosting()?"":"none";
   document.getElementById("costingAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("costingAuditBox").style.display="none";
+  closeTopSellersModal();
   await ensureCostingLoadedFor(currentBusiness);
   renderCostingList()
 }
@@ -3420,6 +3425,7 @@ function renderCostingList(){
       <div style="margin-top:12px">${periodSummaryTableHtml(totals)}</div>
       ${deptBlocks||'<div style="font-size:12px;color:var(--muted);margin-top:6px">Sube un archivo para ver el desglose.</div>'}
       <button class="btn" style="margin-top:14px" onclick="openCosting(${r.id})">Ver detalle</button>
+      <button class="btn" style="margin-top:14px" onclick="showTopSellersForRecord(${r.id})">Top platillos</button>
       <button class="btn" style="margin-top:14px" onclick="printCostingRecordById(${r.id})">Imprimir</button>
     </div>`
   }).join("")
@@ -3864,34 +3870,16 @@ function setCostoRealModo(dept,modo){
   currentCosting.costoReal[dept]=cur;
   renderCostPeriodSummary();renderCostingSummary()
 }
-function onTopSellersCountChange(){
-  const sel=document.getElementById("topSellersCount");
-  const custom=document.getElementById("topSellersCustom");
-  if(!sel||!custom)return;
-  custom.style.display=sel.value==="custom"?"":"none";
-  if(sel.value==="custom"){if(!custom.value)custom.value=10;custom.focus()}
-  renderTopSellers()
-}
-function getTopSellersN(){
-  const sel=document.getElementById("topSellersCount");
-  if(!sel)return 10;
-  if(sel.value==="custom"){
-    const v=parseInt(document.getElementById("topSellersCustom").value,10);
-    return(v&&v>0)?v:10
-  }
-  return parseInt(sel.value,10)||10
-}
-function renderTopSellers(){
-  const box=document.getElementById("topSellersBox");
-  if(!box)return;
-  const items=(currentCosting.items||[]).filter(it=>!looksLikeTotalRowItem(it));
-  if(!items.length){box.innerHTML='<div class="empty">Sube un archivo de popularidad para ver el top de platillos más vendidos.</div>';return}
-  const n=getTopSellersN();
-  const allDepts=[...new Set(items.map(it=>it.departamento))];
+// Construye el HTML de las tarjetas "Top platillos" (Alimentos/Bebidas/otros) para un set de items y un top N dado.
+// Se usa tanto dentro del editor de un análisis como en el panel rápido de la lista de Costeo.
+function topSellersCardsHtml(items,n){
+  const clean=(items||[]).filter(it=>!looksLikeTotalRowItem(it));
+  if(!clean.length)return'<div class="empty">Este análisis no tiene platillos cargados todavía.</div>';
+  const allDepts=[...new Set(clean.map(it=>it.departamento))];
   const otros=allDepts.filter(d=>d!=="Alimentos"&&d!=="Bebidas").sort((a,b)=>a.localeCompare(b,"es"));
   const orderedDepts=["Alimentos","Bebidas",...otros];
-  box.innerHTML=orderedDepts.map(d=>{
-    const deptItems=items.filter(it=>it.departamento===d);
+  return orderedDepts.map(d=>{
+    const deptItems=clean.filter(it=>it.departamento===d);
     if(!deptItems.length&&(d==="Alimentos"||d==="Bebidas")){
       return`<div class="card business" style="max-width:520px"><div class="business-head"><h4>${esc(d)}</h4></div><hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px"><div class="empty">Sin platillos cargados en este departamento.</div></div>`
     }
@@ -3908,6 +3896,61 @@ function renderTopSellers(){
       </table></div>
     </div>`
   }).join("")
+}
+function topSellersNFromSelect(selectId,customId){
+  const sel=document.getElementById(selectId);
+  if(!sel)return 10;
+  if(sel.value==="custom"){
+    const v=parseInt((document.getElementById(customId)||{}).value,10);
+    return(v&&v>0)?v:10
+  }
+  return parseInt(sel.value,10)||10
+}
+function onTopSellersCountChange(){
+  const sel=document.getElementById("topSellersCount");
+  const custom=document.getElementById("topSellersCustom");
+  if(!sel||!custom)return;
+  custom.style.display=sel.value==="custom"?"":"none";
+  if(sel.value==="custom"){if(!custom.value)custom.value=10;custom.focus()}
+  renderTopSellers()
+}
+function renderTopSellers(){
+  const box=document.getElementById("topSellersBox");
+  if(!box)return;
+  if(!(currentCosting.items||[]).length){box.innerHTML='<div class="empty">Sube un archivo de popularidad para ver el top de platillos más vendidos.</div>';return}
+  const n=topSellersNFromSelect("topSellersCount","topSellersCustom");
+  box.innerHTML=topSellersCardsHtml(currentCosting.items,n)
+}
+// --- Panel rápido de Top platillos desde la lista de Costeo (sin entrar al detalle del análisis) ---
+let topSellersModalRecordId=null;
+function showTopSellersForRecord(id){
+  const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===id);
+  if(!record){alert("No se encontró este análisis.");return}
+  topSellersModalRecordId=id;
+  document.getElementById("topSellersModalTitle").textContent=`Top platillos más vendidos — ${record.periodicidad||""} ${record.startDate||""} a ${record.endDate||""}`;
+  document.getElementById("topSellersModalBox").style.display="block";
+  renderTopSellersModal();
+  document.getElementById("topSellersModalBox").scrollIntoView({behavior:"smooth",block:"start"})
+}
+function closeTopSellersModal(){
+  topSellersModalRecordId=null;
+  document.getElementById("topSellersModalBox").style.display="none"
+}
+function onTopSellersModalCountChange(){
+  const sel=document.getElementById("topSellersModalCount");
+  const custom=document.getElementById("topSellersModalCustom");
+  if(!sel||!custom)return;
+  custom.style.display=sel.value==="custom"?"":"none";
+  if(sel.value==="custom"){if(!custom.value)custom.value=10;custom.focus()}
+  renderTopSellersModal()
+}
+function renderTopSellersModal(){
+  const content=document.getElementById("topSellersModalContent");
+  if(!content||!topSellersModalRecordId)return;
+  const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===topSellersModalRecordId);
+  if(!record){closeTopSellersModal();return}
+  const n=topSellersNFromSelect("topSellersModalCount","topSellersModalCustom");
+  content.innerHTML=topSellersCardsHtml(record.items,n)
 }
 let costDeptActive="";
 let costOnlySinReceta=false;
