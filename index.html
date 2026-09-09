@@ -809,7 +809,12 @@ textarea{min-height:76px;resize:vertical}
             <div id="costSummaryCards" class="costing-grid"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
+            <div class="table-head"><h3 style="margin:0">Top platillos más vendidos</h3><div class="flex" style="gap:8px;align-items:center"><label style="font-size:12.5px;color:var(--muted)">Mostrar</label><select id="topSellersCount" onchange="onTopSellersCountChange()" style="max-width:130px"><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option><option value="9999">Todos</option><option value="custom">Otro número…</option></select><input type="number" min="1" step="1" id="topSellersCustom" placeholder="Cantidad" style="max-width:90px;display:none" onchange="renderTopSellers()"></div></div>
+            <p class="empty" style="margin:0 0 10px">Por cantidad de unidades vendidas en este periodo, separado por Alimentos y Bebidas.</p>
+            <div id="topSellersBox" class="costing-grid"></div>
+          </div>
+          <div class="card table-card">
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail();renderTopSellers()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
             <div class="tabs" id="costDeptTabs"></div>
             <div id="costDetailTotals" style="margin:2px 0 12px"></div>
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 8px" onclick="toggleCostDetailHelp()">
@@ -3460,7 +3465,7 @@ function openCostingEditorForm(){
   renderIvaSettings();
   renderCostPeriodSummary();
   renderCostingSummary();
-  renderCostingDetail()
+  renderCostingDetail();renderTopSellers()
 }
 function closeCostingEditor(){
   currentCosting=null;editingCostingId=null;
@@ -3475,7 +3480,7 @@ function clearCostingItems(){
   currentCosting.items=[];
   currentCosting.ivaDefaults={};
   costDeptActive="";
-  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers()
 }
 function looksLikeTotalRowItem(it){
   const p=(it.producto||"").trim().toUpperCase();
@@ -3489,7 +3494,7 @@ function removeTotalRowsFromCosting(){
   if(!confirm(`Se encontraron ${matches.length} renglón(es) que no son platillos reales (ej. "${matches[0].producto}"). ¿Quitarlos de este análisis?`))return;
   currentCosting.items=currentCosting.items.filter(it=>!looksLikeTotalRowItem(it));
   costDeptActive="";
-  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
   alert(`Listo, se quitaron ${matches.length} renglón(es). No olvides darle "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`)
 }
 function guessDeptForGrupo(g){
@@ -3540,7 +3545,7 @@ function markAllCostingItemsConReceta(){
   if(!confirm(`¿Marcar como "Con receta" los ${candidatos.length} platillo(s) que ya tienen un costo unitario capturado? Los que siguen en $0 (sin costo) se quedan como están — puedes marcarlos a mano si corresponde.`))return;
   candidatos.forEach(it=>{it.estatus="Con receta"});
   costDeptActive="";
-  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
   const msg=document.getElementById("costingUploadMsg");
   msg.style.color="#15965a";
   msg.textContent=`Listo — se marcaron ${candidatos.length} platillo(s) como "Con receta" (los que ya traían costo). No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
@@ -3551,7 +3556,7 @@ function markAllCostingItemsAplicaIVA(){
   if(!confirm(`¿Marcar los ${currentCosting.items.length} platillos cargados como "Normal"? Esto deja el costo unitario tal cual lo subiste, sin desglosar IVA (útil para limpiar datos ya cargados). Después puedes marcar como "No trae IVA, agregar" solo los que en particular lo necesiten.`))return;
   currentCosting.items.forEach(it=>{it.aplicaIVA=true});
   costDeptActive="";
-  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
   const msg=document.getElementById("costingUploadMsg");
   msg.style.color="#15965a";
   msg.textContent=`Listo — se marcó "Normal" en ${currentCosting.items.length} platillo(s). No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
@@ -3575,7 +3580,7 @@ function applyGrupoMapToExistingItems(){
   costingIvaDefaultsFor(currentCosting);
   pruneCostingDeptSettings(currentCosting);
   costDeptActive="";
-  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
   const msg=document.getElementById("costingUploadMsg");
   msg.style.color="#15965a";
   msg.textContent=`Listo — se reclasificaron ${changed} platillo(s) a Alimentos/Bebidas. No olvides "Guardar borrador" o "Marcar como terminado" para conservar el cambio.`
@@ -3591,7 +3596,7 @@ function finalizeCostingPdfPopularityImport(rawItems){
   msg.style.color="#15965a";
   msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`+(matched?` Se completó el costo de ${matched} platillo(s) con la Receta de Productos ya cargada.`:" Este reporte no trae costo por platillo — sube también el PDF de \"Receta de Productos\" para completarlo, o captúralo a mano abajo.");
   costDeptActive="";
-  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+  renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers()
 }
 async function uploadCostingFile(){
   if(!canManageCosting())return;
@@ -3612,7 +3617,7 @@ async function uploadCostingFile(){
         msg.style.color="#15965a";
         msg.textContent=`Listo — se leyeron ${recipeItems.length} receta(s) de costo. ${matched?`Se ligaron ${matched} platillo(s) ya cargados por clave.`:"Aún no hay platillos de popularidad cargados — en cuanto los subas, se ligará el costo automáticamente."}`;
         costDeptActive="";
-        renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+        renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
         input.value="";
         return
       } else if(kind==="popularidad"){
@@ -3644,7 +3649,7 @@ async function uploadCostingFile(){
     msg.style.color="#15965a";
     msg.textContent=`Listo — ${added} platillo(s) nuevo(s), ${updated} completado(s)/actualizado(s) con este archivo. Total: ${merged.length}.`;
     costDeptActive="";
-    renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();
+    renderIvaSettings();renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers();
     input.value=""
   }catch(e){
     console.error(e);msg.style.color="#dc2f34";msg.textContent="No se pudo leer el archivo. Verifica que sea un .xlsx, .csv o .pdf válido."
@@ -3677,7 +3682,7 @@ function toggleCostDetailHelp(){
 function updateVentaConIva(value){
   if(!canManageCosting())return;
   currentCosting.ventaConIVA=value==="1";
-  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers()
 }
 function openPrintWindow(title,bodyHtml){
   const w=window.open("","_blank");
@@ -3812,7 +3817,7 @@ function renderIvaSettings(){
 }
 function updateIvaDefault(dept,field,value){
   currentCosting.ivaDefaults[dept][field]=num(value);
-  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers()
 }
 function renderCostPeriodSummary(){
   const box=document.getElementById("costPeriodSummary");
@@ -3859,11 +3864,56 @@ function setCostoRealModo(dept,modo){
   currentCosting.costoReal[dept]=cur;
   renderCostPeriodSummary();renderCostingSummary()
 }
+function onTopSellersCountChange(){
+  const sel=document.getElementById("topSellersCount");
+  const custom=document.getElementById("topSellersCustom");
+  if(!sel||!custom)return;
+  custom.style.display=sel.value==="custom"?"":"none";
+  if(sel.value==="custom"){if(!custom.value)custom.value=10;custom.focus()}
+  renderTopSellers()
+}
+function getTopSellersN(){
+  const sel=document.getElementById("topSellersCount");
+  if(!sel)return 10;
+  if(sel.value==="custom"){
+    const v=parseInt(document.getElementById("topSellersCustom").value,10);
+    return(v&&v>0)?v:10
+  }
+  return parseInt(sel.value,10)||10
+}
+function renderTopSellers(){
+  const box=document.getElementById("topSellersBox");
+  if(!box)return;
+  const items=(currentCosting.items||[]).filter(it=>!looksLikeTotalRowItem(it));
+  if(!items.length){box.innerHTML='<div class="empty">Sube un archivo de popularidad para ver el top de platillos más vendidos.</div>';return}
+  const n=getTopSellersN();
+  const allDepts=[...new Set(items.map(it=>it.departamento))];
+  const otros=allDepts.filter(d=>d!=="Alimentos"&&d!=="Bebidas").sort((a,b)=>a.localeCompare(b,"es"));
+  const orderedDepts=["Alimentos","Bebidas",...otros];
+  box.innerHTML=orderedDepts.map(d=>{
+    const deptItems=items.filter(it=>it.departamento===d);
+    if(!deptItems.length&&(d==="Alimentos"||d==="Bebidas")){
+      return`<div class="card business" style="max-width:520px"><div class="business-head"><h4>${esc(d)}</h4></div><hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px"><div class="empty">Sin platillos cargados en este departamento.</div></div>`
+    }
+    if(!deptItems.length)return"";
+    const sorted=deptItems.slice().sort((a,b)=>num(b.cantidadVendida)-num(a.cantidadVendida));
+    const top=sorted.slice(0,n);
+    const rows=top.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${num(it.cantidadVendida).toLocaleString("es-MX")}</td><td>${money(it.ventaTotal)}</td></tr>`).join("");
+    return`<div class="card business" style="max-width:520px">
+      <div class="business-head"><h4>${esc(d)} <span style="font-weight:400;color:var(--muted);font-size:12px">— top ${top.length} de ${sorted.length} platillo(s)</span></h4></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px">
+      <div class="table-wrap"><table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">#</th><th style="padding:6px">Clave</th><th style="padding:6px">Platillo</th><th style="padding:6px">Cant. vendida</th><th style="padding:6px">Venta</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`
+  }).join("")
+}
 let costDeptActive="";
 let costOnlySinReceta=false;
 function toggleSinRecetaFilter(){
   costOnlySinReceta=!costOnlySinReceta;
-  renderCostingDetail()
+  renderCostingDetail();renderTopSellers()
 }
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
@@ -3917,7 +3967,7 @@ function renderCostingDetail(){
 }
 function setCostDeptTab(dept){
   costDeptActive=dept;
-  renderCostingDetail()
+  renderCostingDetail();renderTopSellers()
 }
 function updateCostingItem(idx,field,value){
   if(!canManageCosting())return;
@@ -3935,7 +3985,7 @@ function updateCostingItem(idx,field,value){
     it._costoManual=true;
     it._costoFromRecipe=false
   }
-  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail()
+  renderCostPeriodSummary();renderCostingSummary();renderCostingDetail();renderTopSellers()
 }
 async function saveCosting(status){
   if(!canManageCosting()){alert("No tienes permiso para gestionar este análisis.");return}
