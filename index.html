@@ -3907,13 +3907,25 @@ function topSellersSectionsHtml(items,n){
     if(!deptItems.length)return"";
     const sorted=deptItems.slice().sort((a,b)=>num(b.cantidadVendida)-num(a.cantidadVendida));
     const top=sorted.slice(0,n);
-    const rows=top.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${num(it.cantidadVendida).toLocaleString("es-MX")}</td><td>${money(it.ventaTotal)}</td></tr>`).join("");
+    const rows=top.map((it,i)=>{
+      const cantidad=num(it.cantidadVendida);
+      const ventaTotal=num(it.ventaTotal);
+      const precioUnitario=cantidad>0?ventaTotal/cantidad:null;
+      const tieneCosto=it.costoUnitario!==null&&it.costoUnitario!==undefined&&it.costoUnitario!==""&&!isNaN(num(it.costoUnitario))&&num(it.costoUnitario)>0;
+      const costoUnitario=tieneCosto?num(it.costoUnitario):null;
+      const pctCosto=(tieneCosto&&precioUnitario)?(costoUnitario/precioUnitario*100):null;
+      const utilidad=(tieneCosto&&precioUnitario!==null)?(precioUnitario-costoUnitario):null;
+      const costoCell=tieneCosto?money(costoUnitario):'<span style="color:var(--muted)">Sin receta</span>';
+      const pctCell=pctCosto!==null?pctCosto.toLocaleString("es-MX",{maximumFractionDigits:1})+"%":"—";
+      const utilCell=utilidad!==null?`<span style="color:${utilidad>=0?"var(--green)":"var(--red)"}">${money(utilidad)}</span>`:"—";
+      return`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${cantidad.toLocaleString("es-MX")}</td><td>${money(ventaTotal)}</td><td>${costoCell}</td><td>${pctCell}</td><td>${utilCell}</td></tr>`
+    }).join("");
     return`<div style="margin-bottom:26px">
       <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:8px">
         <h4 style="margin:0">${esc(d)}</h4>
         <span style="color:var(--muted);font-size:12px">Top ${top.length} de ${sorted.length} platillo(s)</span>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>#</th><th>Clave</th><th>Platillo</th><th>Cant. vendida</th><th>Venta</th></tr></thead>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Clave</th><th>Platillo</th><th>Cant. vendida</th><th>Venta</th><th>Costo por receta</th><th>% costo vs. venta</th><th>Utilidad por receta</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
     </div>`
