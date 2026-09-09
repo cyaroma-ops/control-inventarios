@@ -653,7 +653,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="recipeHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
-              <div><label>Negocio</label><select id="recBusiness"></select></div>
+              <div><label>Negocio</label><div id="recBusiness" style="padding:8px 0;font-weight:600"></div></div>
               <div><label>Área</label><select id="recArea"><option value="Cocina">Cocina</option><option value="Barra">Barra</option><option value="Bebidas">Bebidas</option></select></div>
               <div><label>Tipo de receta</label><select id="recType" onchange="onRecipeTypeChange()"><option value="menu">Menú (se vende al cliente)</option><option value="produccion">Producción (sub-receta / prep)</option></select></div>
             </div>
@@ -703,7 +703,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="supplierHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
-              <div><label>Negocio</label><select id="supBusiness"></select></div>
+              <div><label>Negocio</label><div id="supBusiness" style="padding:8px 0;font-weight:600"></div></div>
               <div><label>Nombre del proveedor</label><input id="supName" placeholder="Ej. Distribuidora XYZ"></div>
               <div><label>Contacto (opcional)</label><input id="supContact" placeholder="Teléfono, correo..."></div>
             </div>
@@ -727,6 +727,7 @@ textarea{min-height:76px;resize:vertical}
           <div id="insumoAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px">
             <input type="text" id="insumoSearch" placeholder="Buscar insumo..." style="max-width:240px">
+            <select id="insumoFamiliaFilter" style="max-width:180px"><option value="">Todas las familias</option><option value="Insumos Cocina">Insumos Cocina</option><option value="Insumos Bebidas">Insumos Bebidas</option></select>
             <select id="insumoGroupFilter" style="max-width:200px"><option value="">Todos los grupos</option></select>
           </div></div>
           <div id="insumoMigrationBox" class="notice" style="display:none;margin-bottom:14px"></div>
@@ -738,7 +739,8 @@ textarea{min-height:76px;resize:vertical}
           <div id="insumoHistoryBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
           <div class="card form-card">
             <div class="form-grid">
-              <div><label>Negocio</label><select id="insBusiness"></select></div>
+              <div><label>Negocio</label><div id="insBusiness" style="padding:8px 0;font-weight:600"></div></div>
+              <div><label>Familia</label><select id="insFamilia"><option value="">— Selecciona familia —</option><option value="Insumos Cocina">Insumos Cocina</option><option value="Insumos Bebidas">Insumos Bebidas</option></select></div>
               <div><label>Nombre del insumo</label><input id="insName" placeholder="Ej. Tequila Don Julio"></div>
               <div><label>Grupo</label><select id="insGrupo"></select></div>
             </div>
@@ -843,7 +845,7 @@ textarea{min-height:76px;resize:vertical}
               <span style="font-size:12.5px;color:var(--blue)" id="costDetailHelpToggle">¿Cómo edito esta tabla? ▾</span>
             </div>
             <p class="empty" id="costDetailHelpText" style="display:none;margin:0 0 10px">Edita el <b>Estatus</b>, el <b>Ajuste de IVA (costo)</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo. "Normal" (default) deja el costo tal cual lo subiste, sin desglosar IVA — muchas recetas de alimentos no lo llevan. "No trae IVA, agregar" se lo suma solo a esa fila. "Genérico" usa el % ponderado de la tarjeta de arriba.</p>
-            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Observaciones</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>Ajuste de IVA (costo)</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>Ajuste de IVA (costo)</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th><th>Observaciones</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
@@ -2319,7 +2321,8 @@ function renderRecipeList(){
 }
 function startNewRecipe(){
   if(!canManageRecipes())return;
-  currentRecipe={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),area:"Cocina",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
+  if(!currentBusiness){alert("Primero selecciona un negocio específico arriba (no \"Todos los negocios\") para saber a cuál pertenece la receta nueva.");return}
+  currentRecipe={id:Date.now(),business:currentBusiness,area:"Cocina",type:"menu",name:"",yieldQty:1,yieldUnit:"porciones",salePrice:"",photo:null,ingredients:[],steps:"",notes:"",status:"Borrador",history:[]};
   editingRecipeId=null;
   Promise.all([ensureSuppliersLoadedFor(currentRecipe.business),ensureRecipesLoadedFor(currentRecipe.business)]).then(openRecipeEditorForm)
 }
@@ -2337,13 +2340,7 @@ function openRecipeEditorForm(){
   document.getElementById("recipeEditorView").style.display="block";
   document.getElementById("recipeEditorTitle").textContent=editingRecipeId?"Editar receta":"Nueva receta";
   const bizSel=document.getElementById("recBusiness");
-  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
-  bizSel.value=currentRecipe.business;
-  bizSel.onchange=async()=>{
-    currentRecipe.business=bizSel.value;
-    await Promise.all([ensureSuppliersLoadedFor(bizSel.value),ensureRecipesLoadedFor(bizSel.value)]);
-    renderIngredientRows();renderRecipeTotals()
-  };
+  bizSel.textContent=currentRecipe.business||"";
   document.getElementById("recType").value=currentRecipe.type;
   document.getElementById("recArea").value=currentRecipe.area||"Cocina";
   document.getElementById("recName").value=currentRecipe.name||"";
@@ -2357,7 +2354,7 @@ function openRecipeEditorForm(){
   onRecipeTypeChange();
   renderRecipeTotals();
   const readOnly=!canManageRecipes();
-  ["recBusiness","recType","recArea","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  ["recType","recArea","recName","recYieldQty","recYieldUnit","recSalePrice","recPhotoFile","recSteps","recNotes"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnAddIngredient").style.display=readOnly?"none":"";
   document.getElementById("btnSaveDraftRecipe").style.display=readOnly?"none":"";
   document.getElementById("btnSendForReview").style.display=readOnly?"none":"";
@@ -2519,8 +2516,8 @@ function onRecipePhotoChange(e){
 }
 async function saveRecipe(status){
   if(!canManageRecipes()){alert("No tienes permiso para gestionar recetas.");return}
-  const business=document.getElementById("recBusiness").value;
-  if(!business){alert("Selecciona un negocio.");return}
+  const business=currentRecipe.business;
+  if(!business){alert("No hay un negocio seleccionado. Vuelve al listado y selecciona un negocio arriba antes de crear la receta.");return}
   const name=document.getElementById("recName").value.trim();
   if(!name){alert("Ponle un nombre a la receta.");return}
   currentRecipe.business=business;
@@ -2685,7 +2682,8 @@ function renderSupplierList(){
 }
 function startNewSupplier(){
   if(!canManageRecipes())return;
-  currentSupplier={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),name:"",contact:""};
+  if(!currentBusiness){alert("Primero selecciona un negocio específico arriba (no \"Todos los negocios\") para saber a cuál pertenece el proveedor nuevo.");return}
+  currentSupplier={id:Date.now(),business:currentBusiness,name:"",contact:""};
   editingSupplierId=null;
   openSupplierEditorForm()
 }
@@ -2703,12 +2701,11 @@ function openSupplierEditorForm(){
   document.getElementById("supplierEditorView").style.display="block";
   document.getElementById("supplierEditorTitle").textContent=editingSupplierId?"Editar proveedor":"Nuevo proveedor";
   const bizSel=document.getElementById("supBusiness");
-  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
-  bizSel.value=currentSupplier.business;
+  bizSel.textContent=currentSupplier.business||"";
   document.getElementById("supName").value=currentSupplier.name||"";
   document.getElementById("supContact").value=currentSupplier.contact||"";
   const readOnly=!canManageRecipes();
-  ["supBusiness","supName","supContact"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  ["supName","supContact"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnSaveSupplier").style.display=readOnly?"none":"";
   document.getElementById("btnDeleteSupplier").style.display=(editingSupplierId&&!readOnly)?"":"none";
   document.getElementById("btnSupplierHistory").style.display=editingSupplierId?"":"none";
@@ -2724,8 +2721,8 @@ function closeSupplierEditor(){
 }
 async function saveSupplier(){
   if(!canManageRecipes()){alert("No tienes permiso para gestionar proveedores.");return}
-  const business=document.getElementById("supBusiness").value;
-  if(!business){alert("Selecciona un negocio.");return}
+  const business=currentSupplier.business;
+  if(!business){alert("No hay un negocio seleccionado. Vuelve al listado y selecciona un negocio arriba antes de crear el proveedor.");return}
   const name=document.getElementById("supName").value.trim();
   if(!name){alert("Ponle un nombre al proveedor.");return}
   currentSupplier.business=business;
@@ -2829,6 +2826,7 @@ async function bootInsumos(){
   ensureCurrentBusiness();
   document.getElementById("insumoSearch").oninput=renderInsumoList;
   document.getElementById("insumoGroupFilter").onchange=renderInsumoList;
+  document.getElementById("insumoFamiliaFilter").onchange=renderInsumoList;
   document.getElementById("btnNewInsumo").style.display=canManageRecipes()?"":"none";
   document.getElementById("insumoAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("insumoAuditBox").style.display="none";
@@ -2889,6 +2887,7 @@ async function migrateOldSupplierProducts(){
 function renderInsumoList(){
   const bizFilter=currentBusiness;
   const q=(document.getElementById("insumoSearch").value||"").toLowerCase().trim();
+  const familiaFilter=document.getElementById("insumoFamiliaFilter").value;
   const groupFilter=document.getElementById("insumoGroupFilter").value;
   let list=allInsumosFlat();
   if(bizFilter)list=list.filter(i=>i.business===bizFilter);
@@ -2900,14 +2899,16 @@ function renderInsumoList(){
     groupSel.dataset.built=groups.join("|")
   }
   const sinGrupoCount=list.filter(i=>!i.grupo).length;
+  const sinFamiliaCount=list.filter(i=>!i.familia).length;
   const sinCostoCount=list.filter(i=>insumoCostPerUnit(i)<=0).length;
   const summaryBox=document.getElementById("insumoSummaryBox");
   if(summaryBox){
-    if(sinGrupoCount||sinCostoCount){
+    if(sinGrupoCount||sinFamiliaCount||sinCostoCount){
       summaryBox.style.display="block";
-      summaryBox.innerHTML=`<b>Pendientes:</b> ${sinGrupoCount} insumo(s) sin grupo asignado, ${sinCostoCount} insumo(s) sin costo capturado.`
+      summaryBox.innerHTML=`<b>Pendientes:</b> ${sinFamiliaCount} insumo(s) sin familia asignada, ${sinGrupoCount} insumo(s) sin grupo asignado, ${sinCostoCount} insumo(s) sin costo capturado.`
     } else summaryBox.style.display="none"
   }
+  if(familiaFilter)list=list.filter(i=>i.familia===familiaFilter);
   if(groupFilter)list=list.filter(i=>(i.grupo||"Sin grupo")===groupFilter);
   if(q)list=list.filter(i=>(i.name||"").toLowerCase().includes(q));
   list.sort((a,b)=>((a.grupo||"Sin grupo")+(a.name||"")).localeCompare((b.grupo||"Sin grupo")+(b.name||""),"es"));
@@ -2919,6 +2920,7 @@ function renderInsumoList(){
     const costoVal=insumoCostPerUnit(i);
     return `<div class="card business">
       <div class="business-head"><h4>${esc(i.name||"Sin nombre")}</h4></div>
+      <div class="line"><span>Familia</span><span class="badge${i.familia?"":" redtxt"}">${esc(i.familia||"Sin familia")}</span></div>
       <div class="line"><span>Grupo</span><span class="badge${i.grupo?"":" redtxt"}">${esc(i.grupo||"Sin grupo")}</span></div>
       <div class="line"><span>Proveedores</span><strong>${nProv}</strong></div>
       ${cur?`<div class="line"><span>Precio vigente</span><strong class="${costoVal<=0?"redtxt":""}">${money(costoVal)} / ${insumoBaseUnit(i).replace(/s$/,"")}</strong></div>
@@ -2930,7 +2932,8 @@ function renderInsumoList(){
 }
 function startNewInsumo(){
   if(!canManageRecipes())return;
-  currentInsumo={id:Date.now(),business:(currentBusiness&&visibleBusinessNames().includes(currentBusiness))?currentBusiness:(visibleBusinessNames()[0]||""),name:"",grupo:"",precios:[],history:[]};
+  if(!currentBusiness){alert("Primero selecciona un negocio específico arriba (no \"Todos los negocios\") para saber a cuál pertenece el insumo nuevo.");return}
+  currentInsumo={id:Date.now(),business:currentBusiness,name:"",familia:"",grupo:"",precios:[],history:[]};
   editingInsumoId=null;
   openInsumoEditorForm()
 }
@@ -2957,13 +2960,13 @@ function openInsumoEditorForm(){
   document.getElementById("insumoEditorView").style.display="block";
   document.getElementById("insumoEditorTitle").textContent=editingInsumoId?"Editar insumo":"Nuevo insumo";
   const bizSel=document.getElementById("insBusiness");
-  bizSel.innerHTML=visibleBusinessNames().map(b=>`<option>${esc(b)}</option>`).join("");
-  bizSel.value=currentInsumo.business;
+  bizSel.textContent=currentInsumo.business||"";
   document.getElementById("insName").value=currentInsumo.name||"";
+  document.getElementById("insFamilia").value=currentInsumo.familia||"";
   refreshInsumoGroupOptions();
   renderInsumoPriceRows();
   const readOnly=!canManageRecipes();
-  ["insBusiness","insName","insGrupo"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
+  ["insName","insFamilia","insGrupo"].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=readOnly});
   document.getElementById("btnAddInsumoPrice").style.display=readOnly?"none":"";
   document.getElementById("btnSaveInsumo").style.display=readOnly?"none":"";
   document.getElementById("btnDeleteInsumo").style.display=(editingInsumoId&&!readOnly)?"":"none";
@@ -3033,12 +3036,13 @@ function updateInsumoPrice(idx,field,value){
 }
 async function saveInsumo(){
   if(!canManageRecipes()){alert("No tienes permiso para gestionar insumos.");return}
-  const business=document.getElementById("insBusiness").value;
-  if(!business){alert("Selecciona un negocio.");return}
+  const business=currentInsumo.business;
+  if(!business){alert("No hay un negocio seleccionado. Vuelve al listado y selecciona un negocio arriba antes de crear el insumo.");return}
   const name=document.getElementById("insName").value.trim();
   if(!name){alert("Ponle un nombre al insumo.");return}
   currentInsumo.business=business;
   currentInsumo.name=name;
+  currentInsumo.familia=document.getElementById("insFamilia").value;
   currentInsumo.grupo=document.getElementById("insGrupo").value;
   currentInsumo.history=currentInsumo.history||[];
   const isNew=!editingInsumoId;
@@ -3805,9 +3809,9 @@ function printInsumosList(){
     const cur=insumoCurrentPrice(i);
     const nProv=new Set((i.precios||[]).map(p=>p.supplierId)).size;
     const costoVal=insumoCostPerUnit(i);
-    return`<tr><td>${esc(i.name||"")}</td><td>${esc(i.grupo||"Sin grupo")}</td><td>${nProv}</td><td>${cur?money(costoVal)+" / "+insumoBaseUnit(i).replace(/s$/,""):"—"}</td><td>${cur?esc(cur.supplierName||"—")+" — "+esc(cur.capturedAt||""):"—"}</td></tr>`
+    return`<tr><td>${esc(i.name||"")}</td><td>${esc(i.familia||"Sin familia")}</td><td>${esc(i.grupo||"Sin grupo")}</td><td>${nProv}</td><td>${cur?money(costoVal)+" / "+insumoBaseUnit(i).replace(/s$/,""):"—"}</td><td>${cur?esc(cur.supplierName||"—")+" — "+esc(cur.capturedAt||""):"—"}</td></tr>`
   }).join("");
-  openPrintWindow(`Insumos — ${bizFilter||""}`,`<h1>Insumos — ${esc(bizFilter||"")}</h1>${printBusinessMetaHtml(bizFilter)}<p class="meta">${list.length} insumo(s)</p><table><tr><th>Nombre</th><th>Grupo</th><th>Proveedores</th><th>Precio vigente</th><th>De</th></tr>${rows}</table>`)
+  openPrintWindow(`Insumos — ${bizFilter||""}`,`<h1>Insumos — ${esc(bizFilter||"")}</h1>${printBusinessMetaHtml(bizFilter)}<p class="meta">${list.length} insumo(s)</p><table><tr><th>Nombre</th><th>Familia</th><th>Grupo</th><th>Proveedores</th><th>Precio vigente</th><th>De</th></tr>${rows}</table>`)
 }
 function printCostingRecordById(id){
   const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===id);
@@ -3825,7 +3829,7 @@ function printCostingDetail(record){
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
     const estatus=normalizeKey(it.estatus||"").trim()==="con receta"?"Con receta":"Sin receta (paquete/menú)";
     const sinCosto=!(num(it.costoUnitario)>0);
-    return`<tr${sinCosto?' style="color:#ae1d23"':""}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${esc(it.observaciones||"—")}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    return`<tr${sinCosto?' style="color:#ae1d23"':""}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td><td>${esc(it.observaciones||"—")}</td></tr>`
   }).join("");
   const deptRows=summary.map(d=>`<tr><td>${esc(d.departamento)}</td><td>${money(d.ventaTotal)}</td><td>${money(d.costoSinIVA)}</td><td>${d.pctSinIVA.toFixed(1)}%</td><td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td></tr>`).join("");
   const bodyHtml=`
@@ -3842,7 +3846,7 @@ ${printBusinessMetaHtml(record.business)}
 <h2>Resumen por departamento</h2>
 <table><tr><th>Departamento</th><th>Venta (sin IVA)</th><th>Costo teórico (sin IVA)</th><th>Costo teórico %</th><th>Costo real %</th></tr>${deptRows}</table>
 <h2>Detalle por platillo (${items.length}${sinCostoTotal?`, <span style="color:#ae1d23">${sinCostoTotal} sin costo de receta</span>`:""})</h2>
-<table><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Observaciones</th><th>Cant.</th><th>Venta total</th><th>Costo unitario</th><th>Estatus</th><th>Costo teórico sin IVA</th><th>Costo teórico con IVA</th></tr>${rows}</table>`;
+<table><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant.</th><th>Venta total</th><th>Costo unitario</th><th>Estatus</th><th>Costo teórico sin IVA</th><th>Costo teórico con IVA</th><th>Observaciones</th></tr>${rows}</table>`;
   openPrintWindow(`Costeo — ${record.business||""}`,bodyHtml)
 }
 function renderIvaSettings(){
@@ -4123,7 +4127,7 @@ function renderCostingDetail(){
         <button type="button" class="btn primary" style="padding:0 8px;font-size:11px" onclick="saveObservacion(${idx})">Guardar</button>
       </span>
     </td>`;
-    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td>${obsCell}<td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td${costRowStyle}><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td${costRowStyle}><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td>${obsCell}</tr>`
   }).join("")
 }
 function toggleObservacionEdit(idx){
