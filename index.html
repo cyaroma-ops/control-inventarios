@@ -3918,14 +3918,14 @@ function topSellersSectionsHtml(items,n){
       const costoCell=tieneCosto?money(costoUnitario):'<span style="color:var(--muted)">Sin receta</span>';
       const pctCell=pctCosto!==null?pctCosto.toLocaleString("es-MX",{maximumFractionDigits:1})+"%":"—";
       const utilCell=utilidad!==null?`<span style="color:${utilidad>=0?"var(--green)":"var(--red)"}">${money(utilidad)}</span>`:"—";
-      return`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${cantidad.toLocaleString("es-MX")}</td><td>${money(ventaTotal)}</td><td>${costoCell}</td><td>${pctCell}</td><td>${utilCell}</td></tr>`
+      return`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${cantidad.toLocaleString("es-MX")}</td><td>${money(ventaTotal)}</td><td>${precioUnitario!==null?money(precioUnitario):"—"}</td><td>${costoCell}</td><td>${pctCell}</td><td>${utilCell}</td></tr>`
     }).join("");
     return`<div style="margin-bottom:26px">
       <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:8px">
         <h4 style="margin:0">${esc(d)}</h4>
         <span style="color:var(--muted);font-size:12px">Top ${top.length} de ${sorted.length} platillo(s)</span>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>#</th><th>Clave</th><th>Platillo</th><th>Cant. vendida</th><th>Venta</th><th>Costo por receta</th><th>% costo vs. venta</th><th>Utilidad por receta</th></tr></thead>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Clave</th><th>Platillo</th><th>Cant. vendida</th><th>Venta</th><th>Precio de venta</th><th>Costo por receta</th><th>% costo vs. venta</th><th>Utilidad por receta</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
     </div>`
