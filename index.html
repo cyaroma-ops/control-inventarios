@@ -843,7 +843,7 @@ textarea{min-height:76px;resize:vertical}
               <span style="font-size:12.5px;color:var(--blue)" id="costDetailHelpToggle">¿Cómo edito esta tabla? ▾</span>
             </div>
             <p class="empty" id="costDetailHelpText" style="display:none;margin:0 0 10px">Edita el <b>Estatus</b>, el <b>Ajuste de IVA (costo)</b> o el <b>Costo unitario</b> directamente aquí si el archivo lo trajo incompleto o si más adelante conoces el costo real de un platillo. "Normal" (default) deja el costo tal cual lo subiste, sin desglosar IVA — muchas recetas de alimentos no lo llevan. "No trae IVA, agregar" se lo suma solo a esa fila. "Genérico" usa el % ponderado de la tarjeta de arriba.</p>
-            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>Ajuste de IVA (costo)</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Observaciones</th><th>Cant. vendida</th><th>Venta total</th><th>Costo unitario</th><th>Ajuste de IVA (costo)</th><th>Estatus</th><th>Costo teórico (sin IVA)</th><th>Costo teórico (con IVA)</th></tr></thead><tbody id="costDetailBody"></tbody></table></div>
           </div>
           <div class="card form-card" style="position:sticky;bottom:8px">
             <div class="flex" style="flex-wrap:wrap;gap:10px">
@@ -3739,16 +3739,21 @@ function printBusinessMetaHtml(name){
 function openPrintWindow(title,bodyHtml){
   const w=window.open("","_blank");
   if(!w){alert("Tu navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.");return}
+  const fecha=new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>
-body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
+body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px 24px 60px}
 h1{font-size:18px;margin:0 0 4px}
 h2{font-size:14px;margin:22px 0 8px}
 p.meta{color:#555;margin:0 0 4px}
 table{width:100%;border-collapse:collapse;margin-bottom:8px}
 th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px}
 th{background:#f2f2f2}
-</style></head><body>${bodyHtml}</body></html>`);
+.printFooterWin{position:fixed;bottom:6px;left:24px;right:24px;font-size:9px;color:#94a3b8;font-weight:400;border-top:1px solid #e2e8f0;padding-top:6px}
+@media print{.printFooterWin{position:fixed;bottom:6px}}
+</style></head><body>${bodyHtml}
+<div class="printFooterWin">CYAroma® / Roma &amp; Associates — Marca registrada · Uso interno · Impreso el ${fecha}</div>
+</body></html>`);
   w.document.close();
   w.focus();
   setTimeout(()=>{w.print()},300)
@@ -3820,21 +3825,10 @@ function printCostingDetail(record){
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,record.ventaConIVA);
     const estatus=normalizeKey(it.estatus||"").trim()==="con receta"?"Con receta":"Sin receta (paquete/menú)";
     const sinCosto=!(num(it.costoUnitario)>0);
-    return`<tr${sinCosto?' style="color:#ae1d23"':""}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    return`<tr${sinCosto?' style="color:#ae1d23"':""}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${esc(it.observaciones||"—")}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td>${money(it.costoUnitario)}</td><td>${estatus}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
   }).join("");
   const deptRows=summary.map(d=>`<tr><td>${esc(d.departamento)}</td><td>${money(d.ventaTotal)}</td><td>${money(d.costoSinIVA)}</td><td>${d.pctSinIVA.toFixed(1)}%</td><td>${d.tieneReal?d.pctReal.toFixed(1)+"%":"—"}</td></tr>`).join("");
-  const w=window.open("","_blank");
-  if(!w){alert("Tu navegador bloqueó la ventana de impresión. Permite ventanas emergentes para este sitio e inténtalo de nuevo.");return}
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Costeo — ${esc(record.business||"")}</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#1a1a1a;padding:24px}
-h1{font-size:18px;margin:0 0 4px}
-h2{font-size:14px;margin:22px 0 8px}
-p.meta{color:#555;margin:0 0 4px}
-table{width:100%;border-collapse:collapse;margin-bottom:8px}
-th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:11px}
-th{background:#f2f2f2}
-</style></head><body>
+  const bodyHtml=`
 <h1>Costeo — ${esc(record.business||"")}</h1>
 ${printBusinessMetaHtml(record.business)}
 <p class="meta">${esc(record.periodicidad||"")} — ${esc(record.startDate||"")} a ${esc(record.endDate||"")}</p>
@@ -3848,11 +3842,8 @@ ${printBusinessMetaHtml(record.business)}
 <h2>Resumen por departamento</h2>
 <table><tr><th>Departamento</th><th>Venta (sin IVA)</th><th>Costo teórico (sin IVA)</th><th>Costo teórico %</th><th>Costo real %</th></tr>${deptRows}</table>
 <h2>Detalle por platillo (${items.length}${sinCostoTotal?`, <span style="color:#ae1d23">${sinCostoTotal} sin costo de receta</span>`:""})</h2>
-<table><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Cant.</th><th>Venta total</th><th>Costo unitario</th><th>Estatus</th><th>Costo teórico sin IVA</th><th>Costo teórico con IVA</th></tr>${rows}</table>
-</body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(()=>{w.print()},300)
+<table><tr><th>Departamento</th><th>Grupo</th><th>Código</th><th>Producto</th><th>Observaciones</th><th>Cant.</th><th>Venta total</th><th>Costo unitario</th><th>Estatus</th><th>Costo teórico sin IVA</th><th>Costo teórico con IVA</th></tr>${rows}</table>`;
+  openPrintWindow(`Costeo — ${record.business||""}`,bodyHtml)
 }
 function renderIvaSettings(){
   const box=document.getElementById("costIvaSettings");
@@ -4114,7 +4105,7 @@ function renderCostingDetail(){
   } else {
     totalsBox.innerHTML=""
   }
-  if(!list.length){body.innerHTML=`<tr><td colspan="11" class="empty">${costOnlySinReceta?'Ningún platillo en esta vista está sin costo de receta.':'Sin platillos capturados.'}</td></tr>`;return}
+  if(!list.length){body.innerHTML=`<tr><td colspan="12" class="empty">${costOnlySinReceta?'Ningún platillo en esta vista está sin costo de receta.':'Sin platillos capturados.'}</td></tr>`;return}
   body.innerHTML=list.map(({it,idx})=>{
     const{costoSinIVA,costoConIVA}=computeItemCosting(it,ivaDefaults,currentCosting.ventaConIVA);
     const excluded=normalizeKey(it.estatus||"").trim()!=="con receta";
@@ -4122,8 +4113,38 @@ function renderCostingDetail(){
     const ivaSel=`<select onchange="updateCostingItem(${idx},'aplicaIVA',this.value)" ${readOnly?"disabled":""} style="max-width:150px"><option value="" ${it.aplicaIVA===null||it.aplicaIVA===undefined?"selected":""}>Genérico</option><option value="si" ${it.aplicaIVA===true?"selected":""}>Normal</option><option value="no" ${it.aplicaIVA===false?"selected":""}>No trae IVA, agregar</option></select>`;
     const estatusSel=`<select onchange="updateCostingItem(${idx},'estatus',this.value)" ${readOnly?"disabled":""} style="max-width:170px"><option value="Con receta" ${!excluded?"selected":""}>Con receta</option><option value="Sin receta (paquete/menú)" ${excluded?"selected":""}>Sin receta (paquete/menú)</option></select>`;
     const costRowStyle=sinCosto(it)?' style="color:var(--red)"':"";
-    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td${costRowStyle}><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
+    const obsCell=`<td>
+      <span id="obsText-${idx}" style="display:inline-flex;align-items:center;gap:4px;max-width:170px">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(it.observaciones||"")}">${esc(it.observaciones||"—")}</span>
+        ${readOnly?"":`<button type="button" class="btn" style="padding:0 6px;font-size:11px;line-height:1.5" title="Editar observaciones" onclick="toggleObservacionEdit(${idx})">⋯</button>`}
+      </span>
+      <span id="obsEdit-${idx}" style="display:none;gap:4px;align-items:center">
+        <input type="text" id="obsInput-${idx}" value="${esc(it.observaciones||"")}" placeholder="Observaciones" style="max-width:150px" onkeydown="if(event.key==='Enter')saveObservacion(${idx})">
+        <button type="button" class="btn primary" style="padding:0 8px;font-size:11px" onclick="saveObservacion(${idx})">Guardar</button>
+      </span>
+    </td>`;
+    return`<tr${rowStyle}><td>${esc(it.departamento)}</td><td>${esc(it.grupo)}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td>${obsCell}<td>${it.cantidadVendida}</td><td>${money(it.ventaTotal)}</td><td${costRowStyle}><input type="number" step="0.01" lang="en" value="${it.costoUnitario}" onchange="updateCostingItem(${idx},'costoUnitario',this.value)" ${readOnly?"disabled":""} style="max-width:100px"></td><td>${ivaSel}</td><td>${estatusSel}</td><td>${money(costoSinIVA)}</td><td>${money(costoConIVA)}</td></tr>`
   }).join("")
+}
+function toggleObservacionEdit(idx){
+  const txt=document.getElementById(`obsText-${idx}`);
+  const edit=document.getElementById(`obsEdit-${idx}`);
+  if(!txt||!edit)return;
+  const opening=edit.style.display==="none";
+  txt.style.display=opening?"none":"inline-flex";
+  edit.style.display=opening?"inline-flex":"none";
+  if(opening){
+    const inp=document.getElementById(`obsInput-${idx}`);
+    if(inp){inp.focus();inp.select()}
+  }
+}
+function saveObservacion(idx){
+  if(!canManageCosting())return;
+  const it=currentCosting.items[idx];
+  if(!it)return;
+  const inp=document.getElementById(`obsInput-${idx}`);
+  it.observaciones=(inp&&inp.value||"").trim();
+  renderCostingDetail();renderTopSellers()
 }
 function setCostDeptTab(dept){
   costDeptActive=dept;
