@@ -759,12 +759,28 @@ textarea{min-height:76px;resize:vertical}
         <div id="costingListView">
           <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">Auditoría</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
 
-          <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
-          <div id="topSellersModalBox" class="card form-card" style="display:none;margin-bottom:14px">
-            <div class="table-head"><h3 style="margin:0" id="topSellersModalTitle">Top platillos más vendidos</h3><div class="flex" style="gap:8px;align-items:center"><label style="font-size:12.5px;color:var(--muted)">Mostrar</label><select id="topSellersModalCount" onchange="onTopSellersModalCountChange()" style="max-width:130px"><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option><option value="9999">Todos</option><option value="custom">Otro número…</option></select><input type="number" min="1" step="1" id="topSellersModalCustom" placeholder="Cantidad" style="max-width:90px;display:none" onchange="renderTopSellersModal()"><button class="btn" onclick="closeTopSellersModal()">Cerrar</button></div></div>
-            <div id="topSellersModalContent" class="costing-grid"></div>
+          <div class="tabs" id="costingTopTabs">
+            <button type="button" class="tab active" id="costingTopTabAnalisis" onclick="setCostingTopTab('analisis')">Análisis</button>
+            <button type="button" class="tab" id="costingTopTabPopularidad" onclick="setCostingTopTab('popularidad')">Popularidad de platillos</button>
           </div>
-          <div id="costingCards" class="costing-grid"></div>
+
+          <div id="costingAuditBox" class="card form-card" style="display:none;margin-bottom:14px"></div>
+
+          <div id="costingAnalisisPanel">
+            <div id="costingCards" class="costing-grid"></div>
+          </div>
+
+          <div id="costingPopularidadPanel" style="display:none">
+            <div class="card table-card">
+              <div class="table-head"><h3 style="margin:0">Popularidad de platillos</h3></div>
+              <div class="flex" style="gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+                <div><label>Periodo (análisis)</label><select id="popPeriodoSelect" onchange="renderPopularidadPanel()" style="min-width:220px"></select></div>
+                <div><label>Mostrar</label><select id="popCountSelect" onchange="onPopCountChange()" style="max-width:150px"><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option><option value="9999">Todos</option><option value="custom">Otro número…</option></select></div>
+                <div><input type="number" min="1" step="1" id="popCountCustom" placeholder="Cantidad" style="display:none;max-width:110px" onchange="renderPopularidadPanel()"></div>
+              </div>
+              <div id="popularidadContent"></div>
+            </div>
+          </div>
         </div>
         <div id="costingEditorView" style="display:none">
           <div class="page-title"><div><h2 id="costingEditorTitle">Nuevo análisis</h2><p>Sube el archivo de popularidad y costeo que exportas de tu sistema (por platillo, con cantidad vendida y costo de receta).</p></div><div class="actions"><button class="btn" id="btnCostingHistory" onclick="toggleCostingHistory()" style="display:none">Historial de cambios</button><button class="btn" onclick="closeCostingEditor()">← Volver al listado</button></div></div>
@@ -815,7 +831,7 @@ textarea{min-height:76px;resize:vertical}
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Top platillos más vendidos</h3><div class="flex" style="gap:8px;align-items:center"><label style="font-size:12.5px;color:var(--muted)">Mostrar</label><select id="topSellersCount" onchange="onTopSellersCountChange()" style="max-width:130px"><option value="10">Top 10</option><option value="20">Top 20</option><option value="30">Top 30</option><option value="50">Top 50</option><option value="9999">Todos</option><option value="custom">Otro número…</option></select><input type="number" min="1" step="1" id="topSellersCustom" placeholder="Cantidad" style="max-width:90px;display:none" onchange="renderTopSellers()"></div></div>
             <p class="empty" style="margin:0 0 10px">Por cantidad de unidades vendidas en este periodo, separado por Alimentos y Bebidas.</p>
-            <div id="topSellersBox" class="costing-grid"></div>
+            <div id="topSellersBox"></div>
           </div>
           <div class="card table-card">
             <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail();renderTopSellers()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
@@ -3374,9 +3390,10 @@ async function bootCosting(){
   document.getElementById("btnNewCosting").style.display=canManageCosting()?"":"none";
   document.getElementById("costingAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("costingAuditBox").style.display="none";
-  closeTopSellersModal();
+  setCostingTopTab("analisis");
   await ensureCostingLoadedFor(currentBusiness);
-  renderCostingList()
+  renderCostingList();
+  populatePopPeriodoSelect()
 }
 function periodSummaryTableHtml(totals){
   if(!totals.depsTotal)return '<div class="empty">Sube un archivo para ver el resumen del periodo.</div>';
@@ -3425,7 +3442,6 @@ function renderCostingList(){
       <div style="margin-top:12px">${periodSummaryTableHtml(totals)}</div>
       ${deptBlocks||'<div style="font-size:12px;color:var(--muted);margin-top:6px">Sube un archivo para ver el desglose.</div>'}
       <button class="btn" style="margin-top:14px" onclick="openCosting(${r.id})">Ver detalle</button>
-      <button class="btn" style="margin-top:14px" onclick="showTopSellersForRecord(${r.id})">Top platillos</button>
       <button class="btn" style="margin-top:14px" onclick="printCostingRecordById(${r.id})">Imprimir</button>
     </div>`
   }).join("")
@@ -3477,7 +3493,9 @@ function closeCostingEditor(){
   currentCosting=null;editingCostingId=null;
   document.getElementById("costingEditorView").style.display="none";
   document.getElementById("costingListView").style.display="block";
-  renderCostingList()
+  renderCostingList();
+  populatePopPeriodoSelect();
+  if(costingTopTab==="popularidad")renderPopularidadPanel()
 }
 function clearCostingItems(){
   if(!canManageCosting())return;
@@ -3870,9 +3888,10 @@ function setCostoRealModo(dept,modo){
   currentCosting.costoReal[dept]=cur;
   renderCostPeriodSummary();renderCostingSummary()
 }
-// Construye el HTML de las tarjetas "Top platillos" (Alimentos/Bebidas/otros) para un set de items y un top N dado.
-// Se usa tanto dentro del editor de un análisis como en el panel rápido de la lista de Costeo.
-function topSellersCardsHtml(items,n){
+// Construye el HTML de las secciones "Alimentos"/"Bebidas" (ancho completo, sin tarjetas angostas)
+// para un set de items y un top N dado. Se usa tanto en el editor de un análisis como en la
+// pestaña "Popularidad de platillos" de la lista de Costeo.
+function topSellersSectionsHtml(items,n){
   const clean=(items||[]).filter(it=>!looksLikeTotalRowItem(it));
   if(!clean.length)return'<div class="empty">Este análisis no tiene platillos cargados todavía.</div>';
   const allDepts=[...new Set(clean.map(it=>it.departamento))];
@@ -3881,17 +3900,18 @@ function topSellersCardsHtml(items,n){
   return orderedDepts.map(d=>{
     const deptItems=clean.filter(it=>it.departamento===d);
     if(!deptItems.length&&(d==="Alimentos"||d==="Bebidas")){
-      return`<div class="card business" style="max-width:520px"><div class="business-head"><h4>${esc(d)}</h4></div><hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px"><div class="empty">Sin platillos cargados en este departamento.</div></div>`
+      return`<div style="margin-bottom:26px"><h4 style="margin:0 0 8px">${esc(d)}</h4><div class="empty">Sin platillos cargados en este departamento.</div></div>`
     }
     if(!deptItems.length)return"";
     const sorted=deptItems.slice().sort((a,b)=>num(b.cantidadVendida)-num(a.cantidadVendida));
     const top=sorted.slice(0,n);
     const rows=top.map((it,i)=>`<tr><td>${i+1}</td><td>${esc(it.clave)}</td><td>${esc(it.producto)}</td><td>${num(it.cantidadVendida).toLocaleString("es-MX")}</td><td>${money(it.ventaTotal)}</td></tr>`).join("");
-    return`<div class="card business" style="max-width:520px">
-      <div class="business-head"><h4>${esc(d)} <span style="font-weight:400;color:var(--muted);font-size:12px">— top ${top.length} de ${sorted.length} platillo(s)</span></h4></div>
-      <hr style="border:none;border-top:1px solid var(--line);margin:0 0 10px">
-      <div class="table-wrap"><table style="width:100%;border-collapse:collapse">
-        <thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">#</th><th style="padding:6px">Clave</th><th style="padding:6px">Platillo</th><th style="padding:6px">Cant. vendida</th><th style="padding:6px">Venta</th></tr></thead>
+    return`<div style="margin-bottom:26px">
+      <div class="flex" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h4 style="margin:0">${esc(d)}</h4>
+        <span style="color:var(--muted);font-size:12px">Top ${top.length} de ${sorted.length} platillo(s)</span>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>#</th><th>Clave</th><th>Platillo</th><th>Cant. vendida</th><th>Venta</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
     </div>`
@@ -3919,38 +3939,43 @@ function renderTopSellers(){
   if(!box)return;
   if(!(currentCosting.items||[]).length){box.innerHTML='<div class="empty">Sube un archivo de popularidad para ver el top de platillos más vendidos.</div>';return}
   const n=topSellersNFromSelect("topSellersCount","topSellersCustom");
-  box.innerHTML=topSellersCardsHtml(currentCosting.items,n)
+  box.innerHTML=topSellersSectionsHtml(currentCosting.items,n)
 }
-// --- Panel rápido de Top platillos desde la lista de Costeo (sin entrar al detalle del análisis) ---
-let topSellersModalRecordId=null;
-function showTopSellersForRecord(id){
-  const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===id);
-  if(!record){alert("No se encontró este análisis.");return}
-  topSellersModalRecordId=id;
-  document.getElementById("topSellersModalTitle").textContent=`Top platillos más vendidos — ${record.periodicidad||""} ${record.startDate||""} a ${record.endDate||""}`;
-  document.getElementById("topSellersModalBox").style.display="block";
-  renderTopSellersModal();
-  document.getElementById("topSellersModalBox").scrollIntoView({behavior:"smooth",block:"start"})
+// --- Pestaña "Popularidad de platillos" dentro de la lista de Costeo ---
+let costingTopTab="analisis";
+function setCostingTopTab(tab){
+  costingTopTab=tab;
+  document.getElementById("costingTopTabAnalisis").classList.toggle("active",tab==="analisis");
+  document.getElementById("costingTopTabPopularidad").classList.toggle("active",tab==="popularidad");
+  document.getElementById("costingAnalisisPanel").style.display=tab==="analisis"?"":"none";
+  document.getElementById("costingPopularidadPanel").style.display=tab==="popularidad"?"":"none";
+  if(tab==="popularidad"){populatePopPeriodoSelect();renderPopularidadPanel()}
 }
-function closeTopSellersModal(){
-  topSellersModalRecordId=null;
-  document.getElementById("topSellersModalBox").style.display="none"
+function populatePopPeriodoSelect(){
+  const sel=document.getElementById("popPeriodoSelect");
+  const list=(costingByBusiness[currentBusiness]||[]).slice().sort((a,b)=>String(b.endDate).localeCompare(String(a.endDate)));
+  const prevValue=sel.value;
+  if(!list.length){sel.innerHTML='<option value="">Sin análisis todavía</option>';return}
+  sel.innerHTML=list.map(r=>`<option value="${r.id}">${esc(r.periodicidad||"")} — ${esc(r.startDate||"")} a ${esc(r.endDate||"")}${r.status==="Terminado"?"":" (borrador)"}</option>`).join("");
+  if(list.some(r=>String(r.id)===prevValue))sel.value=prevValue
 }
-function onTopSellersModalCountChange(){
-  const sel=document.getElementById("topSellersModalCount");
-  const custom=document.getElementById("topSellersModalCustom");
+function onPopCountChange(){
+  const sel=document.getElementById("popCountSelect");
+  const custom=document.getElementById("popCountCustom");
   if(!sel||!custom)return;
   custom.style.display=sel.value==="custom"?"":"none";
   if(sel.value==="custom"){if(!custom.value)custom.value=10;custom.focus()}
-  renderTopSellersModal()
+  renderPopularidadPanel()
 }
-function renderTopSellersModal(){
-  const content=document.getElementById("topSellersModalContent");
-  if(!content||!topSellersModalRecordId)return;
-  const record=(costingByBusiness[currentBusiness]||[]).find(r=>r.id===topSellersModalRecordId);
-  if(!record){closeTopSellersModal();return}
-  const n=topSellersNFromSelect("topSellersModalCount","topSellersModalCustom");
-  content.innerHTML=topSellersCardsHtml(record.items,n)
+function renderPopularidadPanel(){
+  const content=document.getElementById("popularidadContent");
+  if(!content)return;
+  const sel=document.getElementById("popPeriodoSelect");
+  const list=costingByBusiness[currentBusiness]||[];
+  const record=list.find(r=>String(r.id)===String(sel.value));
+  if(!record){content.innerHTML='<div class="empty">Crea o abre un análisis primero para ver su popularidad de platillos.</div>';return}
+  const n=topSellersNFromSelect("popCountSelect","popCountCustom");
+  content.innerHTML=topSellersSectionsHtml(record.items,n)
 }
 let costDeptActive="";
 let costOnlySinReceta=false;
