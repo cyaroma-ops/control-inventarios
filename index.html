@@ -4277,6 +4277,7 @@ async function toggleCostingAuditPanel(){
   if(open){box.style.display="none";return}
   const business=currentBusiness;
   if(!business){alert("Selecciona un negocio primero.");return}
+  costingAuditLoaded.delete(business); // forzar relectura fresca cada vez que se abre el panel
   await ensureCostingAuditLoadedFor(business);
   const log=(costingAuditByBusiness[business]||[]).slice().reverse();
   box.innerHTML=`<h3 style="margin-top:0">Auditoría de Costeo — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
@@ -4328,6 +4329,7 @@ async function toggleTomaAuditPanel(){
   if(open){box.style.display="none";return}
   const business=currentBusiness;
   if(!business){alert("Selecciona un negocio primero.");return}
+  tomaAuditLoaded.delete(business); // forzar relectura fresca cada vez que se abre el panel
   await ensureTomaAuditLoadedFor(business);
   const log=(tomaAuditByBusiness[business]||[]).slice().reverse();
   box.innerHTML=`<h3 style="margin-top:0">Auditoría de Tomas físicas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
