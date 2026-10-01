@@ -1107,11 +1107,11 @@ async function ensureUserProfile(user){
   const { data, error } = await sb.from("user_access").select("*").eq("id", user.id).maybeSingle();
   if (error){ console.error("Error al leer perfil de acceso:", error); return; }
   if (!data){
-    const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false, can_capture_tomas:false, toma_departments:[] });
+    const { error: insErr } = await sb.from("user_access").insert({ id:user.id, email:user.email, is_admin:false, businesses:[], view_only:false, can_edit_tomas:false, can_capture_tomas:false, toma_departments:[], can_manage_recipes:false, can_view_costing:false });
     if (insErr) console.error("Error al crear perfil de acceso:", insErr);
-    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], canManageRecipes:false, name:"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:false, businesses:[], viewOnly:false, canEditTomas:false, canCaptureTomas:false, tomaDepartments:[], canManageRecipes:false, canViewCosting:false, name:"" };
   } else {
-    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], canManageRecipes:!!data.can_manage_recipes, name:data.display_name||"" };
+    currentUser = { id:user.id, email:user.email, isAdmin:!!data.is_admin, businesses:Array.isArray(data.businesses)?data.businesses:[], viewOnly:!!data.view_only, canEditTomas:!!data.can_edit_tomas, canCaptureTomas:!!data.can_capture_tomas, tomaDepartments:Array.isArray(data.toma_departments)?data.toma_departments:[], canManageRecipes:!!data.can_manage_recipes, canViewCosting:!!data.can_view_costing, name:data.display_name||"" };
   }
 }
 function userCanSee(name){ return currentUser.isAdmin || currentUser.businesses.includes(name); }
@@ -1292,7 +1292,7 @@ function applyNavVisibility(){
   const showRecipes=isAdmin||viewOnly||currentUser.canManageRecipes;
   if(recBtn)recBtn.style.display=showRecipes?"":"none";
   const costBtn=document.querySelector('[data-view="costing"]');
-  if(costBtn)costBtn.style.display=isAdmin?"":"none";
+  if(costBtn)costBtn.style.display=(isAdmin||currentUser.canViewCosting)?"":"none";
   const usersTabBtn2=document.getElementById("settingsTab-users");if(usersTabBtn2)usersTabBtn2.style.display=isAdmin?"":"none";
   if(restricted){
     if(showToma)openView("tomafisica");
@@ -3438,11 +3438,11 @@ function costingPeriodTotals(record){
   return t
 }
 async function bootCosting(){
-  if(!currentUser.isAdmin){openView("dashboard");return}
+  if(!currentUser.isAdmin&&!currentUser.canViewCosting){openView("dashboard");return}
   document.getElementById("costingEditorView").style.display="none";
   document.getElementById("costingListView").style.display="block";
   document.getElementById("btnNewCosting").style.display=canManageCosting()?"":"none";
-  document.getElementById("costingAuditBtn").style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("costingAuditBtn").style.display=(currentUser.isAdmin||currentUser.canViewCosting)?"":"none";
   document.getElementById("costingAuditBox").style.display="none";
   setCostingTopTab("analisis");
   await ensureCostingLoadedFor(currentBusiness);
@@ -4792,7 +4792,8 @@ async function renderUsersPanel(){
     const extraBadges = [
       u.can_edit_tomas?'<span class="badge">Administra Tomas</span>':"",
       u.can_capture_tomas?'<span class="badge">Captura Tomas</span>':"",
-      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':""
+      u.can_manage_recipes?'<span class="badge">Gestiona Recetas</span>':"",
+      u.can_view_costing?'<span class="badge">Ve Costeo</span>':""
     ].filter(Boolean).join(" ");
     const bizHtml = u.is_admin
       ? '<span class="badge green">Todos los negocios</span>'
@@ -4816,9 +4817,10 @@ async function renderUsersPanel(){
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomaedit-${u.id}" ${u.can_edit_tomas?"checked":""} style="width:auto;margin-right:6px">Administrar Tomas físicas</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="tomacapture-${u.id}" ${u.can_capture_tomas?"checked":""} style="width:auto;margin-right:6px">Capturar cantidades en Tomas físicas</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="recipes-${u.id}" ${u.can_manage_recipes?"checked":""} style="width:auto;margin-right:6px">Gestionar recetas (chef)</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="viewcosting-${u.id}" ${u.can_view_costing?"checked":""} style="width:auto;margin-right:6px">Ver Costeo</label>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="admin-${u.id}" ${u.is_admin?"checked":""} style="width:auto;margin-right:6px">Administrador</label>
         </div>
-        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.). <b>"Gestionar recetas"</b> permite crear, editar y eliminar recetas de menú y producción en los negocios asignados (pensado para chefs), sin darle el resto de los permisos de administrador.</div>
+        <div class="empty" style="margin-top:8px">"Solo lectura" permite ver el Dashboard, Historial y el detalle de cada inventario (con diferencias y CxC), pero no puede capturar, editar, guardar ni borrar nada. Dos excepciones para Toma física: <b>"Administrar Tomas físicas"</b> permite crear tomas nuevas, cargar/reemplazar el catálogo de la toma, y eliminarlas (pensado para el encargado o supervisor). <b>"Capturar cantidades"</b> solo permite abrir una toma que alguien más ya haya creado y llenar las cantidades — sin poder crear, cargar catálogo ni eliminar (pensado para bartenders, cocineros, etc.). <b>"Gestionar recetas"</b> permite crear, editar y eliminar recetas de menú y producción en los negocios asignados (pensado para chefs), sin darle el resto de los permisos de administrador. <b>"Ver Costeo"</b> le da acceso al apartado de Costeo (análisis y popularidad de platillos) en modo solo consulta, sin poder crear, editar ni guardar ningún análisis.</div>
         <div style="margin-top:12px">
           <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Departamentos de Toma física que puede ver y capturar (deja todos sin marcar para que vea todos)</label>
           <div class="flex" style="gap:16px;flex-wrap:wrap">
@@ -4853,14 +4855,16 @@ async function saveUserAccess(userId){
   const canEditTomas = document.getElementById(`tomaedit-${userId}`).checked;
   const canCaptureTomas = document.getElementById(`tomacapture-${userId}`).checked;
   const canManageRecipesFlag = document.getElementById(`recipes-${userId}`).checked;
+  const canViewCosting = document.getElementById(`viewcosting-${userId}`).checked;
   const name = document.getElementById(`name-${userId}`).value.trim();
   const checked = Array.from(document.querySelectorAll(`.biz-${userId}:checked`)).map(el=>el.value);
   const tomaDepartments = Array.from(document.querySelectorAll(`.tomadept-${userId}:checked`)).map(el=>el.value);
-  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, can_manage_recipes:canManageRecipesFlag, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
+  const { error } = await sb.from("user_access").update({ is_admin:isAdmin, view_only:viewOnly, can_edit_tomas:canEditTomas, can_capture_tomas:canCaptureTomas, can_manage_recipes:canManageRecipesFlag, can_view_costing:canViewCosting, toma_departments:tomaDepartments, display_name:name, businesses:checked, updated_at:new Date().toISOString() }).eq("id", userId);
   if (error){ alert("No se pudo guardar el acceso."); console.error(error); return; }
   if (userId === currentUser.id){
-    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.canManageRecipes = canManageRecipesFlag; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
+    currentUser.isAdmin = isAdmin; currentUser.viewOnly = viewOnly; currentUser.canEditTomas = canEditTomas; currentUser.canCaptureTomas = canCaptureTomas; currentUser.canManageRecipes = canManageRecipesFlag; currentUser.canViewCosting = canViewCosting; currentUser.tomaDepartments = tomaDepartments; currentUser.businesses = checked; currentUser.name = name;
     applyViewOnlyUI();
+    applyNavVisibility();
     updateUserBoxUI();
   }
   alert("Acceso actualizado.");
