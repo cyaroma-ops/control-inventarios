@@ -588,7 +588,7 @@ textarea{min-height:76px;resize:vertical}
       <section id="history" class="view">
         <div class="page-title"><div><h2>Inventarios</h2><p>Consulta, edita o inicia un nuevo inventario por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="toggleInventoryAuditPanel()" id="invAuditBtn">Auditoría</button><button class="btn" onclick="printHistory()">Imprimir</button><button class="btn primary" id="btnNewInventory2" onclick="startNewInventory()">+ Nuevo inventario</button></div></div>
         <div id="invAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
-        <div class="card form-card no-print"><div class="flex"><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button></div><div class="empty" style="margin-top:8px">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</div></div>
+        <div class="card form-card no-print"><div class="flex"><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button><span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</span></span></div></div>
         <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
         <div id="historyPrintView" style="display:none"></div>
       </section>
@@ -843,7 +843,7 @@ textarea{min-height:76px;resize:vertical}
             <div id="topSellersBox"></div>
           </div>
           <div class="card table-card">
-            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="renderCostingDetail();renderTopSellers()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
+            <div class="table-head"><h3 style="margin:0">Detalle por platillo</h3><div class="flex" style="gap:10px;align-items:center"><input type="text" id="costDetailSearch" placeholder="Buscar platillo o código..." oninput="debouncedRenderCostingDetail()" style="max-width:260px"><button class="btn" onclick="printCostingDetail()">Imprimir detalle</button></div></div>
             <div class="tabs" id="costDeptTabs"></div>
             <div id="costDetailTotals" style="margin:2px 0 12px"></div>
             <div class="flex" style="justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 8px" onclick="toggleCostDetailHelp()">
@@ -909,7 +909,7 @@ textarea{min-height:76px;resize:vertical}
         <div id="settingsPane-users" class="settings-tab" style="display:none">
           <div style="margin-bottom:10px;font-size:13px;color:var(--muted)">¿Cómo doy de alta a un usuario nuevo?<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</span></span></div>
           <div id="usersSummary" style="margin:4px 0 12px"></div>
-          <input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="renderUsersPanel()" style="max-width:340px;margin-bottom:14px">
+          <input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="debouncedRenderUsersPanel()" style="max-width:340px;margin-bottom:14px">
           <div id="usersPanel"></div>
         </div>
       </section>
@@ -1584,6 +1584,10 @@ function renderInventory(){
   if(currentUser&&currentUser.viewOnly)applyCaptureReadOnly(true)
 }
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;")}
+// Espera a que la persona haga una pausa al escribir antes de ejecutar una búsqueda/filtrado
+// pesado (listas grandes, o que consultan la nube) — evita que el buscador se sienta "trabado"
+// si se vuelve a dibujar todo en cada tecla.
+function debounce(fn,wait){let t;return function(...args){clearTimeout(t);t=setTimeout(()=>fn.apply(this,args),wait)}}
 // Ícono de ayuda "ⓘ": en computadora se ve al pasar el mouse, en celular/tablet se abre con un toque
 // y se cierra tocando de nuevo o tocando fuera. infoTip(texto) genera el ícono completo para usarlo
 // dentro de plantillas de JS; en el HTML estático se escribe el mismo markup directamente.
@@ -2309,7 +2313,7 @@ async function bootRecipes(){
   ensureCurrentBusiness();
   document.getElementById("recipeAreaFilter").onchange=renderRecipeList;
   document.getElementById("recipeTypeFilter").onchange=renderRecipeList;
-  document.getElementById("recipeSearch").oninput=renderRecipeList;
+  document.getElementById("recipeSearch").oninput=debounce(renderRecipeList,250);
   document.getElementById("btnNewRecipe").style.display=canManageRecipes()?"":"none";
   document.getElementById("btnCleanupYieldUnits").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("recipeAuditBtn").style.display=currentUser.isAdmin?"":"none";
@@ -2695,7 +2699,7 @@ async function bootSuppliers(){
   document.getElementById("supplierEditorView").style.display="none";
   document.getElementById("supplierListView").style.display="block";
   ensureCurrentBusiness();
-  document.getElementById("supplierSearch").oninput=renderSupplierList;
+  document.getElementById("supplierSearch").oninput=debounce(renderSupplierList,250);
   document.getElementById("btnNewSupplier").style.display=canManageRecipes()?"":"none";
   document.getElementById("supplierAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("supplierAuditBox").style.display="none";
@@ -2868,7 +2872,7 @@ async function bootInsumos(){
   document.getElementById("insumoEditorView").style.display="none";
   document.getElementById("insumoListView").style.display="block";
   ensureCurrentBusiness();
-  document.getElementById("insumoSearch").oninput=renderInsumoList;
+  document.getElementById("insumoSearch").oninput=debounce(renderInsumoList,250);
   document.getElementById("insumoGroupFilter").onchange=renderInsumoList;
   document.getElementById("insumoFamiliaFilter").onchange=renderInsumoList;
   document.getElementById("btnNewInsumo").style.display=canManageRecipes()?"":"none";
@@ -4113,6 +4117,7 @@ function toggleSinRecetaFilter(){
   costOnlySinReceta=!costOnlySinReceta;
   renderCostingDetail();renderTopSellers()
 }
+const debouncedRenderCostingDetail=debounce(()=>{renderCostingDetail();renderTopSellers()},250);
 function renderCostingDetail(){
   const body=document.getElementById("costDetailBody");
   const q=(document.getElementById("costDetailSearch").value||"").toLowerCase().trim();
@@ -4628,7 +4633,7 @@ function renderTomaGroups(){
   </div>`;
   box.innerHTML=html;
   const searchInput=document.getElementById("tomaSearch");
-  if(searchInput)searchInput.addEventListener("input",()=>filterTomaItems(searchInput.value));
+  if(searchInput)searchInput.addEventListener("input",debounce(()=>filterTomaItems(searchInput.value),200));
   updateTomaCount()
 }
 let tomaEditingIdx=new Set();
@@ -4791,6 +4796,7 @@ async function pushBusinessesToCloud(){
   const { error } = await sb.from("inventarios_data").upsert({ id: 2, data: businesses, updated_at: new Date().toISOString() });
   if (error) console.error("Error al guardar negocios:", error);
 }
+const debouncedRenderUsersPanel=debounce(()=>renderUsersPanel(),400);
 async function renderUsersPanel(){
   const panel = document.getElementById("usersPanel");
   const summaryBox = document.getElementById("usersSummary");
