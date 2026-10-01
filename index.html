@@ -270,6 +270,11 @@ textarea{min-height:76px;resize:vertical}
 .stage.done{background:#e4f6ec;color:#146b43;border-color:#bfe7d0}.stage.current{background:#eaf2ff;color:#114a9d;border-color:#a8c5fa}
 .view{display:none}.view.active{display:block}
 .empty{padding:50px;text-align:center;color:var(--muted)}
+.info-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:#e2e8f0;color:#475569;font-size:11px;font-weight:700;font-style:normal;cursor:pointer;margin-left:6px;vertical-align:middle;line-height:1;user-select:none}
+.info-tip-bubble{display:none;position:absolute;left:0;top:23px;z-index:80;background:#1f2937;color:#fff;font-size:12.5px;font-weight:400;line-height:1.45;padding:10px 12px;border-radius:8px;width:min(290px,80vw);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.info-tip-bubble::before{content:"";position:absolute;top:-5px;left:10px;border-width:0 6px 6px 6px;border-style:solid;border-color:transparent transparent #1f2937 transparent}
+@media(hover:hover) and (pointer:fine){.info-tip:hover .info-tip-bubble{display:block}}
+.info-tip.open .info-tip-bubble{display:block}
 .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
 @media(max-width:1200px){
@@ -869,8 +874,7 @@ textarea{min-height:76px;resize:vertical}
         <div id="settingsPane-general" class="settings-tab">
           <div class="card form-card"><div class="form-grid"><div><label>Semáforo verde hasta</label><input value="1%"></div><div><label>Semáforo amarillo hasta</label><input value="3%"></div><div><label>Requiere autorización CxC</label><select><option>Sí</option><option>No</option></select></div></div></div>
           <div class="card form-card">
-            <h3 style="margin-top:0">Cambiar mi contraseña</h3>
-            <p class="empty" style="margin-top:-4px">Cambia tu contraseña directamente aquí — no se envía ningún correo, el cambio es inmediato.</p>
+            <h3 style="margin-top:0">Cambiar mi contraseña<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Cambia tu contraseña directamente aquí — no se envía ningún correo, el cambio es inmediato.</span></span></h3>
             <div class="form-grid">
               <div><label>Nueva contraseña</label><input type="password" id="myNewPass1" placeholder="••••••••"></div>
               <div><label>Confirmar contraseña</label><input type="password" id="myNewPass2" placeholder="••••••••"></div>
@@ -882,14 +886,12 @@ textarea{min-height:76px;resize:vertical}
         <div id="settingsPane-businesses" class="settings-tab" style="display:none">
           <div class="card form-card"><div class="flex"><input id="newBusinessName" placeholder="Nombre del nuevo negocio" style="max-width:320px"><button class="btn primary" onclick="addBusiness()">+ Agregar negocio</button></div></div><div id="businessCatalog" class="business-grid"></div>
           <div class="card form-card" style="margin-top:20px">
-            <h3 style="margin-top:0">Departamentos de Toma física</h3>
-            <p class="empty" style="margin-top:-4px">Estos son los departamentos disponibles al crear una toma física, y para asignarle a cada usuario a cuáles tiene acceso. En cuanto agregues uno, queda disponible de inmediato en toda la app.</p>
+            <h3 style="margin-top:0">Departamentos de Toma física<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Estos son los departamentos disponibles al crear una toma física, y para asignarle a cada usuario a cuáles tiene acceso. En cuanto agregues uno, queda disponible de inmediato en toda la app.</span></span></h3>
             <div class="flex"><input id="newTomaDeptName" placeholder="Nombre del departamento (ej. Panadería)" style="max-width:320px"><button class="btn primary" onclick="addTomaDepartment()">+ Agregar departamento</button></div>
             <div id="tomaDepartmentsList" style="margin-top:14px"></div>
           </div>
           <div class="card form-card" style="margin-top:20px">
-            <h3 style="margin-top:0">Almacenes adicionales para Nuevo inventario</h3>
-            <p class="empty" style="margin-top:-4px">Úsalo cuando un negocio necesite un almacén que no sea de los ya incluidos (Almacén general, Producción, etc.). Se agrega como una pestaña más dentro de Cocina o Barra, junto a las demás.</p>
+            <h3 style="margin-top:0">Almacenes adicionales para Nuevo inventario<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Úsalo cuando un negocio necesite un almacén que no sea de los ya incluidos (Almacén general, Producción, etc.). Se agrega como una pestaña más dentro de Cocina o Barra, junto a las demás.</span></span></h3>
             <div class="flex" style="flex-wrap:wrap">
               <input id="newAlmacenName" placeholder="Nombre del almacén (ej. Panadería)" style="max-width:260px">
               <select id="newAlmacenGroup"><option>Cocina</option><option>Barra</option><option>Almacén General</option></select>
@@ -899,14 +901,13 @@ textarea{min-height:76px;resize:vertical}
             <div id="customAlmacenesList" style="margin-top:14px"></div>
           </div>
           <div class="card form-card" style="margin-top:20px">
-            <h3 style="margin-top:0">Grupos de Insumos</h3>
-            <p class="empty" style="margin-top:-4px">Estos son los únicos grupos disponibles al capturar un insumo (Recetario → Insumos) — solo un administrador puede agregar o quitar uno de aquí, así se evita que cada quien invente su propio grupo.</p>
+            <h3 style="margin-top:0">Grupos de Insumos<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Estos son los únicos grupos disponibles al capturar un insumo (Recetario → Insumos) — solo un administrador puede agregar o quitar uno de aquí, así se evita que cada quien invente su propio grupo.</span></span></h3>
             <div class="flex"><input id="newInsumoGroupName" placeholder="Nombre del grupo (ej. Whisky)" style="max-width:320px"><button class="btn primary" onclick="addInsumoGroup()">+ Agregar grupo</button></div>
             <div id="insumoGroupsAdminList" style="margin-top:14px"></div>
           </div>
         </div>
         <div id="settingsPane-users" class="settings-tab" style="display:none">
-          <div class="card form-card"><div class="empty">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</div></div>
+          <div style="margin-bottom:10px;font-size:13px;color:var(--muted)">¿Cómo doy de alta a un usuario nuevo?<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Los usuarios se dan de alta desde el panel de Supabase (Authentication → Users). En cuanto esa persona entra por primera vez a esta app, aparece aquí abajo para asignarle acceso a los negocios que le correspondan.</span></span></div>
           <div id="usersSummary" style="margin:4px 0 12px"></div>
           <input type="text" id="usersSearch" placeholder="Buscar por nombre, correo o negocio..." oninput="renderUsersPanel()" style="max-width:340px;margin-bottom:14px">
           <div id="usersPanel"></div>
@@ -1580,6 +1581,19 @@ function renderInventory(){
   if(currentUser&&currentUser.viewOnly)applyCaptureReadOnly(true)
 }
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;")}
+// Ícono de ayuda "ⓘ": en computadora se ve al pasar el mouse, en celular/tablet se abre con un toque
+// y se cierra tocando de nuevo o tocando fuera. infoTip(texto) genera el ícono completo para usarlo
+// dentro de plantillas de JS; en el HTML estático se escribe el mismo markup directamente.
+function infoTip(text){
+  return `<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">${esc(text)}</span></span>`
+}
+function toggleInfoTip(el,ev){
+  if(ev)ev.stopPropagation();
+  const wasOpen=el.classList.contains("open");
+  document.querySelectorAll(".info-tip.open").forEach(t=>t.classList.remove("open"));
+  if(!wasOpen)el.classList.add("open")
+}
+document.addEventListener("click",()=>{document.querySelectorAll(".info-tip.open").forEach(t=>t.classList.remove("open"))});
 function escJs(v){return String(v??"").replaceAll("\\","\\\\").replaceAll("'","\\'").replaceAll("\n"," ").replaceAll("<","&lt;")}
 function edit(id,i,field,value){
   const numeric=["theo","phys","cost"].includes(field);
@@ -4781,7 +4795,7 @@ async function renderUsersPanel(){
     return name.includes(q)||email.includes(q)||biz.includes(q)
   }):all;
   if(!users.length){ panel.innerHTML = `<div class="card form-card"><div class="empty">Ningún usuario coincide con "${esc(q)}".</div></div>`; return }
-  panel.innerHTML = `<div class="empty" style="margin-bottom:10px">Tu propia cuenta no aparece aquí — ya tienes acceso completo como administrador. Da clic en "Editar" para cambiar el acceso de alguien.</div>` + users.map(u=>{
+  panel.innerHTML = `<div style="margin-bottom:10px;font-size:13px;color:var(--muted)">Tu cuenta no aparece en esta lista${infoTip('Tu propia cuenta no aparece aquí — ya tienes acceso completo como administrador. Da clic en "Editar" para cambiar el acceso de alguien.')}</div>` + users.map(u=>{
     const name = u.display_name || u.email.split("@")[0];
     const presence=presenceMap[(u.email||"").toLowerCase()];
     const online=presence&&isPresenceOnline(presence.lastSeen);
