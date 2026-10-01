@@ -4251,23 +4251,23 @@ function toggleCostingHistory(){
   box.innerHTML=`<h3 style="margin-top:0">Historial de cambios de este análisis</h3>`+(history.length?history.map(h=>`<div style="border-bottom:1px solid #f1f5f9;padding:8px 0">${esc(new Date(h.at).toLocaleString("es-MX"))} — ${esc(h.by)} — ${esc(h.action)}</div>`).join(""):'<div class="empty">Todavía no hay historial.</div>');
   box.style.display="block"
 }
+/* ==================== AUDITORÍA DE COSTEO ====================
+   Cada evento es su propio registro en costing_audit_events (tabla con una fila por evento,
+   nunca se lee-modifica-escribe un bloque compartido). Así nunca hay manera de que dos personas
+   guardando casi al mismo tiempo se borren la auditoría una a la otra. */
 let costingAuditByBusiness={};
 const costingAuditLoaded=new Set();
 async function ensureCostingAuditLoadedFor(business){
   if(!business||costingAuditLoaded.has(business))return;
-  const{data,error}=await sb.from("costing_audit_log").select("data").eq("business",business).maybeSingle();
+  const{data,error}=await sb.from("costing_audit_events").select("*").eq("business",business).order("at",{ascending:false}).limit(500);
   if(error){console.error("Error al cargar auditoría de costeo de "+business+":",error);costingAuditByBusiness[business]=[];costingAuditLoaded.add(business);return}
-  costingAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  costingAuditByBusiness[business]=Array.isArray(data)?data:[];
   costingAuditLoaded.add(business)
 }
 async function logCostingAudit(business,action,details){
   if(!business)return;
-  const{data,error:readError}=await sb.from("costing_audit_log").select("data").eq("business",business).maybeSingle();
-  const freshLog=(!readError&&data&&Array.isArray(data.data))?data.data:(costingAuditByBusiness[business]||[]);
-  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
-  costingAuditByBusiness[business]=[...freshLog,entry];
-  costingAuditLoaded.add(business);
-  const{error}=await sb.from("costing_audit_log").upsert({business,data:costingAuditByBusiness[business],updated_at:new Date().toISOString()});
+  const entry={business,at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  const{error}=await sb.from("costing_audit_events").insert(entry);
   if(error){console.error("Error al guardar auditoría de costeo de "+business+":",error);return false}
   return true
 }
@@ -4279,7 +4279,7 @@ async function toggleCostingAuditPanel(){
   if(!business){alert("Selecciona un negocio primero.");return}
   costingAuditLoaded.delete(business); // forzar relectura fresca cada vez que se abre el panel
   await ensureCostingAuditLoadedFor(business);
-  const log=(costingAuditByBusiness[business]||[]).slice().reverse();
+  const log=costingAuditByBusiness[business]||[];
   box.innerHTML=`<h3 style="margin-top:0">Auditoría de Costeo — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
   box.style.display="block"
 }
@@ -4299,27 +4299,23 @@ async function pushTomasToCloud(business){
   if(error){console.error("Error al guardar tomas de "+business+":",error);return false}
   return true
 }
-/* ==================== AUDITORÍA DE TOMAS FÍSICAS ==================== */
+/* ==================== AUDITORÍA DE TOMAS FÍSICAS ====================
+   Igual que la de Costeo: una fila por evento en toma_audit_events, nunca se reescribe un bloque
+   compartido — así se elimina por completo el riesgo de que varias personas capturando a la vez
+   se pisen el historial. */
 let tomaAuditByBusiness={};
 const tomaAuditLoaded=new Set();
 async function ensureTomaAuditLoadedFor(business){
   if(!business||tomaAuditLoaded.has(business))return;
-  const{data,error}=await sb.from("toma_audit_log").select("data").eq("business",business).maybeSingle();
+  const{data,error}=await sb.from("toma_audit_events").select("*").eq("business",business).order("at",{ascending:false}).limit(500);
   if(error){console.error("Error al cargar auditoría de "+business+":",error);tomaAuditByBusiness[business]=[];tomaAuditLoaded.add(business);return}
-  tomaAuditByBusiness[business]=(data&&Array.isArray(data.data))?data.data:[];
+  tomaAuditByBusiness[business]=Array.isArray(data)?data:[];
   tomaAuditLoaded.add(business)
 }
 async function logTomaAudit(business,action,details){
   if(!business)return;
-  // Siempre se vuelve a consultar la nube justo antes de escribir (en vez de usar la copia en
-  // memoria, que puede estar desactualizada si alguien más guardó algo mientras tanto). Esto evita
-  // que dos personas guardando casi al mismo tiempo se borren la auditoría una a la otra.
-  const{data,error:readError}=await sb.from("toma_audit_log").select("data").eq("business",business).maybeSingle();
-  const freshLog=(!readError&&data&&Array.isArray(data.data))?data.data:(tomaAuditByBusiness[business]||[]);
-  const entry={at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
-  tomaAuditByBusiness[business]=[...freshLog,entry];
-  tomaAuditLoaded.add(business);
-  const{error}=await sb.from("toma_audit_log").upsert({business,data:tomaAuditByBusiness[business],updated_at:new Date().toISOString()});
+  const entry={business,at:new Date().toISOString(),by:(currentUser.name||currentUser.email||"Desconocido"),action,details:details||""};
+  const{error}=await sb.from("toma_audit_events").insert(entry);
   if(error){console.error("Error al guardar auditoría de "+business+":",error);return false}
   return true
 }
@@ -4331,7 +4327,7 @@ async function toggleTomaAuditPanel(){
   if(!business){alert("Selecciona un negocio primero.");return}
   tomaAuditLoaded.delete(business); // forzar relectura fresca cada vez que se abre el panel
   await ensureTomaAuditLoadedFor(business);
-  const log=(tomaAuditByBusiness[business]||[]).slice().reverse();
+  const log=tomaAuditByBusiness[business]||[];
   box.innerHTML=`<h3 style="margin-top:0">Auditoría de Tomas físicas — ${esc(business)}</h3>`+(log.length?`<div class="table-wrap"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay auditoría registrada para este negocio.</div>');
   box.style.display="block"
 }
