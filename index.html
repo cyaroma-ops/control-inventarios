@@ -1476,7 +1476,9 @@ function init(){
   document.getElementById("navList").addEventListener("scroll",updateNavFade);
   updateNavFade();
   document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{activeGroup=b.dataset.group;activeSection=sections[activeGroup][0].id;renderTabs();renderInventory()});
-  renderTabs();renderInventory();renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList();bootDashboard()
+  renderTabs();renderInventory();renderBusinessCatalog();renderTomaDepartmentsList();renderCustomAlmacenesList();renderInsumoGroupsAdminList();
+  const savedView=loadCurrentView();
+  openView((savedView&&RESTORABLE_VIEWS.includes(savedView))?savedView:"dashboard")
 }
 function toggleMobileMenu(){
   document.getElementById("sidebar").classList.toggle("open");
@@ -1512,6 +1514,7 @@ async function openView(id){
   if(id==="costing")await bootCosting();
   if(id==="capture")bootCapture();
   if(id==="settings")await bootSettings();
+  if(RESTORABLE_VIEWS.includes(id))saveCurrentView(id);
 }
 function bootCapture(){
   const el=document.getElementById("fBusiness");
@@ -1958,15 +1961,16 @@ function calcRecord(r){return totalsFor(r.data)}
 function demoMetrics(i){
   return{theo:0,phys:0,short:0,over:0,waste:0,mermas:0,staffFood:0,loss:0,cxc:0,noCxc:0,pending:0}
 }
-let globalMonth="";
+let globalMonth=loadGlobalMonth();
 function fillGlobalPeriod(){
-  const el=document.getElementById("globalPeriod"),prev=el.value,months=distinctMonths();
+  const el=document.getElementById("globalPeriod"),prev=globalMonth||el.value,months=distinctMonths();
   el.innerHTML='<option value="">Todos los meses</option>'+months.map(m=>`<option value="${m}">${esc(monthLabel(m))}</option>`).join("");
   if([...el.options].some(o=>o.value===prev))el.value=prev;
   else if(months.length)el.value=months[0];
-  globalMonth=el.value
+  globalMonth=el.value;
+  saveGlobalMonth(globalMonth)
 }
-function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;renderDashboard();renderWaste();renderHistory();renderCxc();renderReports()}
+function onGlobalPeriodChange(){globalMonth=document.getElementById("globalPeriod").value;saveGlobalMonth(globalMonth);renderDashboard();renderWaste();renderHistory();renderCxc();renderReports();renderTomaList()}
 function latestForMonth(b,month){
   const list=getRecords().filter(r=>r.business===b&&(!month||monthOf(r)===month));
   if(!list.length)return undefined;
@@ -4387,8 +4391,8 @@ function renderTomaList(){
   const b=currentBusiness,body=document.getElementById("tomaListBody");
   if(!b){body.innerHTML='<tr><td colspan="8" class="empty">Selecciona un negocio.</td></tr>';return}
   const canMan=canManageTomas();
-  const list=(tomasByBusiness[b]||[]).filter(t=>canMan||userCanAccessTomaDepartment(t.department)).slice().sort((a,c)=>String(c.countDate).localeCompare(String(a.countDate)));
-  if(!list.length){body.innerHTML=`<tr><td colspan="8" class="empty">${canMan?"Este negocio todavía no tiene tomas físicas guardadas.":"Todavía no hay ninguna toma física de tu departamento preparada por tu supervisor para este negocio."}</td></tr>`;return}
+  const list=(tomasByBusiness[b]||[]).filter(t=>(canMan||userCanAccessTomaDepartment(t.department))&&(!globalMonth||(t.countDate||"").slice(0,7)===globalMonth)).slice().sort((a,c)=>String(c.countDate).localeCompare(String(a.countDate)));
+  if(!list.length){body.innerHTML=`<tr><td colspan="8" class="empty">${globalMonth?`No hay tomas físicas de ${esc(monthLabel(globalMonth))} para este negocio. Cambia el mes de arriba si buscas otro periodo.`:(canMan?"Este negocio todavía no tiene tomas físicas guardadas.":"Todavía no hay ninguna toma física de tu departamento preparada por tu supervisor para este negocio.")}</td></tr>`;return}
   body.innerHTML=list.map(t=>{
     const total=t.catalog.length,captured=Object.keys(t.quantities||{}).length;
     const canCap=canCaptureTomas();
@@ -4396,10 +4400,31 @@ function renderTomaList(){
     const actionBtn=!canCap?`<button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">Ver</button>`:`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="openToma('${escJs(b)}','${t.id}')">${canMan?managerLabel:"Capturar"}</button>${currentUser.isAdmin?`<div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="tomaListMenu-${t.id}"><button type="button" class="danger" onclick="toggleKebabMenu('tomaListMenu-${t.id}',event);deleteToma('${escJs(b)}','${t.id}')">Eliminar</button></div></div>`:""}</div>`;
     const {label:statusLabel,cls:statusCls}=tomaStatusDisplay(t,captured,total);
     const deptCell=canMan
-      ?`<select onchange="quickChangeTomaDepartment('${escJs(b)}','${t.id}',this.value)" style="font-size:12.5px;padding:4px 6px">${tomaDepartmentOptionsHtml(t.department||"")}</select>`
+      ?`<span id="tomaDeptText-${t.id}" style="display:inline-flex;align-items:center;gap:4px">
+          <span>${esc(t.department||"Sin especificar")}</span>
+          <button type="button" class="btn" style="padding:0 6px;font-size:11px;line-height:1.5" title="Editar departamento" onclick="toggleTomaDeptEdit('${t.id}')">⋯</button>
+        </span>
+        <span id="tomaDeptEdit-${t.id}" style="display:none;gap:4px;align-items:center">
+          <select id="tomaDeptSelect-${t.id}" style="font-size:12.5px;padding:4px 6px">${tomaDepartmentOptionsHtml(t.department||"")}</select>
+          <button type="button" class="btn primary" style="padding:0 8px;font-size:11px" onclick="saveTomaDeptEdit('${escJs(b)}','${t.id}')">Guardar</button>
+        </span>`
       :esc(t.department||"—");
     return`<tr><td>${esc(t.countDate)}</td><td>${esc(b)}</td><td>${deptCell}</td><td>${total}</td><td>${captured}</td><td><span class="badge ${statusCls}">${esc(statusLabel)}</span></td><td>${esc(t.updatedAt?new Date(t.updatedAt).toLocaleString("es-MX"):"-")}${t.updatedBy?`<br><small style="color:var(--muted)">por ${esc(t.updatedBy)}</small>`:""}</td><td>${actionBtn}</td></tr>`
   }).join("")
+}
+function toggleTomaDeptEdit(id){
+  const txt=document.getElementById(`tomaDeptText-${id}`);
+  const edit=document.getElementById(`tomaDeptEdit-${id}`);
+  if(!txt||!edit)return;
+  const opening=edit.style.display==="none";
+  txt.style.display=opening?"none":"inline-flex";
+  edit.style.display=opening?"inline-flex":"none";
+  if(opening){const sel=document.getElementById(`tomaDeptSelect-${id}`);if(sel)sel.focus()}
+}
+async function saveTomaDeptEdit(business,id){
+  const sel=document.getElementById(`tomaDeptSelect-${id}`);
+  if(!sel)return;
+  await quickChangeTomaDepartment(business,id,sel.value)
 }
 async function quickChangeTomaDepartment(business,id,newDept){
   if(!canManageTomas())return;
@@ -5202,6 +5227,11 @@ function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1
 function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
 let currentBusiness=(function(){try{const v=localStorage.getItem("cyaroma_currentBusiness");return v===null?null:v}catch(e){return null}})();
 function saveCurrentBusiness(v){currentBusiness=v;try{localStorage.setItem("cyaroma_currentBusiness",v||"")}catch(e){}}
+const RESTORABLE_VIEWS=["dashboard","history","products","cxc","waste","reports","tomafisica","recetario","costing","settings"];
+function saveCurrentView(id){try{localStorage.setItem("cyaroma_currentView",id||"")}catch(e){}}
+function loadCurrentView(){try{return localStorage.getItem("cyaroma_currentView")||""}catch(e){return""}}
+function saveGlobalMonth(v){try{localStorage.setItem("cyaroma_globalMonth",v||"")}catch(e){}}
+function loadGlobalMonth(){try{return localStorage.getItem("cyaroma_globalMonth")||""}catch(e){return""}}
 function ensureCurrentBusiness(){
   const names=visibleBusinessNames();
   if((!currentBusiness||!names.includes(currentBusiness))&&names.length)saveCurrentBusiness(names[0]);
