@@ -4385,6 +4385,7 @@ async function bootTomaList(){
   document.getElementById("tomaAuditBtn").style.display=currentUser.isAdmin?"":"none";
   document.getElementById("tomaAuditBox").style.display="none";
   await ensureTomasLoadedFor(val);
+  fillGlobalPeriod();
   renderTomaList()
 }
 function renderTomaList(){
@@ -5224,7 +5225,11 @@ async function onBusinessChangeInCapture(){
 const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 function monthOf(r){return(r.countDate||"").slice(0,7)}
 function monthLabel(m){const[y,mm]=m.split("-");return`${MESES[parseInt(mm,10)-1]||mm} ${y}`}
-function distinctMonths(){return[...new Set(getRecords().filter(r=>userCanSee(r.business)).map(monthOf).filter(Boolean))].sort().reverse()}
+function distinctMonths(){
+  const invMonths=getRecords().filter(r=>userCanSee(r.business)).map(monthOf);
+  const tomaMonths=Object.entries(tomasByBusiness).filter(([biz])=>userCanSee(biz)).flatMap(([,list])=>(list||[]).map(t=>(t.countDate||"").slice(0,7)));
+  return[...new Set([...invMonths,...tomaMonths].filter(Boolean))].sort().reverse()
+}
 let currentBusiness=(function(){try{const v=localStorage.getItem("cyaroma_currentBusiness");return v===null?null:v}catch(e){return null}})();
 function saveCurrentBusiness(v){currentBusiness=v;try{localStorage.setItem("cyaroma_currentBusiness",v||"")}catch(e){}}
 const RESTORABLE_VIEWS=["dashboard","history","products","cxc","waste","reports","tomafisica","recetario","costing","settings"];
