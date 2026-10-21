@@ -275,20 +275,38 @@ textarea{min-height:76px;resize:vertical}
 .info-tip-bubble::before{content:"";position:absolute;top:-5px;left:10px;border-width:0 6px 6px 6px;border-style:solid;border-color:transparent transparent #1f2937 transparent}
 @media(hover:hover) and (pointer:fine){.info-tip:hover .info-tip-bubble{display:block}}
 .info-tip.open .info-tip-bubble{display:block}
-.pc-table{min-width:760px}
-.pc-table td,.pc-table th{vertical-align:middle}
+#pricecompare .page-title{margin-bottom:8px}
+#pricecompare .page-title h2{font-size:22px}
+#pricecompare .page-title p{margin:2px 0 0;font-size:13px}
+#pricecompare .actions .btn{padding:8px 12px}
+#pricecompare .card.form-card{padding:10px 14px;margin-bottom:6px}
+.pc-scroll{max-height:calc(100vh - 270px);min-height:300px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.pc-table{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:0}
+.pc-table th,.pc-table td{padding:7px 8px;border-bottom:1px solid #eef1f6;vertical-align:middle;background:#fff;text-align:left;overflow:hidden}
+.pc-table thead th{position:sticky;top:0;z-index:3;background:#f6f8fc;border-bottom:1px solid #dfe5ef;font-size:12px;vertical-align:top}
 .pc-table th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
-.pc-cell{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
-.pc-dots{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 7px;border-radius:6px;cursor:pointer}
+.pc-table .pc-sl{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 #dfe5ef}
+.pc-table .pc-sr{position:sticky;right:0;z-index:2;box-shadow:-1px 0 0 #dfe5ef}
+.pc-table thead th.pc-sl,.pc-table thead th.pc-sr{z-index:5;background:#f6f8fc}
+.pc-table tbody tr:hover td{background:#f7f9fd}
+.pc-table td.pc-best{background:#e6f6ec}.pc-table tbody tr:hover td.pc-best{background:#d9f0e2}
+.pc-table tfoot td{position:sticky;bottom:0;z-index:3;background:#f4f6fb;font-weight:700;font-size:12.5px;border-top:1px solid #dfe5ef;border-bottom:0}
+.pc-table tfoot td.pc-sl,.pc-table tfoot td.pc-sr{z-index:5}
+.pc-1l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-sname,.pc-pname{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25}
+.pc-sname{font-weight:600}.pc-pname{font-weight:600}
+.pc-cell{display:flex;align-items:flex-start;justify-content:space-between;gap:2px}
+.pc-cellmain,.pc-pcell{min-width:0;flex:1}
+.pc-dots{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:0 5px;border-radius:6px;cursor:pointer;flex:none}
 .pc-dots:hover{background:#eef2f9;color:var(--text)}
-.pc-price{font-weight:700}.pc-price small{font-weight:400;color:var(--muted);margin-left:1px}
+.pc-add{opacity:0}.pc-table tr:hover .pc-add{opacity:1}
+@media(hover:none){.pc-add{opacity:1}}
+.pc-price{font-weight:700;white-space:nowrap}.pc-price small{font-weight:400;color:var(--muted);margin-left:1px}
 .pc-sub{font-size:11.5px;color:var(--muted);line-height:1.35}
-.pc-pname{font-weight:600}
-.pc-best{background:#e6f6ec}.pc-best .pc-price{color:#167347}
 .pc-warn{color:#9a5c00;font-size:12px}
-.pc-dash{color:#b8c0cc}
-.pc-bestcol .pc-bn{font-weight:700}.pc-bestcol .pc-bp{color:#167347;font-weight:700}.pc-bestcol .pc-bp small{font-weight:400;color:var(--muted)}
-.pc-foot td{background:#f4f6fb;font-weight:700;font-size:12.5px}
+.pc-dash{color:#c3cad6;font-size:13px}
+.pc-bestcol .pc-bn{font-weight:700}.pc-bestcol .pc-bp{color:#167347;font-weight:700;white-space:nowrap}.pc-bestcol .pc-bp small{font-weight:400;color:var(--muted)}
+.pc-solo{font-size:10.5px!important}
 .pc-link{border:0;background:transparent;color:var(--blue);padding:0;font-size:11.5px;cursor:pointer;text-decoration:underline}
 .pc-menu{position:absolute;z-index:300;width:210px;background:#fff;border:1px solid #d7dfeb;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);padding:4px}
 .pc-menu-item{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer}
@@ -799,6 +817,7 @@ textarea{min-height:76px;resize:vertical}
           <select id="pcGroup" onchange="pcOnFilter()" style="max-width:220px"><option value="">Todos los grupos</option></select>
           <button type="button" class="btn" id="pcBtnGroup" style="display:none" onclick="pcOpenGroup()">Editar grupo</button>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="pcOnlyComp" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Solo comparables (2 o más proveedores)</label>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="pcHideEmpty" checked onchange="pcOnFilter()" style="width:auto;margin-right:6px">Ocultar proveedores sin precios en esta vista</label>
           <label id="pcHiddenWrap" style="font-weight:600;font-size:13px;display:none"><input type="checkbox" id="pcShowHidden" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Mostrar columnas ocultas</label>
         </div></div>
         <div id="pcSummary" style="margin:8px 2px;color:var(--muted);font-size:12.5px"></div>
@@ -5617,7 +5636,7 @@ function pcParseSheetRows(data,sheetName){
 const PC_SCOPE="GLOBAL";
 const pcCanManage=()=>!!(currentUser&&currentUser.isAdmin);
 let pcState={business:PC_SCOPE,suppliers:[],products:[],offers:[],loaded:false};
-let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,limit:250};
+let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,hideEmpty:true,limit:250};
 let pcImp=null,pcImpPendingSupplier="";
 const pcUuid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
 const pcV=id=>{const el=document.getElementById(id);return el?el.value:""};
@@ -5708,7 +5727,7 @@ function pcShortPres(o){const t=(o.presentation||"").trim();return t.length>26?t
 function pcCell(r,s,canM,isBest){
   const c=r.cells[s.id],p=r.p;
   if(!c.offers.length){
-    return'<td class="pc-dash">'+(canM?`<button type="button" class="pc-dots" title="Agregar precio de este proveedor" onclick="pcOpenOffer('${p.id}','${s.id}','')">+</button>`:"")+'—</td>'
+    return'<td class="pc-c pc-dash">—'+(canM?`<button type="button" class="pc-dots pc-add" title="Agregar precio de este proveedor" onclick="pcOpenOffer('${p.id}','${s.id}','')">+</button>`:"")+'</td>'
   }
   const o=c.best||c.offers[0];
   const warn=c.offers.some(x=>pcPerBase(x,p)==null)?'<span class="pc-warn" title="Hay una presentación sin cantidad válida o con otra unidad">⚠</span> ':"";
@@ -5716,8 +5735,14 @@ function pcCell(r,s,canM,isBest){
     ?`<div class="pc-price">${money(c.pb)}<small>/${pcUnitLbl(p.base_unit)}</small></div>`
     :`<div class="pc-price pc-warn">Sin cantidad <small>(lista ${money(o.price)})</small></div>`;
   const edit=canM?` onclick="pcEditCellPrice('${p.id}','${s.id}')" title="Clic para editar el precio" style="cursor:pointer"`:"";
-  const sub=esc(pcShortPres(o))+(o.iva_mode==="mas"?" · +IVA":"")+(c.offers.length>1?" · +"+(c.offers.length-1):"");
-  return`<td class="${isBest?"pc-best":""}"><div class="pc-cell"><div${edit}>${warn}${main}<div class="pc-sub">${sub}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones" onclick="pcMenu(event,'cell','${p.id}','${s.id}')">⋯</button>`:""}</div></td>`
+  const sub=(o.presentation||"")+(o.iva_mode==="mas"?" · +IVA":"")+(c.offers.length>1?" · +"+(c.offers.length-1):"");
+  return`<td class="pc-c${isBest?" pc-best":""}"><div class="pc-cell"><div class="pc-cellmain"${edit}>${warn}${main}<div class="pc-sub pc-1l" title="${esc(sub)}">${esc(sub)}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones" onclick="pcMenu(event,'cell','${p.id}','${s.id}')">⋯</button>`:""}</div></td>`
+}
+// Columnas de proveedor que se muestran: con "ocultar sin precios" solo las que tienen algún precio en los productos filtrados.
+function pcColumns(C,forPrint){
+  if(!(forPrint||pcUi.hideEmpty))return C.visSup;
+  const cols=C.visSup.filter(s=>C.filtered.some(r=>r.cells[s.id].offers.length));
+  return cols.length?cols:C.visSup
 }
 function pcRender(){
   if(!pcState.loaded)return;
@@ -5732,31 +5757,40 @@ function pcRender(){
   gSel.value=pcUi.group;
   const gb=document.getElementById("pcBtnGroup");if(gb)gb.style.display=(pcUi.group&&canM)?"":"none";
   const C=pcCompute(pcUi.showHidden);
+  const cols=pcColumns(C,false);
   const sum=document.getElementById("pcSummary");
-  sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`;
+  const sinPrecios=C.visSup.length-cols.length;
+  sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`+(sinPrecios?` · ${sinPrecios} proveedor(es) sin precios aquí (ocultos)`:"");
   if(!pcState.suppliers.length){
-    box.innerHTML='<div class="empty">Todavía no hay proveedores.'+(canM?' Usa "Cargar lista (PDF)" para traer precios de un proveedor, o "+ Proveedor" para empezar a mano.':"")+'</div>';return
+    box.innerHTML='<div class="empty">Todavía no hay proveedores.'+(canM?' Usa "Cargar lista (PDF o Excel)" para traer precios de un proveedor, o "+ Proveedor" para empezar a mano.':"")+'</div>';return
   }
-  if(!pcState.products.length){box.innerHTML='<div class="empty">Todavía no hay productos.'+(canM?' Carga una lista en PDF o agrega uno con "+ Producto".':"")+'</div>';return}
-  const heads=C.visSup.map(s=>`<th><div class="pc-cell"><div>${esc(s.name)}${s.hidden?" (oculta)":""}${s.trade_name?`<small>${esc(s.trade_name)}</small>`:""}<small>${esc(s.vigencia||"sin vigencia")}</small></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div></th>`).join("");
+  if(!pcState.products.length){box.innerHTML='<div class="empty">Todavía no hay productos.'+(canM?' Carga una lista o agrega uno con "+ Producto".':"")+'</div>';return}
+  const heads=cols.map(s=>{
+    const full=[s.name,s.trade_name,s.vigencia].filter(Boolean).join(" · ");
+    return`<th class="pc-sup" title="${esc(full)}"><div class="pc-cell"><div class="pc-sname">${esc(s.name)}${s.hidden?" (oculta)":""}</div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div>${s.trade_name?`<small class="pc-1l">${esc(s.trade_name)}</small>`:""}<small class="pc-1l">${esc(s.vigencia||"sin vigencia")}</small></th>`
+  }).join("");
   const shown=C.filtered.slice(0,pcUi.limit);
   const body=shown.map(r=>{
     const p=r.p;
-    const tds=C.visSup.map(s=>pcCell(r,s,canM,r.best&&r.valid>=2&&r.best.sid===s.id)).join("");
+    const tds=cols.map(s=>pcCell(r,s,canM,r.best&&r.valid>=2&&r.best.sid===s.id)).join("");
+    const bn=r.best?C.idx.sup.get(r.best.sid).name:"";
     const bestTd=r.best
-      ?`<td class="pc-bestcol"><div class="pc-bn">${esc(C.idx.sup.get(r.best.sid).name)}</div><div class="pc-bp">${money(r.best.pb)}<small>/${pcUnitLbl(p.base_unit)}</small></div>${r.valid<2?'<div class="pc-sub">solo 1 proveedor</div>':""}</td>`
-      :'<td class="pc-dash">—</td>';
-    return`<tr><td><div class="pc-pname">${esc(p.name)}</div>${p.group_name?`<div class="pc-sub">${esc(p.group_name)}</div>`:""}</td><td>${pcUnitLbl(p.base_unit)}</td>${tds}${bestTd}<td>${canM?`<button type="button" class="pc-dots" aria-label="Opciones del producto" onclick="pcMenu(event,'prod','${p.id}','')">⋯</button>`:""}</td></tr>`
+      ?`<td class="pc-sr pc-bestcol"><div class="pc-bn pc-1l" title="${esc(bn)}">${esc(bn)}</div><div class="pc-bp">${money(r.best.pb)}<small>/${pcUnitLbl(p.base_unit)}</small>${r.valid<2?' <small class="pc-solo">solo 1</small>':""}</div></td>`
+      :'<td class="pc-sr pc-dash">—</td>';
+    return`<tr><td class="pc-sl"><div class="pc-cell"><div class="pc-pcell"><div class="pc-pname" title="${esc(p.name)}">${esc(p.name)}</div><div class="pc-sub pc-1l">${pcUnitLbl(p.base_unit)}${p.group_name?" · "+esc(p.group_name):""}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones del producto" onclick="pcMenu(event,'prod','${p.id}','')">⋯</button>`:""}</div></td>${tds}${bestTd}</tr>`
   }).join("");
-  let lead="—",max=0;C.visSup.forEach(s=>{if(C.wins[s.id]>max){max=C.wins[s.id];lead=s.name}});
-  const foot=`<tr class="pc-foot"><td colspan="2">Gana en (productos con 2 o más proveedores)</td>${C.visSup.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td>${max?esc(lead):"—"}</td><td></td></tr>`;
+  let lead="—",max=0;cols.forEach(s=>{if(C.wins[s.id]>max){max=C.wins[s.id];lead=s.name}});
+  const foot=`<tr class="pc-foot"><td class="pc-sl">Gana en (2+ proveedores)</td>${cols.map(s=>`<td class="pc-c">${C.wins[s.id]}</td>`).join("")}<td class="pc-sr pc-1l">${max?esc(lead):"—"}</td></tr>`;
   const more=C.filtered.length>shown.length?`<div style="text-align:center;margin:10px 0"><button type="button" class="btn" onclick="pcMore()">Mostrar más (${shown.length} de ${C.filtered.length})</button></div>`:"";
-  box.innerHTML=`<div class="table-wrap"><table class="pc-table"><thead><tr><th>Producto</th><th>Unidad</th>${heads}<th>Mejor precio</th><th></th></tr></thead><tbody>${body||'<tr><td colspan="'+(C.visSup.length+4)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
+  const W_PROD=230,W_SUP=132,W_BEST=160;
+  const colgroup=`<colgroup><col style="width:${W_PROD}px">${cols.map(()=>`<col style="width:${W_SUP}px">`).join("")}<col style="width:${W_BEST}px"></colgroup>`;
+  box.innerHTML=`<div class="pc-scroll"><table class="pc-table" style="width:${W_PROD+cols.length*W_SUP+W_BEST}px">${colgroup}<thead><tr><th class="pc-sl">Producto</th>${heads}<th class="pc-sr">Mejor precio</th></tr></thead><tbody>${body||'<tr><td colspan="'+(cols.length+2)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
 }
 function pcOnFilter(){
   pcUi.q=pcV("pcSearch");pcUi.group=pcV("pcGroup");
   pcUi.onlyComparable=document.getElementById("pcOnlyComp").checked;
   pcUi.showHidden=document.getElementById("pcShowHidden").checked;
+  pcUi.hideEmpty=document.getElementById("pcHideEmpty").checked;
   pcUi.limit=250;pcRender()
 }
 const debouncedPcFilter=debounce(()=>pcOnFilter(),250);
@@ -6355,9 +6389,10 @@ async function pcToggleAudit(){
 function pcPrint(){
   if(!pcState.loaded||!pcState.products.length){alert("No hay nada que imprimir todavía.");return}
   const C=pcCompute(false);
-  const head=C.visSup.map(s=>`<th>${esc(s.name)}${s.trade_name?`<br><span style="font-weight:400;color:#444">${esc(s.trade_name)}</span>`:""}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
+  const cols=pcColumns(C,true);
+  const head=cols.map(s=>`<th>${esc(s.name)}${s.trade_name?`<br><span style="font-weight:400;color:#444">${esc(s.trade_name)}</span>`:""}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
   const rows=C.filtered.map(r=>{
-    const tds=C.visSup.map(s=>{
+    const tds=cols.map(s=>{
       const c=r.cells[s.id];
       if(!c.offers.length)return'<td style="color:#999">—</td>';
       const best=r.best&&r.valid>=2&&r.best.sid===s.id;
@@ -6367,7 +6402,7 @@ function pcPrint(){
     const bt=r.best?`<td><b>${esc(C.idx.sup.get(r.best.sid).name)}</b><br>${money(r.best.pb)}/${pcUnitLbl(r.p.base_unit)}</td>`:"<td>—</td>";
     return`<tr><td>${esc(r.p.name)}</td><td>${pcUnitLbl(r.p.base_unit)}</td>${tds}${bt}</tr>`
   }).join("");
-  const foot=`<tr><td colspan="2"><b>Gana en</b></td>${C.visSup.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
+  const foot=`<tr><td colspan="2"><b>Gana en</b></td>${cols.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
   openPrintWindow("Comparativa de precios",
     `<h1>Comparativa de precios</h1><p class="meta">Todos los negocios · uso interno</p>
     <p class="meta">${C.filtered.length} producto(s). Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
