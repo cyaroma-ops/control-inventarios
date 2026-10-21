@@ -3276,6 +3276,20 @@ function detectCostingPdfKind(text){
 }
 // Reporte "Productos Vendidos" (SoftRestaurant) — popularidad: clave, descripción, cantidad vendida, venta total.
 // El costo por platillo casi nunca viene lleno en este reporte; se completa aparte con "Receta de Productos".
+// En algunos negocios el reporte trae el mismo platillo en varios renglones (uno por cada precio o nivel de
+// descuento con que se vendió). Se suman cantidad y venta; si no, el último renglón borraba a los anteriores.
+function consolidatePopularityItems(items){
+  const map=new Map();
+  items.forEach(it=>{
+    const k=(it.grupo||"")+"||"+(it.clave||"")+"||"+normalizeKey(it.producto||"");
+    const cur=map.get(k);
+    if(cur){
+      cur.cantidadVendida=Math.round((num(cur.cantidadVendida)+num(it.cantidadVendida))*1000)/1000;
+      cur.ventaTotal=Math.round((num(cur.ventaTotal)+num(it.ventaTotal))*100)/100
+    }else map.set(k,{...it})
+  });
+  return[...map.values()]
+}
 function parsePopularityPdfText(text){
   // Soporta dos formatos del reporte "Productos Vendidos" de SoftRestaurant:
   // 1) Formato clásico: cada platillo en un solo renglón de texto (clave, descripción y montos juntos).
@@ -3307,7 +3321,9 @@ function parsePopularityPdfText(text){
           const cantidadVendida=parseFloat(numMatches[0][0].replace(/,/g,""));
           const producto=(cleaned.slice(0,numMatches[0].index)+cleaned.slice(numMatches[0].index+numMatches[0][0].length)).replace(/%/g," ").trim();
           if(producto&&/[A-Za-zÁÉÍÓÚÑ]/.test(producto)){
-            const ventaTotal=dollars[1];
+            // Última columna del reporte = "VENTA TOTAL (PRECIO CATÁLOGO)": la venta ANTES de descuentos.
+            // (La segunda, "VENTA TOTAL", ya trae los descuentos aplicados y no se usa.)
+            const ventaTotal=dollars[dollars.length-1];
             items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave:mOld[1],producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:true,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null});
             continue
           }
@@ -3339,7 +3355,7 @@ function parsePopularityPdfText(text){
     items.push({departamento:String(grupo||"General").trim()||"General",grupo:String(grupo||""),clave,producto,cantidadVendida,ventaTotal,costoUnitario:null,aplicaIVA:true,costoTeoricoSinIVA:null,costoTeoricoConIVA:null,estatus:null});
     i=j
   }
-  return items
+  return consolidatePopularityItems(items)
 }
 // Reporte "Receta de Productos" (SoftRestaurant) — costo teórico por platillo final, ligado por clave.
 function parseRecipeCostPdfText(text){
