@@ -791,7 +791,7 @@ textarea{min-height:76px;resize:vertical}
       <!--PC-HTML-START-->
       <div id="pricecompare" class="recetario-tab" style="display:none">
         <div class="page-title"><div><h2>Comparativa de precios</h2><p>Precio por kilo, litro o pieza de cada proveedor. El mejor precio sale en verde.<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Se compara el precio final por kilo, litro o pieza. Si un precio está marcado "Más IVA", se le suma el 16% para compararlo; los marcados "Ya incluye IVA" o "Sin IVA" se toman tal cual. Los precios con IEPS ya lo traen incluido.</span></span></p></div>
-          <div class="actions"><button class="btn" id="pcBtnAudit" onclick="pcToggleAudit()">Auditoría</button><button class="btn" onclick="pcPrint()">Imprimir</button><button class="btn" id="pcBtnProduct" onclick="pcOpenProduct('')">+ Producto</button><button class="btn" id="pcBtnSupplier" onclick="pcOpenSupplier('')">+ Proveedor</button><button class="btn primary" id="pcBtnImport" onclick="pcStartImport('')">Cargar lista (PDF)</button></div></div>
+          <div class="actions"><button class="btn" id="pcBtnAudit" onclick="pcToggleAudit()">Auditoría</button><button class="btn" onclick="pcPrint()">Imprimir</button><button class="btn" id="pcBtnProduct" onclick="pcOpenProduct('')">+ Producto</button><button class="btn" id="pcBtnSupplier" onclick="pcOpenSupplier('')">+ Proveedor</button><button class="btn primary" id="pcBtnImport" onclick="pcStartImport('')">Cargar lista (PDF o Excel)</button></div></div>
         <div id="pcAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
         <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px;align-items:center">
           <input type="text" id="pcSearch" placeholder="Buscar producto..." oninput="debouncedPcFilter()" style="max-width:240px">
@@ -801,7 +801,7 @@ textarea{min-height:76px;resize:vertical}
         </div></div>
         <div id="pcSummary" style="margin:8px 2px;color:var(--muted);font-size:12.5px"></div>
         <div id="pcContent"></div>
-        <input type="file" id="pcFile" accept="application/pdf,.pdf" style="display:none" onchange="pcOnFileChosen(this)">
+        <input type="file" id="pcFile" accept="application/pdf,.pdf,.xlsx,.xls,.csv" style="display:none" onchange="pcOnFileChosen(this)">
       </div>
       <!--PC-HTML-END-->
       </section>
@@ -5539,10 +5539,11 @@ function pcParseListText(text){
   });
   return{rows,vigencia:vig,guessSupplier:/par de france/i.test(text)?"Par de France":""}
 }
+function pcKeyNorm(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9.]+/g," ").trim()}
 function pcOfferKey(code,desc,pres){
   const c=String(code||"").trim().toUpperCase();
   if(c)return"c:"+c;
-  return"d:"+pcNorm(desc)+"|"+pcNormPres(pres)
+  return"d:"+pcKeyNorm(desc)+"|"+pcNormPres(pres)
 }
 function pcEffPrice(o){return Number(o.price||0)*(o.iva_mode==="mas"?1+PC_IVA_RATE:1)}
 function pcPerBase(o,p){
@@ -5556,6 +5557,40 @@ function pcFmtQty(q,b){
   if(b==="kg")return q<1?r(q*1000)+" g":r(q)+" kg";
   if(b==="L")return q<1?r(q*1000)+" ml":r(q)+" L";
   return r(q)+" pz"
+}
+function pcExcelInfo(desc,um){
+  const d=String(desc||"").replace(/(\d),(\d{3})(?=\s*(?:kgs?|kilos?|lts?|l)\b)/gi,"$1.$2").replace(/\s+/g," ").trim();
+  const u=String(um||"").trim().toUpperCase();
+  const q=pcParsePres(d);
+  if(q)return{desc:d,qty:q.qty,base:q.base,pres:q.raw.trim(),note:q.note||""};
+  if(u==="KG"||u==="KGS"||/\bKGS?\s*$/i.test(d))return{desc:d,qty:1,base:"kg",pres:"1 kg",note:""};
+  if(u==="L"||u==="LT"||/\bLTS?\s*$/i.test(d))return{desc:d,qty:1,base:"L",pres:"1 L",note:""};
+  return{desc:d,qty:1,base:"pz",pres:"1 pieza",note:""}
+}
+function pcParseSheetRows(data,sheetName){
+  const rows2=Array.isArray(data)?data:[];
+  let hi=-1,ni=0,ui=1,pi=2;
+  for(let i=0;i<Math.min(rows2.length,10);i++){
+    const r=(rows2[i]||[]).map(c=>String(c==null?"":c));
+    const n=r.findIndex(c=>/nombre|descrip|producto|art[ií]culo/i.test(c));
+    const p=r.findIndex(c=>/precio/i.test(c));
+    if(n>=0&&p>=0){hi=i;ni=n;pi=p;const u=r.findIndex(c=>/^\s*(um|unidad|u\.?m\.?)\s*$/i.test(c));ui=u>=0?u:-1;break}
+  }
+  const out=[];let skipped=0;
+  for(let i=hi+1;i<rows2.length;i++){
+    const r=rows2[i]||[];
+    const name=String(r[ni]==null?"":r[ni]).trim();
+    if(!name)continue;
+    let price=r[pi];
+    if(typeof price==="string")price=parseFloat(price.replace(/[$,\s]/g,""));
+    const um=ui>=0?String(r[ui]==null?"":r[ui]).trim():"";
+    if(!(price>0)||/^ACT$/i.test(um)){skipped++;continue}
+    const info=pcExcelInfo(name,um);
+    const clean=info.desc.replace(/\s+[\d.,]*\d\s*(?:KGS?|LTS?|GRS?|G|ML)\.?\s*$/i,"").replace(/\s+(KGS?|LTS?|PZA|PZ)\s*$/i,"").trim();
+    out.push({code:"",desc:info.desc,name:pcTitle(clean.toUpperCase()),pres:info.pres,qty:info.qty,base:info.base,price:Number(price),iva:"incluido",group:"",note:info.note,reader:"excel"})
+  }
+  const sn=String(sheetName||"");
+  return{rows:out,skipped,vigencia:/\d{1,2}[.\-\/]\d{1,2}[.\-\/]\d{2,4}/.test(sn)?"Lista del "+sn:"",guessSupplier:""}
 }
 /*PC-PURE-END*/
 
@@ -5957,17 +5992,28 @@ function pcGuessFromFile(name){
 async function pcOnFileChosen(inp){
   const f=inp.files&&inp.files[0];inp.value="";
   if(!f)return;
-  if(!/\.pdf$/i.test(f.name)){alert("Por ahora solo se pueden cargar archivos PDF.");return}
+  const isXls=/\.(xlsx|xls|csv)$/i.test(f.name);
+  if(!isXls&&!/\.pdf$/i.test(f.name)){alert("Por ahora solo se pueden cargar archivos PDF o Excel (.xlsx).");return}
   pcOpenModal('<div class="empty">Leyendo «'+esc(f.name)+'»…</div>',true);
+  if(isXls){
+    try{
+      if(!window.XLSX)throw new Error("la librería de Excel no cargó");
+      const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});
+      const sheet=wb.SheetNames[0];
+      const data=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:""});
+      pcImpOpenWithParsed(pcParseSheetRows(data,sheet),f.name,true)
+    }catch(e){console.error(e);pcCloseModal();alert("No se pudo leer el Excel: "+((e&&e.message)||e))}
+    return
+  }
   let text="";
   try{text=await extractPdfText(f)}catch(e){console.error(e);pcCloseModal();alert("No se pudo leer el PDF: "+((e&&e.message)||e));return}
   pcImpOpenWithText(text,f.name)
 }
-function pcImpOpenWithText(text,fileName){
-  const parsed=pcParseListText(text);
-  if(!parsed.rows.length){pcCloseModal();alert("No encontré renglones con precio en este PDF. Si es una imagen o un escaneo, por ahora no se puede leer.");return}
+function pcImpOpenWithText(text,fileName){pcImpOpenWithParsed(pcParseListText(text),fileName,false)}
+function pcImpOpenWithParsed(parsed,fileName,isExcel){
+  if(!parsed.rows.length){pcCloseModal();alert("No encontré renglones con precio en este archivo."+(isExcel?" Revisa que tenga columnas de nombre y precio.":" Si es una imagen o un escaneo, por ahora no se puede leer."));return}
   const pend=pcImpPendingSupplier;pcImpPendingSupplier="";
-  pcImp={fileName,parsed,supplierId:pend,newName:pend?"":(parsed.guessSupplier||pcGuessFromFile(fileName)),vigencia:parsed.vigencia||"",rows:[],filter:"todos",limit:300,removeMissing:false,missing:[]};
+  pcImp={fileName,parsed,isExcel:!!isExcel,onlyMatches:!!isExcel,supplierId:pend,newName:pend?"":(parsed.guessSupplier||pcGuessFromFile(fileName)),vigencia:parsed.vigencia||"",rows:[],filter:"todos",limit:300,removeMissing:false,missing:[]};
   const sup=pend?pcState.suppliers.find(s=>s.id===pend):null;
   pcImpStep1(sup)
 }
@@ -5980,11 +6026,15 @@ function pcImpStep1(){
     <select id="pcImpSup" onchange="document.getElementById('pcImpNewWrap').style.display=this.value?'none':''"><option value="">+ Proveedor nuevo…</option>${opts}</select>
     <div id="pcImpNewWrap" style="margin-top:10px;${imp.supplierId?"display:none":""}"><label>Nombre del proveedor nuevo</label><input type="text" id="pcImpNewName" value="${esc(imp.newName)}" placeholder="Ej. Yakun"></div>
     <label style="margin-top:10px">Vigencia de la lista</label><input type="text" id="pcImpVig" value="${esc(imp.vigencia)}" placeholder="Ej. Octubre 2026">
+    <label style="font-weight:600;font-size:13px;display:block;margin-top:12px"><input type="checkbox" id="pcImpOnlyMatch" style="width:auto;margin-right:6px" ${imp.onlyMatches?"checked":""}>Guardar solo los productos que ya coinciden con mi tabla</label>
+    <div class="pc-sub" style="margin-top:2px">Recomendado para listas grandes. Los que no coinciden quedan marcados y puedes descargarlos para revisarlos después.</div>
     <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcImpToReview()">Continuar a revisión</button></div>`)
 }
 function pcImpToReview(){
   const imp=pcImp;
   imp.supplierId=pcV("pcImpSup");imp.vigencia=pcV("pcImpVig").trim();
+  imp.onlyMatches=document.getElementById("pcImpOnlyMatch").checked;
+  imp.filter=imp.onlyMatches?"coinciden":"todos";
   if(!imp.supplierId){
     imp.newName=pcV("pcImpNewName").trim();
     if(!imp.newName){alert("Escribe el nombre del proveedor.");return}
@@ -6041,7 +6091,8 @@ function pcImpCheck(row,reset){
   if(pb!=null&&row.base!=="pz"&&pb<3){row.suspect=true;note=(note?note+" · ":"")+"Precio por "+(row.base==="L"?"litro":"kilo")+" muy bajo ("+money(pb)+") — revisa la cantidad"}
   row.note=note;
   const valid=!row.dup&&row.qty>0&&!row.suspect;
-  if(reset)row.include=valid;else if(!valid)row.include=false
+  const want=valid&&(!(pcImp&&pcImp.onlyMatches)||row.link!=="nuevo");
+  if(reset)row.include=want;else if(!valid)row.include=false
 }
 function pcImpStatus(r){
   if(r.dup)return{k:"repetido",t:"Repetido en el archivo",c:"yellow"};
@@ -6051,12 +6102,13 @@ function pcImpStatus(r){
     const pct=num(r.old.price)>0?d/num(r.old.price)*100:0;
     return d>0?{k:"subio",t:"Subió "+pct.toFixed(1)+"%",c:"red"}:{k:"bajo",t:"Bajó "+Math.abs(pct).toFixed(1)+"%",c:"green"}
   }
-  return{k:"nuevo",t:"Nuevo",c:"blue"}
+  if(pcImp.onlyMatches&&r.link==="nuevo")return{k:"sinmatch",t:"Sin coincidencia",c:"yellow"};
+  return{k:"nuevo",t:pcImp.onlyMatches?"Precio nuevo":"Nuevo",c:"blue"}
 }
-function pcImpNeedsReview(r){return r.dup||!(r.qty>0)||r.suspect||!!r.sug||(!!r.note&&r.reader==="unidad")||/Gramos corregidos|No pude leer/.test(r.note||"")}
+function pcImpNeedsReview(r){if(pcImp.onlyMatches&&r.link==="nuevo"&&!r.sug)return false;return r.dup||!(r.qty>0)||r.suspect||!!r.sug||(!!r.note&&r.reader==="unidad")||/Gramos corregidos|No pude leer/.test(r.note||"")}
 function pcImpCounts(){
-  const c={total:0,inc:0,nuevo:0,subio:0,bajo:0,igual:0,rev:0};
-  pcImp.rows.forEach(r=>{c.total++;if(r.include)c.inc++;const s=pcImpStatus(r).k;if(c[s]!==undefined)c[s]++;if(pcImpNeedsReview(r))c.rev++});
+  const c={total:0,inc:0,nuevo:0,sinmatch:0,dup:0,match:0,subio:0,bajo:0,igual:0,rev:0};
+  pcImp.rows.forEach(r=>{c.total++;if(r.include)c.inc++;if(r.dup)c.dup++;else if(r.link!=="nuevo"||r.old)c.match++;const s=pcImpStatus(r).k;if(c[s]!==undefined)c[s]++;if(pcImpNeedsReview(r))c.rev++});
   return c
 }
 function pcImpVisible(){
@@ -6065,6 +6117,8 @@ function pcImpVisible(){
     const s=pcImpStatus(r).k;
     if(f==="cambios")return s==="subio"||s==="bajo";
     if(f==="nuevos")return s==="nuevo";
+    if(f==="coinciden")return r.link!=="nuevo"||!!r.old;
+    if(f==="sinmatch")return s==="sinmatch";
     if(f==="igual")return s==="igual";
     if(f==="revisar")return pcImpNeedsReview(r);
     return true
@@ -6089,8 +6143,9 @@ function pcImpRender(){
   const supName=imp.supplierId?(pcState.suppliers.find(s=>s.id===imp.supplierId)||{}).name:imp.newName;
   pcOpenModal(`<h3 style="margin-top:0">Revisar lista — ${esc(supName)} <span style="font-weight:400;color:var(--muted)">${esc(imp.vigencia||"")}</span></h3>
     <div id="pcImpCounts" class="pc-sub" style="margin-bottom:8px"></div>
+    ${imp.onlyMatches?'<div style="margin-bottom:8px"><button type="button" class="btn" onclick="pcImpExportUnmatched()">Descargar los que no coinciden (CSV)</button></div>':""}
     <div class="flex" style="gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-      <select id="pcImpFilter" onchange="pcImpSetFilter(this.value)" style="max-width:240px"><option value="todos">Ver todos</option><option value="cambios">Solo cambios de precio</option><option value="nuevos">Solo nuevos</option><option value="revisar">Por revisar</option><option value="igual">Sin cambio</option></select>
+      <select id="pcImpFilter" onchange="pcImpSetFilter(this.value)" style="max-width:240px"><option value="coinciden">Solo los que coinciden</option><option value="sinmatch">Solo sin coincidencia</option><option value="todos">Ver todos</option><option value="cambios">Solo cambios de precio</option><option value="nuevos">Solo nuevos</option><option value="revisar">Por revisar</option><option value="igual">Sin cambio</option></select>
       <span class="pc-sub">IVA para los visibles:</span><select id="pcImpBulkIva" style="max-width:150px"><option value="incluido">Ya incluye IVA</option><option value="sin">Sin IVA</option><option value="mas">Más IVA</option></select><button type="button" class="btn" onclick="pcImpBulkIva()">Aplicar</button>
       <span class="pc-sub">Presentación para los que no tienen:</span><input type="text" id="pcImpBulkPres" placeholder="Ej. Bolsa 250 gr" style="max-width:150px"><button type="button" class="btn" onclick="pcImpBulkPres()">Aplicar</button>
     </div>
@@ -6110,12 +6165,24 @@ function pcImpFill(){
 }
 function pcImpUpdateCounts(){
   const c=pcImpCounts();
-  document.getElementById("pcImpCounts").textContent=`${c.total} renglones · ${c.inc} marcados para guardar · ${c.nuevo} nuevos · ${c.subio} subieron · ${c.bajo} bajaron · ${c.igual} sin cambio · ${c.rev} por revisar`
+  document.getElementById("pcImpCounts").textContent=pcImp.onlyMatches
+    ?`${c.total} renglones · ${c.match} coinciden con tu tabla · ${c.sinmatch} sin coincidencia (no se guardan)${c.dup?" · "+c.dup+" repetidos en el archivo":""} · ${c.inc} marcados para guardar · ${c.subio} subieron · ${c.bajo} bajaron · ${c.igual} sin cambio · ${c.rev} por revisar`
+    :`${c.total} renglones · ${c.inc} marcados para guardar · ${c.nuevo} nuevos · ${c.subio} subieron · ${c.bajo} bajaron · ${c.igual} sin cambio · ${c.rev} por revisar`
 }
 function pcImpRefreshRow(i){
   const r=pcImp.rows[i],el=document.getElementById("pcr-"+i);
   if(el)el.outerHTML=pcImpRowHtml(r);
   pcImpUpdateCounts()
+}
+function pcImpExportUnmatched(){
+  const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const un=pcImp.rows.filter(r=>r.link==="nuevo"&&!r.old&&!r.dup);
+  if(!un.length){alert("Todos los renglones coinciden con tu tabla.");return}
+  const lines=["Nombre en la lista,Presentación,Cantidad,Unidad,Precio,Posible coincidencia"].concat(un.map(r=>[q(r.desc),q(r.pres),q(r.qty>0?Number(r.qty.toFixed(4)):""),q(r.base?pcUnitLbl(r.base):""),q(r.price),q(r.sug?r.sug.name:"")].join(",")));
+  const blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="sin_coincidencia_"+(pcImp.fileName||"lista").replace(/\.[^.]+$/,"")+".csv";
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)
 }
 function pcImpSetRemove(v){pcImp.removeMissing=v}
 function pcImpMoreRows(){pcImp.limit+=300;pcImpFill()}
@@ -6133,7 +6200,9 @@ function pcImpLink(i,productId){
   const r=pcImp.rows[i],p=pcState.products.find(x=>x.id===productId);
   if(!p)return;
   if(r.base&&p.base_unit!==r.base){alert(`"${p.name}" se compara por ${pcUnitLbl(p.base_unit)} y este renglón viene en ${pcUnitLbl(r.base)}. No se pueden juntar así.`);return}
-  r.productId=p.id;r.link="vinculado";r.sug=null;r.showLink=false;pcImpRefreshRow(i)
+  r.productId=p.id;r.link="vinculado";r.sug=null;r.showLink=false;
+  if(pcImp.onlyMatches)r.include=!r.dup&&r.qty>0&&!r.suspect;
+  pcImpRefreshRow(i)
 }
 function pcImpLinkByName(i,val){
   const p=pcState.products.find(x=>x.name.toLowerCase()===String(val).trim().toLowerCase());
@@ -6180,6 +6249,7 @@ async function pcImpApply(){
     });
     const inserts=[],updates=[];let nNew=0,nUp=0,nDown=0,nSame=0;
     const label=r=>`"${r.name}"${r.pres?" "+r.pres:""}`;
+    const nSinMatch=imp.onlyMatches?imp.rows.filter(r=>r.link==="nuevo"&&!r.old&&!r.dup&&!r.include).length:0;
     sel.forEach(r=>{
       if(r.old){
         const o=r.old;
@@ -6206,10 +6276,10 @@ async function pcImpApply(){
       for(const part of pcChunk(imp.missing.map(o=>o.id),80))await pcMust(sb.from("pc_offers").delete().in("id",part));
       imp.missing.forEach(o=>{const pp=pcState.products.find(x=>x.id===o.product_id);events.push({action:"Quitó precio",details:`"${pp?pp.name:(o.supplier_desc||"?")}" ${o.presentation||""} (${sup.name}) — ya no viene en la lista`})})
     }
-    events.unshift({action:"Cargó lista de precios",details:`${sup.name}${imp.vigencia?" ("+imp.vigencia+")":""} — archivo "${imp.fileName}": ${sel.length} renglones guardados · ${nNew} nuevos · ${nUp} subieron · ${nDown} bajaron · ${nSame} sin cambio${nRem?" · "+nRem+" quitados":""}`});
+    events.unshift({action:"Cargó lista de precios",details:`${sup.name}${imp.vigencia?" ("+imp.vigencia+")":""} — archivo "${imp.fileName}": ${sel.length} renglones guardados · ${nNew} nuevos · ${nUp} subieron · ${nDown} bajaron · ${nSame} sin cambio${nRem?" · "+nRem+" quitados":""}${nSinMatch?" · "+nSinMatch+" sin coincidencia (no guardados)":""}`});
     await pcAuditMany(events);
     pcCloseModal();await pcReload();
-    alert(`Lista guardada: ${nNew} nuevos, ${nUp} subieron, ${nDown} bajaron, ${nSame} sin cambio${nRem?", "+nRem+" quitados":""}.`)
+    alert(`Lista guardada: ${nNew} nuevos, ${nUp} subieron, ${nDown} bajaron, ${nSame} sin cambio${nRem?", "+nRem+" quitados":""}.${nSinMatch?"\n"+nSinMatch+" renglones no coincidían con tu tabla y no se guardaron.":""}`)
   }catch(e){
     console.error(e);
     alert("Hubo un problema a la mitad del guardado: "+((e&&e.message)||"error")+".\nRevisa la comparativa y la Auditoría: puede que una parte sí se haya guardado. Vuelve a cargar la lista para completar lo que falte.");
