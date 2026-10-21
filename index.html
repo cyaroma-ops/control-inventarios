@@ -495,6 +495,7 @@ textarea{min-height:76px;resize:vertical}
       <div class="nav-section-label">Catálogos</div>
       <button data-view="products"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 7 8.5-4 8.5 4-8.5 4-8.5-4Z"/><path d="M3.5 7v10l8.5 4 8.5-4V7M12 11v10"/></svg></span>Productos</button>
       <button data-view="recetario"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v20M6 2c-1.5 0-2.5 1-2.5 3s1 3 2.5 3M6 8c1.5 0 2.5-1 2.5-3S7.5 2 6 2M17 2c-2 0-3.5 2-3.5 5s1 5 2.5 5.5V22"/></svg></span>Recetario</button>
+      <button data-view="pricecompare"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg></span>Comparativa precios</button>
       <div class="nav-section-label">Cuenta</div>
       <button data-view="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.9-1.5-2-3.4-2.2.9a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.4 7.4 0 0 0-2.6 1.5l-2.2-.9-2 3.4L4.6 10.5a7.6 7.6 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.9c.75.66 1.63 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.4 7.4 0 0 0 2.6-1.5l2.2.9 2-3.4Z"/></svg></span>Configuración</button>
     </nav>
@@ -665,7 +666,6 @@ textarea{min-height:76px;resize:vertical}
           <button class="rtab active" id="recetarioTab-recipes" onclick="switchRecetarioTab('recipes')">Recetas</button>
           <button class="rtab" id="recetarioTab-suppliers" onclick="switchRecetarioTab('suppliers')">Proveedores</button>
           <button class="rtab" id="recetarioTab-insumos" onclick="switchRecetarioTab('insumos')">Insumos</button>
-          <button class="rtab" id="recetarioTab-pricecompare" onclick="switchRecetarioTab('pricecompare')">Comparativa de precios</button>
         </div>
       <div id="recipes" class="recetario-tab">
         <div id="recipeListView">
@@ -788,23 +788,24 @@ textarea{min-height:76px;resize:vertical}
           </div>
         </div>
       </div>
+      </section>
       <!--PC-HTML-START-->
-      <div id="pricecompare" class="recetario-tab" style="display:none">
-        <div class="page-title"><div><h2>Comparativa de precios</h2><p>Precio por kilo, litro o pieza de cada proveedor. El mejor precio sale en verde.<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Se compara el precio final por kilo, litro o pieza. Si un precio está marcado "Más IVA", se le suma el 16% para compararlo; los marcados "Ya incluye IVA" o "Sin IVA" se toman tal cual. Los precios con IEPS ya lo traen incluido.</span></span></p></div>
+      <section id="pricecompare" class="view">
+        <div class="page-title"><div><h2>Comparativa de precios</h2><p>Precio por kilo, litro o pieza de cada proveedor, para todos tus negocios (solo administradores). El mejor precio sale en verde.<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Se compara el precio final por kilo, litro o pieza. Si un precio está marcado "Más IVA", se le suma el 16% para compararlo; los marcados "Ya incluye IVA" o "Sin IVA" se toman tal cual. Los precios con IEPS ya lo traen incluido.</span></span></p></div>
           <div class="actions"><button class="btn" id="pcBtnAudit" onclick="pcToggleAudit()">Auditoría</button><button class="btn" onclick="pcPrint()">Imprimir</button><button class="btn" id="pcBtnProduct" onclick="pcOpenProduct('')">+ Producto</button><button class="btn" id="pcBtnSupplier" onclick="pcOpenSupplier('')">+ Proveedor</button><button class="btn primary" id="pcBtnImport" onclick="pcStartImport('')">Cargar lista (PDF o Excel)</button></div></div>
         <div id="pcAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
         <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px;align-items:center">
           <input type="text" id="pcSearch" placeholder="Buscar producto..." oninput="debouncedPcFilter()" style="max-width:240px">
           <select id="pcGroup" onchange="pcOnFilter()" style="max-width:220px"><option value="">Todos los grupos</option></select>
+          <button type="button" class="btn" id="pcBtnGroup" style="display:none" onclick="pcOpenGroup()">Editar grupo</button>
           <label style="font-weight:600;font-size:13px"><input type="checkbox" id="pcOnlyComp" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Solo comparables (2 o más proveedores)</label>
           <label id="pcHiddenWrap" style="font-weight:600;font-size:13px;display:none"><input type="checkbox" id="pcShowHidden" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Mostrar columnas ocultas</label>
         </div></div>
         <div id="pcSummary" style="margin:8px 2px;color:var(--muted);font-size:12.5px"></div>
         <div id="pcContent"></div>
         <input type="file" id="pcFile" accept="application/pdf,.pdf,.xlsx,.xls,.csv" style="display:none" onchange="pcOnFileChosen(this)">
-      </div>
-      <!--PC-HTML-END-->
       </section>
+      <!--PC-HTML-END-->
       <section id="costing" class="view">
         <div id="costingListView">
           <div class="page-title"><div><h2>Costeo</h2><p>Costo teórico (receta y ventas) vs. costo real, por departamento</p></div><div class="actions"><button class="btn" onclick="toggleCostingAuditPanel()" id="costingAuditBtn">Auditoría</button><button class="btn" onclick="printCostingList()">Imprimir</button><button class="btn primary" id="btnNewCosting" onclick="startNewCosting()">+ Nuevo análisis</button></div></div>
@@ -1335,6 +1336,8 @@ function applyNavVisibility(){
   if(recBtn)recBtn.style.display=showRecipes?"":"none";
   const costBtn=document.querySelector('[data-view="costing"]');
   if(costBtn)costBtn.style.display=(isAdmin||currentUser.canViewCosting)?"":"none";
+  const pcBtn=document.querySelector('[data-view="pricecompare"]');
+  if(pcBtn)pcBtn.style.display=isAdmin?"":"none";
   const usersTabBtn2=document.getElementById("settingsTab-users");if(usersTabBtn2)usersTabBtn2.style.display=isAdmin?"":"none";
   if(restricted){
     if(showToma)openView("tomafisica");
@@ -1362,7 +1365,7 @@ async function checkSession(){
     document.getElementById("loginOverlay").style.display = "flex";
   }
 }
-const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recetario:"Recetario",costing:"Costeo"};
+const viewTitles={dashboard:"Dashboard",history:"Historial",cxc:"CxC por inventarios",waste:"Mermas",reports:"Reportes",tomafisica:"Toma física",recetario:"Recetario",costing:"Costeo",pricecompare:"Comparativa de precios"};
 let titleBeforePrint="";
 window.addEventListener("beforeprint",()=>{
   const el=document.getElementById("printDate");
@@ -1553,6 +1556,7 @@ async function openView(id){
   if(id==="tomafisica"){currentToma=null;document.getElementById("tomaCaptureView").style.display="none";document.getElementById("tomaListView").style.display="block";await bootTomaList()}
   if(id==="recetario")await bootRecetario();
   if(id==="costing")await bootCosting();
+  if(id==="pricecompare")await bootPriceCompare();
   if(id==="capture")bootCapture();
   if(id==="settings")await bootSettings();
   if(RESTORABLE_VIEWS.includes(id))saveCurrentView(id);
@@ -2286,15 +2290,14 @@ async function bootRecetario(){
 }
 async function switchRecetarioTab(tab){
   activeRecetarioTab=tab;
-  ["recipes","suppliers","insumos","pricecompare"].forEach(t=>{
+  ["recipes","suppliers","insumos"].forEach(t=>{
     document.getElementById(t).style.display=(t===tab)?"block":"none";
     const tabBtn=document.getElementById(`recetarioTab-${t}`);
     if(tabBtn)tabBtn.classList.toggle("active",t===tab)
   });
   if(tab==="recipes")await bootRecipes();
   else if(tab==="suppliers")await bootSuppliers();
-  else if(tab==="insumos")await bootInsumos();
-  else if(tab==="pricecompare")await bootPriceCompare()
+  else if(tab==="insumos")await bootInsumos()
 }
 /* ==================== RECETAS ==================== */
 let recipesByBusiness={};
@@ -5280,7 +5283,7 @@ function distinctMonths(){
 }
 let currentBusiness=(function(){try{const v=localStorage.getItem("cyaroma_currentBusiness");return v===null?null:v}catch(e){return null}})();
 function saveCurrentBusiness(v){currentBusiness=v;try{localStorage.setItem("cyaroma_currentBusiness",v||"")}catch(e){}}
-const RESTORABLE_VIEWS=["dashboard","history","products","cxc","waste","reports","tomafisica","recetario","costing","settings"];
+const RESTORABLE_VIEWS=["dashboard","history","products","cxc","waste","reports","tomafisica","recetario","costing","pricecompare","settings"];
 function saveCurrentView(id){try{localStorage.setItem("cyaroma_currentView",id||"")}catch(e){}}
 function loadCurrentView(){try{return localStorage.getItem("cyaroma_currentView")||""}catch(e){return""}}
 function saveGlobalMonth(v){try{localStorage.setItem("cyaroma_globalMonth",v||"")}catch(e){}}
@@ -5427,7 +5430,7 @@ function renderReports(){
   }
   reportText.innerHTML=html
 }
-/* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES ==================== */
+/* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
 /*PC-PURE-START*/
 const PC_IVA_RATE=0.16;
 const PC_UNITS="kgs?|kilos?|grs?|g|gramos?|lts?|l|litros?|ml|pzas?|pzs?|pz|piezas?|hojas?|c[aá]psulas?";
@@ -5595,7 +5598,9 @@ function pcParseSheetRows(data,sheetName){
 /*PC-PURE-END*/
 
 /* ---------- Estado y utilidades ---------- */
-let pcState={business:"",suppliers:[],products:[],offers:[],loaded:false};
+const PC_SCOPE="GLOBAL";
+const pcCanManage=()=>!!(currentUser&&currentUser.isAdmin);
+let pcState={business:PC_SCOPE,suppliers:[],products:[],offers:[],loaded:false};
 let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,limit:250};
 let pcImp=null,pcImpPendingSupplier="";
 const pcUuid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
@@ -5629,20 +5634,17 @@ function pcFail(e){console.error(e);alert("No se pudo guardar: "+((e&&e.message)
 
 /* ---------- Carga ---------- */
 async function bootPriceCompare(){
-  const b=currentBusiness,box=document.getElementById("pcContent");
-  const canM=canManageRecipes();
-  ["pcBtnProduct","pcBtnSupplier","pcBtnImport"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=canM?"":"none"});
-  const au=document.getElementById("pcBtnAudit");if(au)au.style.display=currentUser.isAdmin?"":"none";
+  if(!pcCanManage()){openView("dashboard");return}
+  const box=document.getElementById("pcContent");
   document.getElementById("pcAuditBox").style.display="none";
-  if(!b){box.innerHTML='<div class="empty">Selecciona un negocio arriba para ver su comparativa de precios.</div>';document.getElementById("pcSummary").textContent="";return}
-  if(pcState.business!==b||!pcState.loaded){
+  if(!pcState.loaded){
     box.innerHTML='<div class="empty">Cargando comparativa…</div>';
     try{
-      const[s,p,o]=await Promise.all([pcFetchAll("pc_suppliers",b),pcFetchAll("pc_products",b),pcFetchAll("pc_offers",b)]);
-      pcState={business:b,suppliers:s,products:p,offers:o,loaded:true}
+      const[s,p,o]=await Promise.all([pcFetchAll("pc_suppliers",PC_SCOPE),pcFetchAll("pc_products",PC_SCOPE),pcFetchAll("pc_offers",PC_SCOPE)]);
+      pcState={business:PC_SCOPE,suppliers:s,products:p,offers:o,loaded:true}
     }catch(e){
       console.error(e);
-      box.innerHTML='<div class="empty redtxt">No se pudo cargar la comparativa ('+esc((e&&e.message)||"error")+'). Si es la primera vez, falta correr el SQL de comparativa_precios en Supabase.</div>';
+      box.innerHTML='<div class="empty redtxt">No se pudo cargar la comparativa ('+esc((e&&e.message)||"error")+'). Si es la primera vez, falta correr el SQL de comparativa_precios_global en Supabase.</div>';
       return
     }
   }
@@ -5697,12 +5699,13 @@ function pcCell(r,s,canM,isBest){
   const main=c.pb!=null
     ?`<div class="pc-price">${money(c.pb)}<small>/${pcUnitLbl(p.base_unit)}</small></div>`
     :`<div class="pc-price pc-warn">Sin cantidad <small>(lista ${money(o.price)})</small></div>`;
+  const edit=canM?` onclick="pcEditCellPrice('${p.id}','${s.id}')" title="Clic para editar el precio" style="cursor:pointer"`:"";
   const sub=esc(pcShortPres(o))+(o.iva_mode==="mas"?" · +IVA":"")+(c.offers.length>1?" · +"+(c.offers.length-1):"");
-  return`<td class="${isBest?"pc-best":""}"><div class="pc-cell"><div>${warn}${main}<div class="pc-sub">${sub}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones" onclick="pcMenu(event,'cell','${p.id}','${s.id}')">⋯</button>`:""}</div></td>`
+  return`<td class="${isBest?"pc-best":""}"><div class="pc-cell"><div${edit}>${warn}${main}<div class="pc-sub">${sub}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones" onclick="pcMenu(event,'cell','${p.id}','${s.id}')">⋯</button>`:""}</div></td>`
 }
 function pcRender(){
   if(!pcState.loaded)return;
-  const canM=canManageRecipes();
+  const canM=pcCanManage();
   const box=document.getElementById("pcContent");
   const hiddenCount=pcState.suppliers.filter(s=>s.hidden).length;
   document.getElementById("pcHiddenWrap").style.display=hiddenCount?"":"none";
@@ -5711,6 +5714,7 @@ function pcRender(){
   const gk=groups.join("|");
   if(gSel.dataset.k!==gk){gSel.innerHTML='<option value="">Todos los grupos</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");gSel.dataset.k=gk}
   gSel.value=pcUi.group;
+  const gb=document.getElementById("pcBtnGroup");if(gb)gb.style.display=(pcUi.group&&canM)?"":"none";
   const C=pcCompute(pcUi.showHidden);
   const sum=document.getElementById("pcSummary");
   sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`;
@@ -5718,7 +5722,7 @@ function pcRender(){
     box.innerHTML='<div class="empty">Todavía no hay proveedores.'+(canM?' Usa "Cargar lista (PDF)" para traer precios de un proveedor, o "+ Proveedor" para empezar a mano.':"")+'</div>';return
   }
   if(!pcState.products.length){box.innerHTML='<div class="empty">Todavía no hay productos.'+(canM?' Carga una lista en PDF o agrega uno con "+ Producto".':"")+'</div>';return}
-  const heads=C.visSup.map(s=>`<th><div class="pc-cell"><div>${esc(s.name)}${s.hidden?" (oculta)":""}<small>${esc(s.vigencia||"sin vigencia")}</small></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div></th>`).join("");
+  const heads=C.visSup.map(s=>`<th><div class="pc-cell"><div>${esc(s.name)}${s.hidden?" (oculta)":""}${s.trade_name?`<small>${esc(s.trade_name)}</small>`:""}<small>${esc(s.vigencia||"sin vigencia")}</small></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div></th>`).join("");
   const shown=C.filtered.slice(0,pcUi.limit);
   const body=shown.map(r=>{
     const p=r.p;
@@ -5777,7 +5781,8 @@ function pcMenu(ev,type,a,b){
     ])
   }else if(type==="cell"){
     pcShowMenu(ev,[
-      {label:"Ver y editar presentaciones",js:`pcOpenOfferList('${a}','${b}')`},
+      {label:"Editar precio",js:`pcEditCellPrice('${a}','${b}')`},
+      {label:"Ver todas las presentaciones",js:`pcOpenOfferList('${a}','${b}')`},
       {label:"IVA: ya incluye IVA",js:`pcSetCellIva('${a}','${b}','incluido')`},
       {label:"IVA: sin IVA / no aplica",js:`pcSetCellIva('${a}','${b}','sin')`},
       {label:"IVA: más IVA (se suma 16%)",js:`pcSetCellIva('${a}','${b}','mas')`},
@@ -5836,27 +5841,54 @@ async function pcDeleteProduct(id){
   await pcReload()
 }
 
+/* ---------- Grupos ---------- */
+function pcOpenGroup(){
+  const g=pcUi.group;if(!g)return;
+  const n=pcState.products.filter(p=>p.group_name===g).length;
+  pcOpenModal(`<h3 style="margin-top:0">Editar grupo</h3>
+    <p style="color:var(--muted);margin-top:0">Grupo actual: <b>${esc(g)}</b> (${n} producto${n===1?"":"s"}).</p>
+    <label>Nombre nuevo del grupo</label><input type="text" id="pcf-gname" value="${esc(g)}">
+    <div class="pc-sub" style="margin-top:4px">Si escribes el nombre de otro grupo que ya existe, los productos se unen a ese grupo.</div>
+    <div class="flex" style="margin-top:16px;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" onclick="pcSaveGroup(true)">Quitar el grupo (los productos quedan sin grupo)</button><span class="flex" style="gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveGroup(false)">Guardar</button></span></div>`)
+}
+async function pcSaveGroup(remove){
+  const old=pcUi.group;if(!old)return;
+  const nuevo=remove?"":pcV("pcf-gname").trim();
+  if(!remove&&!nuevo){alert("Escribe el nombre del grupo, o usa «Quitar el grupo».");return}
+  if(!remove&&nuevo===old){pcCloseModal();return}
+  const n=pcState.products.filter(p=>p.group_name===old).length;
+  const exists=!remove&&pcState.products.some(p=>p.group_name===nuevo);
+  const msg=remove?`¿Quitar el grupo «${old}»? Sus ${n} producto(s) quedarán sin grupo.`:(exists?`Ya existe un grupo «${nuevo}». ¿Unir los ${n} producto(s) de «${old}» a ese grupo?`:`¿Cambiar el nombre del grupo «${old}» a «${nuevo}» en sus ${n} producto(s)?`);
+  if(!confirm(msg))return;
+  try{
+    await pcMust(sb.from("pc_products").update({group_name:nuevo||null,updated_at:new Date().toISOString()}).eq("business",PC_SCOPE).eq("group_name",old));
+    await pcAudit(remove?"Quitó grupo":(exists?"Unió grupos":"Renombró grupo"),remove?`«${old}» (${n} productos quedaron sin grupo)`:`«${old}» → «${nuevo}» (${n} productos)`)
+  }catch(e){pcFail(e);return}
+  pcUi.group=nuevo;pcCloseModal();await pcReload()
+}
+
 /* ---------- Proveedores ---------- */
 function pcOpenSupplier(id){
   const s=id?pcState.suppliers.find(x=>x.id===id):null;
   pcOpenModal(`<h3 style="margin-top:0">${s?"Editar proveedor":"Nuevo proveedor"}</h3>
-    <label>Nombre del proveedor</label><input type="text" id="pcf-sname" value="${esc(s?s.name:"")}" placeholder="Ej. Yakun">
+    <label>Razón social</label><input type="text" id="pcf-sname" value="${esc(s?s.name:"")}" placeholder="Ej. Frutas y Verduras Yakun S.A. de C.V.">
+    <label style="margin-top:10px">Nombre comercial (opcional)</label><input type="text" id="pcf-strade" value="${esc(s?s.trade_name||"":"")}" placeholder="Ej. Yakun">
     <label style="margin-top:10px">Vigencia de su lista (opcional)</label><input type="text" id="pcf-svig" value="${esc(s?s.vigencia||"":"")}" placeholder="Ej. Octubre 2026">
     <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveSupplier('${id||""}')">Guardar</button></div>`)
 }
 async function pcSaveSupplier(id){
-  const name=pcV("pcf-sname").trim(),vig=pcV("pcf-svig").trim();
-  if(!name){alert("Escribe el nombre del proveedor.");return}
+  const name=pcV("pcf-sname").trim(),trade=pcV("pcf-strade").trim(),vig=pcV("pcf-svig").trim();
+  if(!name){alert("Escribe la razón social del proveedor.");return}
   const old=id?pcState.suppliers.find(x=>x.id===id):null;
   if(pcState.suppliers.some(x=>x.id!==id&&pcNorm(x.name)===pcNorm(name))){alert("Ya existe un proveedor con ese nombre.");return}
   try{
     if(old){
-      await pcMust(sb.from("pc_suppliers").update({name,vigencia:vig||null,updated_at:new Date().toISOString()}).eq("id",id));
-      const ch=[];if(old.name!==name)ch.push(`nombre "${old.name}" → "${name}"`);if((old.vigencia||"")!==vig)ch.push(`vigencia "${old.vigencia||"—"}" → "${vig||"—"}"`);
+      await pcMust(sb.from("pc_suppliers").update({name,trade_name:trade||null,vigencia:vig||null,updated_at:new Date().toISOString()}).eq("id",id));
+      const ch=[];if(old.name!==name)ch.push(`razón social "${old.name}" → "${name}"`);if((old.trade_name||"")!==trade)ch.push(`nombre comercial "${old.trade_name||"—"}" → "${trade||"—"}"`);if((old.vigencia||"")!==vig)ch.push(`vigencia "${old.vigencia||"—"}" → "${vig||"—"}"`);
       if(ch.length)await pcAudit("Editó proveedor",ch.join("; "))
     }else{
-      await pcMust(sb.from("pc_suppliers").insert({id:pcUuid(),business:pcState.business,name,vigencia:vig||null,hidden:false}));
-      await pcAudit("Agregó proveedor",`"${name}"`)
+      await pcMust(sb.from("pc_suppliers").insert({id:pcUuid(),business:pcState.business,name,trade_name:trade||null,vigencia:vig||null,hidden:false}));
+      await pcAudit("Agregó proveedor",`"${name}"${trade?" ("+trade+")":""}`)
     }
   }catch(e){pcFail(e);return}
   pcCloseModal();await pcReload()
@@ -5875,6 +5907,12 @@ async function pcDeleteSupplier(id){
 }
 
 /* ---------- Precios (ofertas) ---------- */
+function pcEditCellPrice(productId,supplierId){
+  const offs=pcState.offers.filter(o=>o.product_id===productId&&o.supplier_id===supplierId);
+  if(!offs.length)return pcOpenOffer(productId,supplierId,"");
+  if(offs.length===1)return pcOpenOffer(productId,supplierId,offs[0].id);
+  pcOpenOfferList(productId,supplierId)
+}
 let pcOfferCtx="";
 function pcOpenOffer(productId,supplierId,offerId){
   const p=pcState.products.find(x=>x.id===productId);if(!p)return;
@@ -5981,7 +6019,6 @@ async function pcDeleteCell(productId,supplierId){
 
 /* ---------- Importar lista PDF ---------- */
 function pcStartImport(supplierId){
-  if(!currentBusiness){alert("Selecciona un negocio primero.");return}
   pcImpPendingSupplier=supplierId||"";
   document.getElementById("pcFile").click()
 }
@@ -6024,7 +6061,7 @@ function pcImpStep1(){
     <p style="color:var(--muted);margin-top:0">Archivo: <b>${esc(imp.fileName)}</b> — leí <b>${imp.parsed.rows.length}</b> renglones con precio.</p>
     <label>¿De qué proveedor es?</label>
     <select id="pcImpSup" onchange="document.getElementById('pcImpNewWrap').style.display=this.value?'none':''"><option value="">+ Proveedor nuevo…</option>${opts}</select>
-    <div id="pcImpNewWrap" style="margin-top:10px;${imp.supplierId?"display:none":""}"><label>Nombre del proveedor nuevo</label><input type="text" id="pcImpNewName" value="${esc(imp.newName)}" placeholder="Ej. Yakun"></div>
+    <div id="pcImpNewWrap" style="margin-top:10px;${imp.supplierId?"display:none":""}"><label>Razón social del proveedor nuevo</label><input type="text" id="pcImpNewName" value="${esc(imp.newName)}" placeholder="Ej. Frutas y Verduras Yakun S.A. de C.V."><label style="margin-top:10px">Nombre comercial (opcional)</label><input type="text" id="pcImpNewTrade" value="${esc(imp.newTrade||"")}" placeholder="Ej. Yakun"></div>
     <label style="margin-top:10px">Vigencia de la lista</label><input type="text" id="pcImpVig" value="${esc(imp.vigencia)}" placeholder="Ej. Octubre 2026">
     <label style="font-weight:600;font-size:13px;display:block;margin-top:12px"><input type="checkbox" id="pcImpOnlyMatch" style="width:auto;margin-right:6px" ${imp.onlyMatches?"checked":""}>Guardar solo los productos que ya coinciden con mi tabla</label>
     <div class="pc-sub" style="margin-top:2px">Recomendado para listas grandes. Los que no coinciden quedan marcados y puedes descargarlos para revisarlos después.</div>
@@ -6036,8 +6073,8 @@ function pcImpToReview(){
   imp.onlyMatches=document.getElementById("pcImpOnlyMatch").checked;
   imp.filter=imp.onlyMatches?"coinciden":"todos";
   if(!imp.supplierId){
-    imp.newName=pcV("pcImpNewName").trim();
-    if(!imp.newName){alert("Escribe el nombre del proveedor.");return}
+    imp.newName=pcV("pcImpNewName").trim();imp.newTrade=pcV("pcImpNewTrade").trim();
+    if(!imp.newName){alert("Escribe la razón social del proveedor.");return}
     const ex=pcState.suppliers.find(s=>pcNorm(s.name)===pcNorm(imp.newName));
     if(ex)imp.supplierId=ex.id
   }
@@ -6234,9 +6271,9 @@ async function pcImpApply(){
   try{
     let sup=imp.supplierId?pcState.suppliers.find(s=>s.id===imp.supplierId):null;
     if(!sup){
-      sup={id:pcUuid(),business:b,name:imp.newName,vigencia:imp.vigencia||null,hidden:false};
+      sup={id:pcUuid(),business:b,name:imp.newName,trade_name:imp.newTrade||null,vigencia:imp.vigencia||null,hidden:false};
       await pcMust(sb.from("pc_suppliers").insert(sup));
-      events.push({action:"Agregó proveedor",details:`"${sup.name}"`})
+      events.push({action:"Agregó proveedor",details:`"${sup.name}"${sup.trade_name?" ("+sup.trade_name+")":""}`})
     }else if((sup.vigencia||"")!==(imp.vigencia||"")){
       await pcMust(sb.from("pc_suppliers").update({vigencia:imp.vigencia||null,updated_at:now}).eq("id",sup.id))
     }
@@ -6291,19 +6328,18 @@ async function pcImpApply(){
 async function pcToggleAudit(){
   const box=document.getElementById("pcAuditBox");
   if(box.style.display!=="none"){box.style.display="none";return}
-  if(!currentBusiness){alert("Selecciona un negocio primero.");return}
   box.innerHTML='<div class="empty">Cargando…</div>';box.style.display="block";
-  const{data,error}=await sb.from("pc_audit_events").select("*").eq("business",currentBusiness).order("at",{ascending:false}).order("id",{ascending:false}).limit(500);
+  const{data,error}=await sb.from("pc_audit_events").select("*").eq("business",PC_SCOPE).order("at",{ascending:false}).order("id",{ascending:false}).limit(500);
   if(error){box.innerHTML='<div class="empty redtxt">No se pudo cargar la auditoría.</div>';return}
   const log=data||[];
-  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Comparativa de precios — ${esc(currentBusiness)}</h3>`+(log.length?`<div class="table-wrap" style="max-height:60vh;overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:0"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay movimientos registrados.</div>')
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Comparativa de precios</h3>`+(log.length?`<div class="table-wrap" style="max-height:60vh;overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:0"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay movimientos registrados.</div>')
 }
 
 /* ---------- Imprimir ---------- */
 function pcPrint(){
   if(!pcState.loaded||!pcState.products.length){alert("No hay nada que imprimir todavía.");return}
   const C=pcCompute(false);
-  const head=C.visSup.map(s=>`<th>${esc(s.name)}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
+  const head=C.visSup.map(s=>`<th>${esc(s.name)}${s.trade_name?`<br><span style="font-weight:400;color:#444">${esc(s.trade_name)}</span>`:""}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
   const rows=C.filtered.map(r=>{
     const tds=C.visSup.map(s=>{
       const c=r.cells[s.id];
@@ -6316,8 +6352,8 @@ function pcPrint(){
     return`<tr><td>${esc(r.p.name)}</td><td>${pcUnitLbl(r.p.base_unit)}</td>${tds}${bt}</tr>`
   }).join("");
   const foot=`<tr><td colspan="2"><b>Gana en</b></td>${C.visSup.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
-  openPrintWindow("Comparativa de precios — "+(currentBusiness||""),
-    `<h1>Comparativa de precios — ${esc(currentBusiness||"")}</h1>${printBusinessMetaHtml(currentBusiness)}
+  openPrintWindow("Comparativa de precios",
+    `<h1>Comparativa de precios</h1><p class="meta">Todos los negocios · uso interno</p>
     <p class="meta">${C.filtered.length} producto(s). Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
     <table><tr><th>Producto</th><th>Unidad</th>${head}<th>Mejor precio</th></tr>${rows}${foot}</table>`)
 }
