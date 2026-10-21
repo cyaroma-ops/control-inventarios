@@ -275,6 +275,30 @@ textarea{min-height:76px;resize:vertical}
 .info-tip-bubble::before{content:"";position:absolute;top:-5px;left:10px;border-width:0 6px 6px 6px;border-style:solid;border-color:transparent transparent #1f2937 transparent}
 @media(hover:hover) and (pointer:fine){.info-tip:hover .info-tip-bubble{display:block}}
 .info-tip.open .info-tip-bubble{display:block}
+.pc-table{min-width:760px}
+.pc-table td,.pc-table th{vertical-align:middle}
+.pc-table th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.pc-cell{display:flex;align-items:flex-start;justify-content:space-between;gap:4px}
+.pc-dots{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;padding:2px 7px;border-radius:6px;cursor:pointer}
+.pc-dots:hover{background:#eef2f9;color:var(--text)}
+.pc-price{font-weight:700}.pc-price small{font-weight:400;color:var(--muted);margin-left:1px}
+.pc-sub{font-size:11.5px;color:var(--muted);line-height:1.35}
+.pc-pname{font-weight:600}
+.pc-best{background:#e6f6ec}.pc-best .pc-price{color:#167347}
+.pc-warn{color:#9a5c00;font-size:12px}
+.pc-dash{color:#b8c0cc}
+.pc-bestcol .pc-bn{font-weight:700}.pc-bestcol .pc-bp{color:#167347;font-weight:700}.pc-bestcol .pc-bp small{font-weight:400;color:var(--muted)}
+.pc-foot td{background:#f4f6fb;font-weight:700;font-size:12.5px}
+.pc-link{border:0;background:transparent;color:var(--blue);padding:0;font-size:11.5px;cursor:pointer;text-decoration:underline}
+.pc-menu{position:absolute;z-index:300;width:210px;background:#fff;border:1px solid #d7dfeb;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);padding:4px}
+.pc-menu-item{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer}
+.pc-menu-item:hover{background:#f1f5fb}.pc-menu-item.danger{color:var(--red)}
+.pc-menu-sep{height:1px;background:var(--line);margin:4px 2px}
+.pc-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:250;display:none;align-items:flex-start;justify-content:center;padding:28px 12px;overflow:auto}
+.pc-modal-card{background:#fff;border-radius:14px;width:100%;max-width:560px;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.pc-imp td,.pc-imp th{font-size:12.5px;padding:6px 7px;vertical-align:top}
+.pc-imp input[type=text],.pc-imp select{padding:5px 7px;font-size:12.5px}
+@media print{#pcModal,.pc-menu{display:none!important}}
 .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
 @media(max-width:1200px){
@@ -641,6 +665,7 @@ textarea{min-height:76px;resize:vertical}
           <button class="rtab active" id="recetarioTab-recipes" onclick="switchRecetarioTab('recipes')">Recetas</button>
           <button class="rtab" id="recetarioTab-suppliers" onclick="switchRecetarioTab('suppliers')">Proveedores</button>
           <button class="rtab" id="recetarioTab-insumos" onclick="switchRecetarioTab('insumos')">Insumos</button>
+          <button class="rtab" id="recetarioTab-pricecompare" onclick="switchRecetarioTab('pricecompare')">Comparativa de precios</button>
         </div>
       <div id="recipes" class="recetario-tab">
         <div id="recipeListView">
@@ -763,6 +788,22 @@ textarea{min-height:76px;resize:vertical}
           </div>
         </div>
       </div>
+      <!--PC-HTML-START-->
+      <div id="pricecompare" class="recetario-tab" style="display:none">
+        <div class="page-title"><div><h2>Comparativa de precios</h2><p>Precio por kilo, litro o pieza de cada proveedor. El mejor precio sale en verde.<span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">Se compara el precio final por kilo, litro o pieza. Si un precio está marcado "Más IVA", se le suma el 16% para compararlo; los marcados "Ya incluye IVA" o "Sin IVA" se toman tal cual. Los precios con IEPS ya lo traen incluido.</span></span></p></div>
+          <div class="actions"><button class="btn" id="pcBtnAudit" onclick="pcToggleAudit()">Auditoría</button><button class="btn" onclick="pcPrint()">Imprimir</button><button class="btn" id="pcBtnProduct" onclick="pcOpenProduct('')">+ Producto</button><button class="btn" id="pcBtnSupplier" onclick="pcOpenSupplier('')">+ Proveedor</button><button class="btn primary" id="pcBtnImport" onclick="pcStartImport('')">Cargar lista (PDF)</button></div></div>
+        <div id="pcAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
+        <div class="card form-card"><div class="flex" style="flex-wrap:wrap;gap:12px;align-items:center">
+          <input type="text" id="pcSearch" placeholder="Buscar producto..." oninput="debouncedPcFilter()" style="max-width:240px">
+          <select id="pcGroup" onchange="pcOnFilter()" style="max-width:220px"><option value="">Todos los grupos</option></select>
+          <label style="font-weight:600;font-size:13px"><input type="checkbox" id="pcOnlyComp" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Solo comparables (2 o más proveedores)</label>
+          <label id="pcHiddenWrap" style="font-weight:600;font-size:13px;display:none"><input type="checkbox" id="pcShowHidden" onchange="pcOnFilter()" style="width:auto;margin-right:6px">Mostrar columnas ocultas</label>
+        </div></div>
+        <div id="pcSummary" style="margin:8px 2px;color:var(--muted);font-size:12.5px"></div>
+        <div id="pcContent"></div>
+        <input type="file" id="pcFile" accept="application/pdf,.pdf" style="display:none" onchange="pcOnFileChosen(this)">
+      </div>
+      <!--PC-HTML-END-->
       </section>
       <section id="costing" class="view">
         <div id="costingListView">
@@ -2245,14 +2286,15 @@ async function bootRecetario(){
 }
 async function switchRecetarioTab(tab){
   activeRecetarioTab=tab;
-  ["recipes","suppliers","insumos"].forEach(t=>{
+  ["recipes","suppliers","insumos","pricecompare"].forEach(t=>{
     document.getElementById(t).style.display=(t===tab)?"block":"none";
     const tabBtn=document.getElementById(`recetarioTab-${t}`);
     if(tabBtn)tabBtn.classList.toggle("active",t===tab)
   });
   if(tab==="recipes")await bootRecipes();
   else if(tab==="suppliers")await bootSuppliers();
-  else if(tab==="insumos")await bootInsumos()
+  else if(tab==="insumos")await bootInsumos();
+  else if(tab==="pricecompare")await bootPriceCompare()
 }
 /* ==================== RECETAS ==================== */
 let recipesByBusiness={};
@@ -5385,8 +5427,834 @@ function renderReports(){
   }
   reportText.innerHTML=html
 }
+/* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES ==================== */
+/*PC-PURE-START*/
+const PC_IVA_RATE=0.16;
+const PC_UNITS="kgs?|kilos?|grs?|g|gramos?|lts?|l|litros?|ml|pzas?|pzs?|pz|piezas?|hojas?|c[aá]psulas?";
+const PC_CONT="Bolsa|Caja|Bote|Cubeta|Marqueta|Frasco|Lata|Elopack|Placa|Bulto|Botella|Garrafa|Paquete|Paq|Libro|Rollo|Manga|Barra|Block|Bot|Pastilla|Saco";
+const PC_MONTHS=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","setiembre","octubre","noviembre","diciembre"];
+const PC_PRES_RE=new RegExp("(?:\\b(?:"+PC_CONT+")\\.?\\s*(?:con\\s+)?)?(?:\\d+\\s*(?:pzas?|latas?|bolsas?|sacos?|frascos?|piezas?)\\s*(?:de\\s*)?\\d*\\.?\\d+\\s*(?:"+PC_UNITS+")(?:\\s*c\\/u)?|\\d*\\.?\\d+\\s*x\\s*\\d*\\.?\\d+\\s*(?:"+PC_UNITS+")|\\d*\\.?\\d+\\s*(?:"+PC_UNITS+"))\\.?\\s*$","i");
+const PC_SKIP=/(C[ÓO]DIGO|DESCRIPCI[ÓO]N|PRESENTACI[ÓO]N|PRECIO|UNIDAD|VIGENCIA|LISTA DE|SUJETO|IEPS|PEDIDOS|WHATSAPP|P[ÁA]GINA|=====)/i;
+
+function pcNorm(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\b(KGS?|PZAS?|PZ|LTS?|LT|L|GRS?|G|ML|DOMO|CAJA|CONO)\b/g," ").replace(/[\d.,]+/g," ").replace(/[^A-Z ]/g," ").replace(/\s+/g," ").trim()}
+function pcNormPres(p){return String(p||"").toLowerCase().replace(/[\s.]/g,"")}
+function pcTitle(s){
+  const t=String(s||"").trim();if(!t||t!==t.toUpperCase())return t;
+  const small=new Set(["de","del","la","las","el","los","y","en","con","sin","a","al","para","por"]);
+  return t.toLowerCase().split(" ").map((w,i)=>{
+    if(i>0&&small.has(w))return w;
+    return w.replace(/^([("\/-]*)([a-záéíóúñü])/,(m,a,b)=>a+b.toUpperCase())
+  }).join(" ")
+}
+function pcBigrams(s){const t=" "+s+" ";const set=new Set();for(let i=0;i<t.length-1;i++)set.add(t.slice(i,i+2));return set}
+function pcDice(a,b){if(!a.size||!b.size)return 0;let n=0;for(const x of a)if(b.has(x))n++;return 2*n/(a.size+b.size)}
+function pcUnitInfo(u){
+  const x=String(u||"").toLowerCase().replace(/\./g,"");
+  if(/^(kgs?|kilos?)$/.test(x))return{b:"kg",f:1,g:false};
+  if(/^(g|grs?|gramos?)$/.test(x))return{b:"kg",f:0.001,g:true};
+  if(/^(l|lts?|litros?)$/.test(x))return{b:"L",f:1,g:false};
+  if(x==="ml")return{b:"L",f:0.001,g:false};
+  if(/^(pz|pzas?|pzs|piezas?|hojas?|capsulas?|cápsulas?)$/.test(x))return{b:"pz",f:1,g:false};
+  return null
+}
+function pcQtyOf(n,amt,unit){
+  const ui=pcUnitInfo(unit);if(!ui)return null;
+  let a=parseFloat(amt);if(!(a>0))return null;
+  let note="";
+  if(ui.g&&a<1){a=a*1000;note="Gramos corregidos (venía con punto decimal)"}
+  return{qty:(n||1)*a*ui.f,base:ui.b,note}
+}
+function pcParsePres(text){
+  const t=String(text||"").replace(/\s+/g," ").trim();if(!t)return null;
+  const U="("+PC_UNITS+")(?![a-záéíóúñ])";
+  let m=t.match(new RegExp("(\\d+)\\s*(?:pzas?|latas?|bolsas?|sacos?|frascos?|piezas?)\\s*(?:de\\s*)?(\\d*\\.?\\d+)\\s*"+U,"i"));
+  if(m){const r=pcQtyOf(parseInt(m[1],10),m[2],m[3]);if(r)return{...r,raw:m[0]}}
+  m=t.match(new RegExp("(\\d*\\.?\\d+)\\s*x\\s*(\\d*\\.?\\d+)\\s*"+U,"i"));
+  if(m){const r=pcQtyOf(parseFloat(m[1]),m[2],m[3]);if(r)return{...r,raw:m[0]}}
+  m=t.match(new RegExp("(\\d*\\.?\\d+)\\s*"+U,"i"));
+  if(m){const r=pcQtyOf(1,m[1],m[2]);if(r)return{...r,raw:m[0]}}
+  return null
+}
+function pcSplit(mid){
+  const m=mid.match(PC_PRES_RE);
+  if(m&&m.index>0)return{desc:mid.slice(0,m.index).trim(),pres:mid.slice(m.index).trim()};
+  return{desc:mid.trim(),pres:""}
+}
+function pcIsCode(t){return /^(?=.*\d)[A-Z0-9][A-Z0-9\-\/\.]{2,}$/.test(t)}
+function pcYakun(desc,unit){
+  if(/^KGS?$/.test(unit))return{qty:1,base:"kg",pres:"1 kg",note:""};
+  if(/^(LT|LTS|L)$/.test(unit))return{qty:1,base:"L",pres:"1 L",note:""};
+  if(/^(PZA|PZ)$/.test(unit)){
+    const q=pcParsePres(desc);
+    if(q)return{qty:q.qty,base:q.base,pres:q.raw.trim(),note:"Cantidad tomada del nombre — confirma"+(q.note?" ("+q.note+")":"")};
+    return{qty:1,base:"pz",pres:"1 pieza",note:""}
+  }
+  return{qty:null,base:"kg",pres:"Caja",note:"La lista no dice cuántos kilos trae la caja"}
+}
+function pcReadLine(line){
+  const L=String(line).replace(/\s+/g," ").trim();
+  const pm=L.match(/\$\s*([\d,]+(?:\.\d{1,2})?)$/);if(!pm)return null;
+  const price=parseFloat(pm[1].replace(/,/g,""));if(!(price>0))return null;
+  const rest=L.slice(0,pm.index).trim();if(!rest)return null;
+  let m=rest.match(/^(\S+)\s+(.+?)\s+(SI|NO|\$\s*[\d.,]+|\$\s*-)\s+(SI|NO)$/i);
+  if(m){
+    let code=m[1],mid=m[2],mm;
+    while((mm=mid.match(/^(-[A-Za-z0-9\-]+|[IVX]+(?:-\d+)?)\s+(.*)$/))&&mm[2]){code+=(mm[1][0]==="-"?"":" ")+mm[1];mid=mm[2]}
+    const ps=pcSplit(mid);
+    return{reader:"codigo",code,desc:ps.desc,pres:ps.pres,price,iva:m[4].toUpperCase()==="SI"?"incluido":"sin"}
+  }
+  m=rest.match(/^(.+?)\s+(KGS?|PZA|PZ|LTS?|L|CJA)$/i);
+  if(m)return{reader:"unidad",code:"",desc:m[1],unit:m[2].toUpperCase(),price,iva:"incluido"};
+  const toks=rest.split(" ");let code="",body=rest;
+  if(toks.length>2&&pcIsCode(toks[0])){code=toks[0];body=toks.slice(1).join(" ")}
+  const ps=pcSplit(body);
+  if(!ps.desc)return null;
+  return{reader:"libre",code,desc:ps.desc,pres:ps.pres,price,iva:"sin"}
+}
+function pcParseListText(text){
+  const lines=String(text||"").split("\n");const rows=[];let group="";
+  const head=lines.slice(0,60).join(" ");
+  let vig="";
+  const mv=head.match(new RegExp("("+PC_MONTHS.join("|")+")\\s+(?:de\\s+)?(20\\d\\d)","i"));
+  if(mv)vig=mv[1][0].toUpperCase()+mv[1].slice(1).toLowerCase()+" "+mv[2];
+  lines.forEach(raw=>{
+    const l=raw.trim();if(!l)return;
+    const r=pcReadLine(l);
+    if(r){
+      let desc=r.desc.replace(/\s+/g," ").trim(),pres=r.pres||"",qty=null,base=null,note="";
+      if(r.reader==="unidad"){
+        const y=pcYakun(desc,r.unit);pres=y.pres;qty=y.qty;base=y.base;note=y.note;
+        desc=desc.replace(/\s+(KGS?|PZA|PZ|LTS?)\s*$/i,"")
+      }else{
+        const q=pcParsePres(pres);
+        if(q){qty=q.qty;base=q.base;note=q.note||""}
+        else note=pres?"No pude leer la presentación":"Sin presentación en la lista"
+      }
+      rows.push({code:r.code||"",desc,name:pcTitle(desc),pres,qty,base,price:r.price,iva:r.iva,group,note,reader:r.reader})
+    }else{
+      const gm=l.match(/^L[IÍ]NEAS?\s+(.+)$/i);
+      if(gm&&l.length<60)group=pcTitle(gm[1].toUpperCase());
+      else if(/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ()\/&-]{2,45}$/.test(l)&&!PC_SKIP.test(l))group=pcTitle(l)
+    }
+  });
+  return{rows,vigencia:vig,guessSupplier:/par de france/i.test(text)?"Par de France":""}
+}
+function pcOfferKey(code,desc,pres){
+  const c=String(code||"").trim().toUpperCase();
+  if(c)return"c:"+c;
+  return"d:"+pcNorm(desc)+"|"+pcNormPres(pres)
+}
+function pcEffPrice(o){return Number(o.price||0)*(o.iva_mode==="mas"?1+PC_IVA_RATE:1)}
+function pcPerBase(o,p){
+  const q=Number(o.qty_base||0);if(!(q>0))return null;
+  if(p&&o.base_unit&&p.base_unit&&o.base_unit!==p.base_unit)return null;
+  return pcEffPrice(o)/q
+}
+function pcFmtQty(q,b){
+  if(!(q>0))return"—";
+  const r=x=>Number(x.toFixed(3)).toString();
+  if(b==="kg")return q<1?r(q*1000)+" g":r(q)+" kg";
+  if(b==="L")return q<1?r(q*1000)+" ml":r(q)+" L";
+  return r(q)+" pz"
+}
+/*PC-PURE-END*/
+
+/* ---------- Estado y utilidades ---------- */
+let pcState={business:"",suppliers:[],products:[],offers:[],loaded:false};
+let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,limit:250};
+let pcImp=null,pcImpPendingSupplier="";
+const pcUuid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
+const pcV=id=>{const el=document.getElementById(id);return el?el.value:""};
+const pcUnitLbl=u=>u==="L"?"L":(u==="pz"?"pz":"kg");
+const pcChunk=(arr,n)=>{const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out};
+async function pcMust(q){const{error}=await q;if(error)throw error}
+async function pcFetchAll(table,business){
+  const out=[];let from=0;const step=1000;
+  for(;;){
+    const{data,error}=await sb.from(table).select("*").eq("business",business).order("id").range(from,from+step-1);
+    if(error)throw error;
+    out.push(...data);
+    if(data.length<step)break;
+    from+=step
+  }
+  return out
+}
+async function pcAuditMany(list){
+  if(!list.length)return true;
+  const by=currentUser.name||currentUser.email||"Desconocido",at=new Date().toISOString();
+  const rows=list.map(e=>({business:pcState.business,at,by,action:e.action,details:e.details||""}));
+  for(const part of pcChunk(rows,400)){
+    const{error}=await sb.from("pc_audit_events").insert(part);
+    if(error){console.error("Error al guardar auditoría de comparativa:",error);return false}
+  }
+  return true
+}
+const pcAudit=(action,details)=>pcAuditMany([{action,details}]);
+function pcFail(e){console.error(e);alert("No se pudo guardar: "+((e&&e.message)||"error de conexión")+".\nTu cambio no se aplicó.")}
+
+/* ---------- Carga ---------- */
+async function bootPriceCompare(){
+  const b=currentBusiness,box=document.getElementById("pcContent");
+  const canM=canManageRecipes();
+  ["pcBtnProduct","pcBtnSupplier","pcBtnImport"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=canM?"":"none"});
+  const au=document.getElementById("pcBtnAudit");if(au)au.style.display=currentUser.isAdmin?"":"none";
+  document.getElementById("pcAuditBox").style.display="none";
+  if(!b){box.innerHTML='<div class="empty">Selecciona un negocio arriba para ver su comparativa de precios.</div>';document.getElementById("pcSummary").textContent="";return}
+  if(pcState.business!==b||!pcState.loaded){
+    box.innerHTML='<div class="empty">Cargando comparativa…</div>';
+    try{
+      const[s,p,o]=await Promise.all([pcFetchAll("pc_suppliers",b),pcFetchAll("pc_products",b),pcFetchAll("pc_offers",b)]);
+      pcState={business:b,suppliers:s,products:p,offers:o,loaded:true}
+    }catch(e){
+      console.error(e);
+      box.innerHTML='<div class="empty redtxt">No se pudo cargar la comparativa ('+esc((e&&e.message)||"error")+'). Si es la primera vez, falta correr el SQL de comparativa_precios en Supabase.</div>';
+      return
+    }
+  }
+  pcRender()
+}
+
+/* ---------- Cálculo de filas ---------- */
+function pcIndex(){
+  const sup=new Map(pcState.suppliers.map(s=>[s.id,s]));
+  const byProd=new Map();
+  pcState.offers.forEach(o=>{if(!byProd.has(o.product_id))byProd.set(o.product_id,[]);byProd.get(o.product_id).push(o)});
+  return{sup,byProd}
+}
+function pcRowData(p,idx,visSup){
+  const offs=idx.byProd.get(p.id)||[];
+  const cells={};let best=null;
+  visSup.forEach(s=>{
+    const mine=offs.filter(o=>o.supplier_id===s.id);
+    let bo=null,bpb=null;
+    mine.forEach(o=>{const pb=pcPerBase(o,p);if(pb!=null&&(bpb==null||pb<bpb)){bpb=pb;bo=o}});
+    cells[s.id]={offers:mine,best:bo,pb:bpb};
+    if(bpb!=null&&(best==null||bpb<best.pb))best={sid:s.id,pb:bpb,o:bo}
+  });
+  const valid=visSup.filter(s=>cells[s.id].pb!=null).length;
+  return{p,cells,best,valid}
+}
+function pcCompute(showHidden){
+  const idx=pcIndex();
+  const allSup=pcState.suppliers.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  const visSup=allSup.filter(s=>showHidden||!s.hidden);
+  let prods=pcState.products.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  const q=pcNorm(pcUi.q);
+  if(q)prods=prods.filter(p=>pcNorm(p.name).includes(q)||pcNorm(p.group_name||"").includes(q));
+  if(pcUi.group)prods=prods.filter(p=>(p.group_name||"")===pcUi.group);
+  const rows=prods.map(p=>pcRowData(p,idx,visSup));
+  const filtered=pcUi.onlyComparable?rows.filter(r=>r.valid>=2):rows;
+  const wins={};visSup.forEach(s=>wins[s.id]=0);
+  let comparable=0;
+  filtered.forEach(r=>{if(r.valid>=2){comparable++;wins[r.best.sid]++}});
+  return{idx,allSup,visSup,filtered,wins,comparable}
+}
+
+/* ---------- Pantalla principal ---------- */
+function pcShortPres(o){const t=(o.presentation||"").trim();return t.length>26?t.slice(0,25)+"…":t}
+function pcCell(r,s,canM,isBest){
+  const c=r.cells[s.id],p=r.p;
+  if(!c.offers.length){
+    return'<td class="pc-dash">'+(canM?`<button type="button" class="pc-dots" title="Agregar precio de este proveedor" onclick="pcOpenOffer('${p.id}','${s.id}','')">+</button>`:"")+'—</td>'
+  }
+  const o=c.best||c.offers[0];
+  const warn=c.offers.some(x=>pcPerBase(x,p)==null)?'<span class="pc-warn" title="Hay una presentación sin cantidad válida o con otra unidad">⚠</span> ':"";
+  const main=c.pb!=null
+    ?`<div class="pc-price">${money(c.pb)}<small>/${pcUnitLbl(p.base_unit)}</small></div>`
+    :`<div class="pc-price pc-warn">Sin cantidad <small>(lista ${money(o.price)})</small></div>`;
+  const sub=esc(pcShortPres(o))+(o.iva_mode==="mas"?" · +IVA":"")+(c.offers.length>1?" · +"+(c.offers.length-1):"");
+  return`<td class="${isBest?"pc-best":""}"><div class="pc-cell"><div>${warn}${main}<div class="pc-sub">${sub}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones" onclick="pcMenu(event,'cell','${p.id}','${s.id}')">⋯</button>`:""}</div></td>`
+}
+function pcRender(){
+  if(!pcState.loaded)return;
+  const canM=canManageRecipes();
+  const box=document.getElementById("pcContent");
+  const hiddenCount=pcState.suppliers.filter(s=>s.hidden).length;
+  document.getElementById("pcHiddenWrap").style.display=hiddenCount?"":"none";
+  const gSel=document.getElementById("pcGroup");
+  const groups=[...new Set(pcState.products.map(p=>p.group_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  const gk=groups.join("|");
+  if(gSel.dataset.k!==gk){gSel.innerHTML='<option value="">Todos los grupos</option>'+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");gSel.dataset.k=gk}
+  gSel.value=pcUi.group;
+  const C=pcCompute(pcUi.showHidden);
+  const sum=document.getElementById("pcSummary");
+  sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`;
+  if(!pcState.suppliers.length){
+    box.innerHTML='<div class="empty">Todavía no hay proveedores.'+(canM?' Usa "Cargar lista (PDF)" para traer precios de un proveedor, o "+ Proveedor" para empezar a mano.':"")+'</div>';return
+  }
+  if(!pcState.products.length){box.innerHTML='<div class="empty">Todavía no hay productos.'+(canM?' Carga una lista en PDF o agrega uno con "+ Producto".':"")+'</div>';return}
+  const heads=C.visSup.map(s=>`<th><div class="pc-cell"><div>${esc(s.name)}${s.hidden?" (oculta)":""}<small>${esc(s.vigencia||"sin vigencia")}</small></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div></th>`).join("");
+  const shown=C.filtered.slice(0,pcUi.limit);
+  const body=shown.map(r=>{
+    const p=r.p;
+    const tds=C.visSup.map(s=>pcCell(r,s,canM,r.best&&r.valid>=2&&r.best.sid===s.id)).join("");
+    const bestTd=r.best
+      ?`<td class="pc-bestcol"><div class="pc-bn">${esc(C.idx.sup.get(r.best.sid).name)}</div><div class="pc-bp">${money(r.best.pb)}<small>/${pcUnitLbl(p.base_unit)}</small></div>${r.valid<2?'<div class="pc-sub">solo 1 proveedor</div>':""}</td>`
+      :'<td class="pc-dash">—</td>';
+    return`<tr><td><div class="pc-pname">${esc(p.name)}</div>${p.group_name?`<div class="pc-sub">${esc(p.group_name)}</div>`:""}</td><td>${pcUnitLbl(p.base_unit)}</td>${tds}${bestTd}<td>${canM?`<button type="button" class="pc-dots" aria-label="Opciones del producto" onclick="pcMenu(event,'prod','${p.id}','')">⋯</button>`:""}</td></tr>`
+  }).join("");
+  let lead="—",max=0;C.visSup.forEach(s=>{if(C.wins[s.id]>max){max=C.wins[s.id];lead=s.name}});
+  const foot=`<tr class="pc-foot"><td colspan="2">Gana en (productos con 2 o más proveedores)</td>${C.visSup.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td>${max?esc(lead):"—"}</td><td></td></tr>`;
+  const more=C.filtered.length>shown.length?`<div style="text-align:center;margin:10px 0"><button type="button" class="btn" onclick="pcMore()">Mostrar más (${shown.length} de ${C.filtered.length})</button></div>`:"";
+  box.innerHTML=`<div class="table-wrap"><table class="pc-table"><thead><tr><th>Producto</th><th>Unidad</th>${heads}<th>Mejor precio</th><th></th></tr></thead><tbody>${body||'<tr><td colspan="'+(C.visSup.length+4)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
+}
+function pcOnFilter(){
+  pcUi.q=pcV("pcSearch");pcUi.group=pcV("pcGroup");
+  pcUi.onlyComparable=document.getElementById("pcOnlyComp").checked;
+  pcUi.showHidden=document.getElementById("pcShowHidden").checked;
+  pcUi.limit=250;pcRender()
+}
+const debouncedPcFilter=debounce(()=>pcOnFilter(),250);
+function pcMore(){pcUi.limit+=250;pcRender()}
+async function pcReload(){pcState.loaded=false;await bootPriceCompare()}
+
+/* ---------- Menús ⋯ y ventana ---------- */
+let pcMenuEl=null;
+function pcCloseMenu(){if(pcMenuEl){pcMenuEl.remove();pcMenuEl=null}}
+document.addEventListener("click",pcCloseMenu);
+function pcShowMenu(ev,items){
+  ev.stopPropagation();pcCloseMenu();
+  const el=document.createElement("div");el.className="pc-menu";
+  el.innerHTML=items.map(it=>it.sep?'<div class="pc-menu-sep"></div>':`<button type="button" class="pc-menu-item${it.danger?" danger":""}" onclick="pcCloseMenu();${it.js}">${esc(it.label)}</button>`).join("");
+  document.body.appendChild(el);
+  const r=ev.currentTarget.getBoundingClientRect();
+  let left=r.right+window.scrollX-210;if(left<8)left=8;
+  el.style.left=left+"px";el.style.top=(r.bottom+window.scrollY+4)+"px";
+  el.addEventListener("click",e=>e.stopPropagation());
+  pcMenuEl=el
+}
+function pcMenu(ev,type,a,b){
+  if(type==="sup"){
+    const s=pcState.suppliers.find(x=>x.id===a);
+    pcShowMenu(ev,[
+      {label:"Editar proveedor",js:`pcOpenSupplier('${a}')`},
+      {label:"Actualizar precios (cargar lista)",js:`pcStartImport('${a}')`},
+      {label:s&&s.hidden?"Mostrar columna":"Ocultar columna",js:`pcToggleSupplierHidden('${a}')`},
+      {sep:true},
+      {label:"Eliminar proveedor",js:`pcDeleteSupplier('${a}')`,danger:true}
+    ])
+  }else if(type==="prod"){
+    pcShowMenu(ev,[
+      {label:"Editar producto",js:`pcOpenProduct('${a}')`},
+      {label:"Agregar precio de un proveedor",js:`pcOpenOffer('${a}','','')`},
+      {sep:true},
+      {label:"Eliminar producto",js:`pcDeleteProduct('${a}')`,danger:true}
+    ])
+  }else if(type==="cell"){
+    pcShowMenu(ev,[
+      {label:"Ver y editar presentaciones",js:`pcOpenOfferList('${a}','${b}')`},
+      {label:"IVA: ya incluye IVA",js:`pcSetCellIva('${a}','${b}','incluido')`},
+      {label:"IVA: sin IVA / no aplica",js:`pcSetCellIva('${a}','${b}','sin')`},
+      {label:"IVA: más IVA (se suma 16%)",js:`pcSetCellIva('${a}','${b}','mas')`},
+      {label:"Agregar otra presentación",js:`pcOpenOffer('${a}','${b}','')`},
+      {sep:true},
+      {label:"Quitar este precio",js:`pcDeleteCell('${a}','${b}')`,danger:true}
+    ])
+  }
+}
+function pcOpenModal(html,wide){
+  const m=document.getElementById("pcModal");
+  m.querySelector(".pc-modal-card").style.maxWidth=wide?"1180px":"560px";
+  m.querySelector(".pc-modal-body").innerHTML=html;
+  m.style.display="flex"
+}
+function pcCloseModal(){
+  const m=document.getElementById("pcModal");
+  m.style.display="none";m.querySelector(".pc-modal-body").innerHTML="";pcImp=null
+}
+
+/* ---------- Productos ---------- */
+function pcOpenProduct(id){
+  const p=id?pcState.products.find(x=>x.id===id):null;
+  const groups=[...new Set(pcState.products.map(x=>x.group_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  pcOpenModal(`<h3 style="margin-top:0">${p?"Editar producto":"Nuevo producto"}</h3>
+    <label>Nombre del producto</label><input type="text" id="pcf-name" value="${esc(p?p.name:"")}" placeholder="Ej. Aceite de canola">
+    <label style="margin-top:10px">Grupo (opcional)</label><input type="text" id="pcf-group" list="pcGroupList" value="${esc(p?p.group_name||"":"")}" placeholder="Ej. Abarrotes"><datalist id="pcGroupList">${groups.map(g=>`<option value="${esc(g)}">`).join("")}</datalist>
+    <label style="margin-top:10px">Se compara por</label>
+    <select id="pcf-unit"><option value="kg" ${p&&p.base_unit==="kg"?"selected":""}>Kilo (kg)</option><option value="L" ${p&&p.base_unit==="L"?"selected":""}>Litro (L)</option><option value="pz" ${p&&p.base_unit==="pz"?"selected":""}>Pieza (pz)</option></select>
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveProduct('${id||""}')">Guardar</button></div>`)
+}
+async function pcSaveProduct(id){
+  const name=pcV("pcf-name").trim(),group=pcV("pcf-group").trim(),unit=pcV("pcf-unit");
+  if(!name){alert("Escribe el nombre del producto.");return}
+  const old=id?pcState.products.find(x=>x.id===id):null;
+  const dup=pcState.products.find(x=>x.id!==id&&pcNorm(x.name)===pcNorm(name)&&x.base_unit===unit);
+  if(dup&&!confirm(`Ya existe un producto llamado "${dup.name}" con la misma unidad. ¿Guardar de todos modos?`))return;
+  if(old&&old.base_unit!==unit&&pcState.offers.some(o=>o.product_id===id)&&!confirm("Cambiar la unidad hace que los precios ya capturados con otra unidad dejen de compararse hasta que los corrijas. ¿Continuar?"))return;
+  try{
+    if(old){
+      await pcMust(sb.from("pc_products").update({name,group_name:group||null,base_unit:unit,updated_at:new Date().toISOString()}).eq("id",id));
+      const ch=[];if(old.name!==name)ch.push(`nombre "${old.name}" → "${name}"`);if((old.group_name||"")!==group)ch.push(`grupo "${old.group_name||"—"}" → "${group||"—"}"`);if(old.base_unit!==unit)ch.push(`unidad ${old.base_unit} → ${unit}`);
+      if(ch.length)await pcAudit("Editó producto",`"${old.name}": ${ch.join("; ")}`)
+    }else{
+      await pcMust(sb.from("pc_products").insert({id:pcUuid(),business:pcState.business,name,group_name:group||null,base_unit:unit}));
+      await pcAudit("Agregó producto",`"${name}" (se compara por ${unit})`)
+    }
+  }catch(e){pcFail(e);return}
+  pcCloseModal();await pcReload()
+}
+async function pcDeleteProduct(id){
+  const p=pcState.products.find(x=>x.id===id);if(!p)return;
+  const n=pcState.offers.filter(o=>o.product_id===id).length;
+  if(!confirm(`¿Eliminar "${p.name}"${n?` y sus ${n} precio(s) de proveedores`:""}? No se puede deshacer.`))return;
+  try{await pcMust(sb.from("pc_products").delete().eq("id",id));await pcAudit("Eliminó producto",`"${p.name}"${n?` con ${n} precio(s)`:""}`)}catch(e){pcFail(e);return}
+  await pcReload()
+}
+
+/* ---------- Proveedores ---------- */
+function pcOpenSupplier(id){
+  const s=id?pcState.suppliers.find(x=>x.id===id):null;
+  pcOpenModal(`<h3 style="margin-top:0">${s?"Editar proveedor":"Nuevo proveedor"}</h3>
+    <label>Nombre del proveedor</label><input type="text" id="pcf-sname" value="${esc(s?s.name:"")}" placeholder="Ej. Yakun">
+    <label style="margin-top:10px">Vigencia de su lista (opcional)</label><input type="text" id="pcf-svig" value="${esc(s?s.vigencia||"":"")}" placeholder="Ej. Octubre 2026">
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveSupplier('${id||""}')">Guardar</button></div>`)
+}
+async function pcSaveSupplier(id){
+  const name=pcV("pcf-sname").trim(),vig=pcV("pcf-svig").trim();
+  if(!name){alert("Escribe el nombre del proveedor.");return}
+  const old=id?pcState.suppliers.find(x=>x.id===id):null;
+  if(pcState.suppliers.some(x=>x.id!==id&&pcNorm(x.name)===pcNorm(name))){alert("Ya existe un proveedor con ese nombre.");return}
+  try{
+    if(old){
+      await pcMust(sb.from("pc_suppliers").update({name,vigencia:vig||null,updated_at:new Date().toISOString()}).eq("id",id));
+      const ch=[];if(old.name!==name)ch.push(`nombre "${old.name}" → "${name}"`);if((old.vigencia||"")!==vig)ch.push(`vigencia "${old.vigencia||"—"}" → "${vig||"—"}"`);
+      if(ch.length)await pcAudit("Editó proveedor",ch.join("; "))
+    }else{
+      await pcMust(sb.from("pc_suppliers").insert({id:pcUuid(),business:pcState.business,name,vigencia:vig||null,hidden:false}));
+      await pcAudit("Agregó proveedor",`"${name}"`)
+    }
+  }catch(e){pcFail(e);return}
+  pcCloseModal();await pcReload()
+}
+async function pcToggleSupplierHidden(id){
+  const s=pcState.suppliers.find(x=>x.id===id);if(!s)return;
+  try{await pcMust(sb.from("pc_suppliers").update({hidden:!s.hidden,updated_at:new Date().toISOString()}).eq("id",id));await pcAudit(s.hidden?"Mostró columna":"Ocultó columna",`Proveedor "${s.name}"`)}catch(e){pcFail(e);return}
+  await pcReload()
+}
+async function pcDeleteSupplier(id){
+  const s=pcState.suppliers.find(x=>x.id===id);if(!s)return;
+  const n=pcState.offers.filter(o=>o.supplier_id===id).length;
+  if(!confirm(`¿Eliminar al proveedor "${s.name}" y sus ${n} precio(s)? No se puede deshacer.\n\nSi solo quieres dejar de verlo, usa "Ocultar columna".`))return;
+  try{await pcMust(sb.from("pc_suppliers").delete().eq("id",id));await pcAudit("Eliminó proveedor",`"${s.name}" con ${n} precio(s)`)}catch(e){pcFail(e);return}
+  await pcReload()
+}
+
+/* ---------- Precios (ofertas) ---------- */
+let pcOfferCtx="";
+function pcOpenOffer(productId,supplierId,offerId){
+  const p=pcState.products.find(x=>x.id===productId);if(!p)return;
+  pcOfferCtx=productId;
+  const o=offerId?pcState.offers.find(x=>x.id===offerId):null;
+  const sups=pcState.suppliers.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  if(!sups.length){alert("Primero agrega un proveedor.");return}
+  const sid=o?o.supplier_id:supplierId;
+  pcOpenModal(`<h3 style="margin-top:0">${o?"Editar precio":"Agregar precio"} — ${esc(p.name)}</h3>
+    <label>Proveedor</label><select id="pcf-sup" ${o?"disabled":""}>${sups.map(s=>`<option value="${s.id}" ${s.id===sid?"selected":""}>${esc(s.name)}</option>`).join("")}</select>
+    <label style="margin-top:10px">Presentación</label><input type="text" id="pcf-pres" value="${esc(o?o.presentation||"":"")}" placeholder="Ej. Bolsa 5 kg, Caja 12 x 950 ml" oninput="pcOfferPreview(true)">
+    <div class="flex" style="gap:12px;margin-top:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px"><label>Cantidad que trae (en ${pcUnitLbl(p.base_unit)})</label><input type="number" step="any" id="pcf-qty" value="${o&&o.qty_base?o.qty_base:""}" data-auto="${o?"0":"1"}" oninput="this.dataset.auto='0';pcOfferPreview(false)"></div>
+      <div style="flex:1;min-width:150px"><label>Precio de la presentación</label><input type="number" step="any" id="pcf-price" value="${o?o.price:""}" oninput="pcOfferPreview(false)"></div>
+    </div>
+    <label style="margin-top:10px">IVA</label>
+    <select id="pcf-iva" onchange="pcOfferPreview(false)"><option value="incluido" ${!o||o.iva_mode==="incluido"?"selected":""}>Ya incluye IVA</option><option value="sin" ${o&&o.iva_mode==="sin"?"selected":""}>Sin IVA / no aplica</option><option value="mas" ${o&&o.iva_mode==="mas"?"selected":""}>Más IVA (se suma 16% para comparar)</option></select>
+    <div id="pcf-prev" class="pc-sub" style="margin-top:10px;font-size:13px"></div>
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveOffer('${offerId||""}','${productId}')">Guardar</button></div>`);
+  pcOfferPreview(false)
+}
+function pcOfferPreview(fromPres){
+  const p=pcState.products.find(x=>x.id===pcOfferCtx);if(!p)return;
+  const qEl=document.getElementById("pcf-qty");
+  if(fromPres&&qEl.dataset.auto==="1"){
+    const q=pcParsePres(pcV("pcf-pres"));
+    qEl.value=q&&q.base===p.base_unit?Number(q.qty.toFixed(6)):""
+  }
+  const qty=parseFloat(qEl.value),price=parseFloat(pcV("pcf-price")),mas=pcV("pcf-iva")==="mas";
+  const pv=document.getElementById("pcf-prev");
+  if(qty>0&&price>0)pv.textContent=`Equivale a ${money(price*(mas?1+PC_IVA_RATE:1)/qty)} por ${pcUnitLbl(p.base_unit)}${mas?" (con IVA sumado)":""}.`;
+  else pv.textContent="Escribe la presentación y el precio para ver el precio por "+pcUnitLbl(p.base_unit)+"."
+}
+async function pcSaveOffer(offerId,productId){
+  const p=pcState.products.find(x=>x.id===productId);
+  const sid=pcV("pcf-sup");if(!sid){alert("Elige el proveedor.");return}
+  const sup=pcState.suppliers.find(s=>s.id===sid);
+  const pres=pcV("pcf-pres").trim(),price=parseFloat(pcV("pcf-price")),iva=pcV("pcf-iva");
+  if(!(price>0)){alert("Escribe el precio de la presentación.");return}
+  const parsed=pcParsePres(pres);
+  let qty=parseFloat(pcV("pcf-qty"));
+  if(!(qty>0)&&parsed&&parsed.base===p.base_unit)qty=parsed.qty;
+  if(!(qty>0)){alert("Escribe cuántos "+pcUnitLbl(p.base_unit)+" trae la presentación (por ejemplo 5 para una bolsa de 5 kg).");return}
+  const manual=!(parsed&&parsed.base===p.base_unit&&Math.abs(parsed.qty-qty)<1e-9);
+  const old=offerId?pcState.offers.find(o=>o.id===offerId):null;
+  try{
+    if(old){
+      await pcMust(sb.from("pc_offers").update({presentation:pres||null,qty_base:qty,base_unit:p.base_unit,price,iva_mode:iva,manual:manual||old.manual,updated_at:new Date().toISOString()}).eq("id",offerId));
+      const ch=[];if(Math.abs(num(old.price)-price)>0.004)ch.push(`precio ${money(old.price)} → ${money(price)}`);
+      if(old.iva_mode!==iva)ch.push(`IVA ${PC_IVA_TXT[old.iva_mode]} → ${PC_IVA_TXT[iva]}`);
+      if((old.presentation||"")!==pres)ch.push(`presentación "${old.presentation||"—"}" → "${pres||"—"}"`);
+      if(Math.abs(num(old.qty_base)-qty)>1e-9)ch.push(`cantidad ${pcFmtQty(old.qty_base,old.base_unit)} → ${pcFmtQty(qty,p.base_unit)}`);
+      if(ch.length)await pcAudit("Editó precio",`"${p.name}" (${sup.name}): ${ch.join("; ")}`)
+    }else{
+      await pcMust(sb.from("pc_offers").insert({id:pcUuid(),business:pcState.business,product_id:productId,supplier_id:sid,supplier_desc:p.name,presentation:pres||null,qty_base:qty,base_unit:p.base_unit,price,iva_mode:iva,manual:true}));
+      await pcAudit("Agregó precio",`"${p.name}" (${sup.name}) ${pres||pcFmtQty(qty,p.base_unit)}: ${money(price)} — ${PC_IVA_TXT[iva]}`)
+    }
+  }catch(e){pcFail(e);return}
+  pcCloseModal();await pcReload()
+}
+const PC_IVA_TXT={incluido:"ya incluye IVA",sin:"sin IVA",mas:"más IVA"};
+function pcOpenOfferList(productId,supplierId){
+  const p=pcState.products.find(x=>x.id===productId),s=pcState.suppliers.find(x=>x.id===supplierId);if(!p||!s)return;
+  const offs=pcState.offers.filter(o=>o.product_id===productId&&o.supplier_id===supplierId);
+  const rows=offs.map(o=>{const pb=pcPerBase(o,p);return`<tr><td>${esc(o.presentation||"—")}</td><td>${pcFmtQty(o.qty_base,o.base_unit)}</td><td>${money(o.price)}</td>
+    <td><select onchange="pcSetOfferIva('${o.id}',this.value)"><option value="incluido" ${o.iva_mode==="incluido"?"selected":""}>Ya incluye IVA</option><option value="sin" ${o.iva_mode==="sin"?"selected":""}>Sin IVA</option><option value="mas" ${o.iva_mode==="mas"?"selected":""}>Más IVA</option></select></td>
+    <td>${pb!=null?money(pb)+"/"+pcUnitLbl(p.base_unit):'<span class="pc-warn">sin cantidad</span>'}</td>
+    <td><button type="button" class="pc-dots" aria-label="Opciones" onclick="pcOfferMenu(event,'${o.id}')">⋯</button></td></tr>`}).join("");
+  pcOpenModal(`<h3 style="margin-top:0">${esc(p.name)} — ${esc(s.name)}</h3>
+    <div class="table-wrap"><table style="min-width:0"><thead><tr><th>Presentación</th><th>Cantidad</th><th>Precio</th><th>IVA</th><th>Por ${pcUnitLbl(p.base_unit)}</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="6" class="empty">Sin presentaciones.</td></tr>'}</tbody></table></div>
+    <div class="flex" style="margin-top:14px;justify-content:space-between;gap:8px"><button class="btn" onclick="pcOpenOffer('${productId}','${supplierId}','')">Agregar presentación</button><button class="btn primary" onclick="pcCloseModal()">Cerrar</button></div>`,true)
+}
+function pcOfferMenu(ev,offerId){
+  const o=pcState.offers.find(x=>x.id===offerId);if(!o)return;
+  pcShowMenu(ev,[{label:"Editar",js:`pcOpenOffer('${o.product_id}','${o.supplier_id}','${o.id}')`},{sep:true},{label:"Quitar este precio",js:`pcDeleteOffer('${o.id}')`,danger:true}])
+}
+async function pcSetOfferIva(offerId,mode){
+  const o=pcState.offers.find(x=>x.id===offerId);if(!o||o.iva_mode===mode)return;
+  const p=pcState.products.find(x=>x.id===o.product_id),s=pcState.suppliers.find(x=>x.id===o.supplier_id);
+  try{await pcMust(sb.from("pc_offers").update({iva_mode:mode,updated_at:new Date().toISOString()}).eq("id",offerId));await pcAudit("Cambió IVA",`"${p.name}" (${s.name}) ${o.presentation||""}: ${PC_IVA_TXT[o.iva_mode]} → ${PC_IVA_TXT[mode]}`)}catch(e){pcFail(e);return}
+  o.iva_mode=mode;pcRender();pcOpenOfferList(o.product_id,o.supplier_id)
+}
+async function pcSetCellIva(productId,supplierId,mode){
+  const offs=pcState.offers.filter(o=>o.product_id===productId&&o.supplier_id===supplierId&&o.iva_mode!==mode);
+  if(!offs.length)return;
+  const p=pcState.products.find(x=>x.id===productId),s=pcState.suppliers.find(x=>x.id===supplierId);
+  try{await pcMust(sb.from("pc_offers").update({iva_mode:mode,updated_at:new Date().toISOString()}).in("id",offs.map(o=>o.id)));await pcAudit("Cambió IVA",`"${p.name}" (${s.name}): ahora ${PC_IVA_TXT[mode]} (${offs.length} presentación(es))`)}catch(e){pcFail(e);return}
+  await pcReload()
+}
+async function pcDeleteOffer(offerId){
+  const o=pcState.offers.find(x=>x.id===offerId);if(!o)return;
+  const p=pcState.products.find(x=>x.id===o.product_id),s=pcState.suppliers.find(x=>x.id===o.supplier_id);
+  if(!confirm(`¿Quitar el precio de ${s.name} para "${p.name}" (${o.presentation||"sin presentación"})?`))return;
+  try{await pcMust(sb.from("pc_offers").delete().eq("id",offerId));await pcAudit("Quitó precio",`"${p.name}" (${s.name}) ${o.presentation||""}: ${money(o.price)}`)}catch(e){pcFail(e);return}
+  await pcReload();if(pcState.offers.some(x=>x.product_id===o.product_id&&x.supplier_id===o.supplier_id))pcOpenOfferList(o.product_id,o.supplier_id);else pcCloseModal()
+}
+async function pcDeleteCell(productId,supplierId){
+  const offs=pcState.offers.filter(o=>o.product_id===productId&&o.supplier_id===supplierId);if(!offs.length)return;
+  const p=pcState.products.find(x=>x.id===productId),s=pcState.suppliers.find(x=>x.id===supplierId);
+  if(!confirm(`¿Quitar ${offs.length>1?"los "+offs.length+" precios":"el precio"} de ${s.name} para "${p.name}"?`))return;
+  try{await pcMust(sb.from("pc_offers").delete().in("id",offs.map(o=>o.id)));await pcAudit("Quitó precio",`"${p.name}" (${s.name}): ${offs.length} presentación(es)`)}catch(e){pcFail(e);return}
+  await pcReload()
+}
+
+/* ---------- Importar lista PDF ---------- */
+function pcStartImport(supplierId){
+  if(!currentBusiness){alert("Selecciona un negocio primero.");return}
+  pcImpPendingSupplier=supplierId||"";
+  document.getElementById("pcFile").click()
+}
+function pcGuessFromFile(name){
+  const t=String(name||"").replace(/\.pdf$/i,"").split(/[_\- ]+/)[0]||"";
+  return /^(lista|precios?|price|pdf)$/i.test(t)?"":t.charAt(0).toUpperCase()+t.slice(1)
+}
+async function pcOnFileChosen(inp){
+  const f=inp.files&&inp.files[0];inp.value="";
+  if(!f)return;
+  if(!/\.pdf$/i.test(f.name)){alert("Por ahora solo se pueden cargar archivos PDF.");return}
+  pcOpenModal('<div class="empty">Leyendo «'+esc(f.name)+'»…</div>',true);
+  let text="";
+  try{text=await extractPdfText(f)}catch(e){console.error(e);pcCloseModal();alert("No se pudo leer el PDF: "+((e&&e.message)||e));return}
+  pcImpOpenWithText(text,f.name)
+}
+function pcImpOpenWithText(text,fileName){
+  const parsed=pcParseListText(text);
+  if(!parsed.rows.length){pcCloseModal();alert("No encontré renglones con precio en este PDF. Si es una imagen o un escaneo, por ahora no se puede leer.");return}
+  const pend=pcImpPendingSupplier;pcImpPendingSupplier="";
+  pcImp={fileName,parsed,supplierId:pend,newName:pend?"":(parsed.guessSupplier||pcGuessFromFile(fileName)),vigencia:parsed.vigencia||"",rows:[],filter:"todos",limit:300,removeMissing:false,missing:[]};
+  const sup=pend?pcState.suppliers.find(s=>s.id===pend):null;
+  pcImpStep1(sup)
+}
+function pcImpStep1(){
+  const imp=pcImp;
+  const opts=pcState.suppliers.slice().sort((a,b)=>a.name.localeCompare(b.name,"es")).map(s=>`<option value="${s.id}" ${s.id===imp.supplierId?"selected":""}>${esc(s.name)}${s.vigencia?" — "+esc(s.vigencia):""}</option>`).join("");
+  pcOpenModal(`<h3 style="margin-top:0">Cargar lista de precios</h3>
+    <p style="color:var(--muted);margin-top:0">Archivo: <b>${esc(imp.fileName)}</b> — leí <b>${imp.parsed.rows.length}</b> renglones con precio.</p>
+    <label>¿De qué proveedor es?</label>
+    <select id="pcImpSup" onchange="document.getElementById('pcImpNewWrap').style.display=this.value?'none':''"><option value="">+ Proveedor nuevo…</option>${opts}</select>
+    <div id="pcImpNewWrap" style="margin-top:10px;${imp.supplierId?"display:none":""}"><label>Nombre del proveedor nuevo</label><input type="text" id="pcImpNewName" value="${esc(imp.newName)}" placeholder="Ej. Yakun"></div>
+    <label style="margin-top:10px">Vigencia de la lista</label><input type="text" id="pcImpVig" value="${esc(imp.vigencia)}" placeholder="Ej. Octubre 2026">
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcImpToReview()">Continuar a revisión</button></div>`)
+}
+function pcImpToReview(){
+  const imp=pcImp;
+  imp.supplierId=pcV("pcImpSup");imp.vigencia=pcV("pcImpVig").trim();
+  if(!imp.supplierId){
+    imp.newName=pcV("pcImpNewName").trim();
+    if(!imp.newName){alert("Escribe el nombre del proveedor.");return}
+    const ex=pcState.suppliers.find(s=>pcNorm(s.name)===pcNorm(imp.newName));
+    if(ex)imp.supplierId=ex.id
+  }
+  pcImpBuild();pcImpRender()
+}
+function pcImpBuild(){
+  const imp=pcImp;
+  const existing=imp.supplierId?pcState.offers.filter(o=>o.supplier_id===imp.supplierId):[];
+  const exKey=new Map();existing.forEach(o=>exKey.set(pcOfferKey(o.code,o.supplier_desc,o.src_pres),o));
+  const prodExact=new Map();pcState.products.forEach(p=>{const k=pcNorm(p.name)+"|"+p.base_unit;if(!prodExact.has(k))prodExact.set(k,p)});
+  const prodBg=pcState.products.map(p=>({p,bg:pcBigrams(pcNorm(p.name))}));
+  const seen=new Set(),usedOld=new Set();
+  imp.rows=imp.parsed.rows.map((r,i)=>{
+    const key=pcOfferKey(r.code,r.desc,r.pres);
+    const dup=seen.has(key);seen.add(key);
+    const old=dup?null:(exKey.get(key)||null);
+    if(old)usedOld.add(old.id);
+    let pres=r.pres,qty=r.qty,base=r.base,iva=r.iva,note=r.note;
+    if(old){iva=old.iva_mode;if(old.manual){pres=old.presentation||pres;qty=old.qty_base;base=old.base_unit;note=""}}
+    let productId=old?old.product_id:"",link=old?"existente":"nuevo",sug=null;
+    if(!old&&!dup&&base){
+      const hit=prodExact.get(pcNorm(r.name)+"|"+base);
+      if(hit){productId=hit.id;link="exacto"}
+      else{
+        const bg=pcBigrams(pcNorm(r.name));let best=0,bp=null;
+        for(const x of prodBg){if(x.p.base_unit!==base)continue;const d=pcDice(bg,x.bg);if(d>best){best=d;bp=x.p}}
+        if(best>=0.84)sug={id:bp.id,name:bp.name}
+      }
+    }
+    const row={i,code:r.code,desc:r.desc,name:r.name,pres,srcPres:r.pres,qty,base,price:r.price,iva,group:r.group,note,reader:r.reader,key,dup,old,productId,link,sug,include:false,suspect:false,showLink:false};
+    pcImpCheck(row,true);
+    return row
+  });
+  imp.missing=existing.filter(o=>!usedOld.has(o.id)&&!(o.manual&&!o.src_pres&&!o.code));
+  imp.prodExact=prodExact;imp.prodBg=prodBg
+}
+function pcImpRematch(r){
+  const imp=pcImp;
+  if(r.old||r.dup||r.link==="vinculado"||!r.base||!imp.prodExact)return;
+  const hit=imp.prodExact.get(pcNorm(r.name)+"|"+r.base);
+  if(hit){r.productId=hit.id;r.link="exacto";r.sug=null;return}
+  r.productId="";r.link="nuevo";r.sug=null;
+  const bg=pcBigrams(pcNorm(r.name));let best=0,bp=null;
+  for(const x of imp.prodBg){if(x.p.base_unit!==r.base)continue;const d=pcDice(bg,x.bg);if(d>best){best=d;bp=x.p}}
+  if(best>=0.84)r.sug={id:bp.id,name:bp.name}
+}
+function pcImpCheck(row,reset){
+  row.suspect=false;
+  const pb=row.qty>0?row.price*(row.iva==="mas"?1+PC_IVA_RATE:1)/row.qty:null;
+  let note=(row.note||"").replace(/ ?· ?Precio por (kilo|litro) muy bajo.*$/,"");
+  if(pb!=null&&row.base!=="pz"&&pb<3){row.suspect=true;note=(note?note+" · ":"")+"Precio por "+(row.base==="L"?"litro":"kilo")+" muy bajo ("+money(pb)+") — revisa la cantidad"}
+  row.note=note;
+  const valid=!row.dup&&row.qty>0&&!row.suspect;
+  if(reset)row.include=valid;else if(!valid)row.include=false
+}
+function pcImpStatus(r){
+  if(r.dup)return{k:"repetido",t:"Repetido en el archivo",c:"yellow"};
+  if(r.old){
+    const d=r.price-num(r.old.price);
+    if(Math.abs(d)<0.005)return{k:"igual",t:"Sin cambio",c:""};
+    const pct=num(r.old.price)>0?d/num(r.old.price)*100:0;
+    return d>0?{k:"subio",t:"Subió "+pct.toFixed(1)+"%",c:"red"}:{k:"bajo",t:"Bajó "+Math.abs(pct).toFixed(1)+"%",c:"green"}
+  }
+  return{k:"nuevo",t:"Nuevo",c:"blue"}
+}
+function pcImpNeedsReview(r){return r.dup||!(r.qty>0)||r.suspect||!!r.sug||(!!r.note&&r.reader==="unidad")||/Gramos corregidos|No pude leer/.test(r.note||"")}
+function pcImpCounts(){
+  const c={total:0,inc:0,nuevo:0,subio:0,bajo:0,igual:0,rev:0};
+  pcImp.rows.forEach(r=>{c.total++;if(r.include)c.inc++;const s=pcImpStatus(r).k;if(c[s]!==undefined)c[s]++;if(pcImpNeedsReview(r))c.rev++});
+  return c
+}
+function pcImpVisible(){
+  const f=pcImp.filter;
+  return pcImp.rows.filter(r=>{
+    const s=pcImpStatus(r).k;
+    if(f==="cambios")return s==="subio"||s==="bajo";
+    if(f==="nuevos")return s==="nuevo";
+    if(f==="igual")return s==="igual";
+    if(f==="revisar")return pcImpNeedsReview(r);
+    return true
+  })
+}
+function pcImpRowHtml(r){
+  const st=pcImpStatus(r);
+  const prod=r.link==="nuevo"?`<span class="pc-sub">→ Producto nuevo</span>`:`<span class="pc-sub">→ ${r.link==="exacto"?"Se junta con":"Producto"}: ${esc((pcState.products.find(p=>p.id===r.productId)||{name:"?"}).name)}</span>`;
+  const sug=r.sug?`<div class="pc-sub">¿Es el mismo que «${esc(r.sug.name)}»? <button type="button" class="pc-link" onclick="pcImpLink(${r.i},'${r.sug.id}')">Vincular</button></div>`:"";
+  const linkBox=r.showLink?`<div><input type="text" list="pcProdList" placeholder="Nombre del producto existente" onchange="pcImpLinkByName(${r.i},this.value)" style="min-width:210px"></div>`:(!r.old&&r.link!=="existente"?`<button type="button" class="pc-link" onclick="pcImpShowLink(${r.i})">Vincular a un producto existente</button>`:"");
+  const pb=r.qty>0?r.price*(r.iva==="mas"?1+PC_IVA_RATE:1)/r.qty:null;
+  return`<tr id="pcr-${r.i}"><td><input type="checkbox" ${r.include?"checked":""} onchange="pcImpToggle(${r.i},this.checked)"></td>
+    <td><div class="pc-pname">${esc(r.name)}</div>${r.code?`<div class="pc-sub">${esc(r.code)}</div>`:""}${prod}${sug}${linkBox}${r.note?`<div class="pc-warn">${esc(r.note)}</div>`:""}</td>
+    <td><input type="text" value="${esc(r.pres)}" placeholder="Ej. Bolsa 5 kg" onchange="pcImpEditPres(${r.i},this.value)"></td>
+    <td>${r.qty>0?pcFmtQty(r.qty,r.base):'<span class="pc-warn">sin cantidad</span>'}</td>
+    <td>${money(r.price)}${pb!=null?`<div class="pc-sub">${money(pb)}/${pcUnitLbl(r.base)}</div>`:""}</td>
+    <td><select onchange="pcImpSetIva(${r.i},this.value)"><option value="incluido" ${r.iva==="incluido"?"selected":""}>Ya incluye IVA</option><option value="sin" ${r.iva==="sin"?"selected":""}>Sin IVA</option><option value="mas" ${r.iva==="mas"?"selected":""}>Más IVA</option></select></td>
+    <td><span class="badge ${st.c}">${esc(st.t)}</span></td></tr>`
+}
+function pcImpRender(){
+  const imp=pcImp,c=pcImpCounts();
+  const supName=imp.supplierId?(pcState.suppliers.find(s=>s.id===imp.supplierId)||{}).name:imp.newName;
+  pcOpenModal(`<h3 style="margin-top:0">Revisar lista — ${esc(supName)} <span style="font-weight:400;color:var(--muted)">${esc(imp.vigencia||"")}</span></h3>
+    <div id="pcImpCounts" class="pc-sub" style="margin-bottom:8px"></div>
+    <div class="flex" style="gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <select id="pcImpFilter" onchange="pcImpSetFilter(this.value)" style="max-width:240px"><option value="todos">Ver todos</option><option value="cambios">Solo cambios de precio</option><option value="nuevos">Solo nuevos</option><option value="revisar">Por revisar</option><option value="igual">Sin cambio</option></select>
+      <span class="pc-sub">IVA para los visibles:</span><select id="pcImpBulkIva" style="max-width:150px"><option value="incluido">Ya incluye IVA</option><option value="sin">Sin IVA</option><option value="mas">Más IVA</option></select><button type="button" class="btn" onclick="pcImpBulkIva()">Aplicar</button>
+      <span class="pc-sub">Presentación para los que no tienen:</span><input type="text" id="pcImpBulkPres" placeholder="Ej. Bolsa 250 gr" style="max-width:150px"><button type="button" class="btn" onclick="pcImpBulkPres()">Aplicar</button>
+    </div>
+    ${imp.missing.length?`<label style="font-weight:600;font-size:13px;display:block;margin-bottom:8px"><input type="checkbox" style="width:auto;margin-right:6px" onchange="pcImpSetRemove(this.checked)">Quitar también los ${imp.missing.length} precio(s) de este proveedor que ya no vienen en esta lista</label>`:""}
+    <datalist id="pcProdList">${pcState.products.map(p=>`<option value="${esc(p.name)}">`).join("")}</datalist>
+    <div class="table-wrap" style="max-height:58vh;overflow:auto"><table class="pc-imp" style="min-width:900px"><thead><tr><th></th><th>Producto en la lista</th><th>Presentación</th><th>Cantidad</th><th>Precio</th><th>IVA</th><th>Estado</th></tr></thead><tbody id="pcImpBody"></tbody></table></div>
+    <div id="pcImpMore"></div>
+    <div class="flex" style="margin-top:14px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" id="pcImpApplyBtn" onclick="pcImpApply()">Guardar seleccionados</button></div>`,true);
+  document.getElementById("pcImpFilter").value=imp.filter;
+  pcImpFill()
+}
+function pcImpFill(){
+  const vis=pcImpVisible(),shown=vis.slice(0,pcImp.limit);
+  document.getElementById("pcImpBody").innerHTML=shown.map(pcImpRowHtml).join("")||'<tr><td colspan="7" class="empty">Nada que mostrar con este filtro.</td></tr>';
+  document.getElementById("pcImpMore").innerHTML=vis.length>shown.length?`<div style="text-align:center;margin-top:8px"><button type="button" class="btn" onclick="pcImpMoreRows()">Mostrar más (${shown.length} de ${vis.length})</button></div>`:"";
+  pcImpUpdateCounts()
+}
+function pcImpUpdateCounts(){
+  const c=pcImpCounts();
+  document.getElementById("pcImpCounts").textContent=`${c.total} renglones · ${c.inc} marcados para guardar · ${c.nuevo} nuevos · ${c.subio} subieron · ${c.bajo} bajaron · ${c.igual} sin cambio · ${c.rev} por revisar`
+}
+function pcImpRefreshRow(i){
+  const r=pcImp.rows[i],el=document.getElementById("pcr-"+i);
+  if(el)el.outerHTML=pcImpRowHtml(r);
+  pcImpUpdateCounts()
+}
+function pcImpSetRemove(v){pcImp.removeMissing=v}
+function pcImpMoreRows(){pcImp.limit+=300;pcImpFill()}
+function pcImpSetFilter(v){pcImp.filter=v;pcImp.limit=300;pcImpFill()}
+function pcImpToggle(i,on){pcImp.rows[i].include=on;pcImpUpdateCounts()}
+function pcImpEditPres(i,val){
+  const r=pcImp.rows[i];r.pres=val.trim();r.edited=true;
+  const q=pcParsePres(r.pres);
+  if(q){r.qty=q.qty;r.base=q.base;r.note=q.note||""}else{r.qty=null;r.note=r.pres?"No pude leer la presentación":"Sin presentación"}
+  pcImpRematch(r);pcImpCheck(r,true);pcImpRefreshRow(i)
+}
+function pcImpSetIva(i,v){const r=pcImp.rows[i];r.iva=v;pcImpCheck(r,false);pcImpRefreshRow(i)}
+function pcImpShowLink(i){pcImp.rows[i].showLink=true;pcImpRefreshRow(i)}
+function pcImpLink(i,productId){
+  const r=pcImp.rows[i],p=pcState.products.find(x=>x.id===productId);
+  if(!p)return;
+  if(r.base&&p.base_unit!==r.base){alert(`"${p.name}" se compara por ${pcUnitLbl(p.base_unit)} y este renglón viene en ${pcUnitLbl(r.base)}. No se pueden juntar así.`);return}
+  r.productId=p.id;r.link="vinculado";r.sug=null;r.showLink=false;pcImpRefreshRow(i)
+}
+function pcImpLinkByName(i,val){
+  const p=pcState.products.find(x=>x.name.toLowerCase()===String(val).trim().toLowerCase());
+  if(!p){alert("No encontré un producto con ese nombre. Elígelo de la lista que aparece al escribir.");return}
+  pcImpLink(i,p.id)
+}
+function pcImpBulkIva(){
+  const v=pcV("pcImpBulkIva");
+  pcImpVisible().forEach(r=>{r.iva=v;pcImpCheck(r,false)});
+  pcImpFill()
+}
+function pcImpBulkPres(){
+  const t=pcV("pcImpBulkPres").trim();if(!t){alert("Escribe la presentación (por ejemplo Bolsa 250 gr).");return}
+  const q=pcParsePres(t);if(!q){alert("No pude leer esa presentación. Usa algo como «Bolsa 250 gr» o «Caja 10 kg».");return}
+  let n=0;
+  pcImpVisible().forEach(r=>{if(!r.pres&&!(r.qty>0)){r.pres=t;r.edited=true;r.qty=q.qty;r.base=q.base;r.note="";pcImpRematch(r);pcImpCheck(r,true);n++}});
+  pcImpFill();
+  if(!n)alert("Ningún renglón visible está sin presentación.")
+}
+async function pcImpApply(){
+  const imp=pcImp,sel=imp.rows.filter(r=>r.include);
+  if(!sel.length){alert("No hay renglones marcados para guardar.");return}
+  const noQty=sel.filter(r=>!(r.qty>0));
+  if(noQty.length){alert(`Hay ${noQty.length} renglón(es) marcados sin cantidad. Escribe su presentación o desmárcalos.`);return}
+  const badUnit=sel.filter(r=>{const p=r.productId&&pcState.products.find(x=>x.id===r.productId);return p&&p.base_unit!==r.base});
+  if(badUnit.length){alert(`Hay ${badUnit.length} renglón(es) ligados a un producto con otra unidad (por ejemplo «${badUnit[0].name}»). Corrige su presentación o desmárcalos.`);return}
+  const btn=document.getElementById("pcImpApplyBtn");btn.disabled=true;btn.textContent="Guardando…";
+  const b=pcState.business,now=new Date().toISOString(),events=[];
+  try{
+    let sup=imp.supplierId?pcState.suppliers.find(s=>s.id===imp.supplierId):null;
+    if(!sup){
+      sup={id:pcUuid(),business:b,name:imp.newName,vigencia:imp.vigencia||null,hidden:false};
+      await pcMust(sb.from("pc_suppliers").insert(sup));
+      events.push({action:"Agregó proveedor",details:`"${sup.name}"`})
+    }else if((sup.vigencia||"")!==(imp.vigencia||"")){
+      await pcMust(sb.from("pc_suppliers").update({vigencia:imp.vigencia||null,updated_at:now}).eq("id",sup.id))
+    }
+    const newProds=new Map(),prodsToInsert=[];
+    sel.forEach(r=>{
+      if(r.productId)return;
+      const k=pcNorm(r.name)+"|"+r.base;
+      if(!newProds.has(k)){const p={id:pcUuid(),business:b,name:r.name,group_name:r.group||null,base_unit:r.base};newProds.set(k,p);prodsToInsert.push(p)}
+      r.productId=newProds.get(k).id
+    });
+    const inserts=[],updates=[];let nNew=0,nUp=0,nDown=0,nSame=0;
+    const label=r=>`"${r.name}"${r.pres?" "+r.pres:""}`;
+    sel.forEach(r=>{
+      if(r.old){
+        const o=r.old;
+        const changed=Math.abs(num(o.price)-r.price)>0.004||o.iva_mode!==r.iva||Math.abs(num(o.qty_base)-r.qty)>1e-9||(o.presentation||"")!==(r.pres||"")||o.base_unit!==r.base;
+        if(!changed){nSame++;return}
+        updates.push({...o,price:r.price,iva_mode:r.iva,qty_base:r.qty,base_unit:r.base,presentation:r.pres||null,manual:o.manual||!!r.edited,updated_at:now});
+        const d=r.price-num(o.price);
+        if(Math.abs(d)>=0.005){
+          const pct=num(o.price)>0?(d/num(o.price)*100).toFixed(1):"0";
+          if(d>0)nUp++;else nDown++;
+          events.push({action:d>0?"Subió precio":"Bajó precio",details:`${label(r)} (${sup.name}): ${money(o.price)} → ${money(r.price)} (${d>0?"+":""}${pct}%)`})
+        }else nSame++
+      }else{
+        inserts.push({id:pcUuid(),business:b,product_id:r.productId,supplier_id:sup.id,code:r.code||null,supplier_desc:r.desc,src_pres:r.srcPres||null,presentation:r.pres||null,qty_base:r.qty,base_unit:r.base,price:r.price,iva_mode:r.iva,manual:!!r.edited,updated_at:now});
+        nNew++;events.push({action:"Agregó precio",details:`${label(r)} (${sup.name}): ${money(r.price)} — ${PC_IVA_TXT[r.iva]}`})
+      }
+    });
+    for(const part of pcChunk(prodsToInsert,500))await pcMust(sb.from("pc_products").insert(part));
+    for(const part of pcChunk(inserts,500))await pcMust(sb.from("pc_offers").insert(part));
+    for(const part of pcChunk(updates,300))await pcMust(sb.from("pc_offers").upsert(part,{onConflict:"id"}));
+    let nRem=0;
+    if(imp.removeMissing&&imp.missing.length){
+      nRem=imp.missing.length;
+      for(const part of pcChunk(imp.missing.map(o=>o.id),80))await pcMust(sb.from("pc_offers").delete().in("id",part));
+      imp.missing.forEach(o=>{const pp=pcState.products.find(x=>x.id===o.product_id);events.push({action:"Quitó precio",details:`"${pp?pp.name:(o.supplier_desc||"?")}" ${o.presentation||""} (${sup.name}) — ya no viene en la lista`})})
+    }
+    events.unshift({action:"Cargó lista de precios",details:`${sup.name}${imp.vigencia?" ("+imp.vigencia+")":""} — archivo "${imp.fileName}": ${sel.length} renglones guardados · ${nNew} nuevos · ${nUp} subieron · ${nDown} bajaron · ${nSame} sin cambio${nRem?" · "+nRem+" quitados":""}`});
+    await pcAuditMany(events);
+    pcCloseModal();await pcReload();
+    alert(`Lista guardada: ${nNew} nuevos, ${nUp} subieron, ${nDown} bajaron, ${nSame} sin cambio${nRem?", "+nRem+" quitados":""}.`)
+  }catch(e){
+    console.error(e);
+    alert("Hubo un problema a la mitad del guardado: "+((e&&e.message)||"error")+".\nRevisa la comparativa y la Auditoría: puede que una parte sí se haya guardado. Vuelve a cargar la lista para completar lo que falte.");
+    pcCloseModal();await pcReload()
+  }
+}
+
+/* ---------- Auditoría ---------- */
+async function pcToggleAudit(){
+  const box=document.getElementById("pcAuditBox");
+  if(box.style.display!=="none"){box.style.display="none";return}
+  if(!currentBusiness){alert("Selecciona un negocio primero.");return}
+  box.innerHTML='<div class="empty">Cargando…</div>';box.style.display="block";
+  const{data,error}=await sb.from("pc_audit_events").select("*").eq("business",currentBusiness).order("at",{ascending:false}).order("id",{ascending:false}).limit(500);
+  if(error){box.innerHTML='<div class="empty redtxt">No se pudo cargar la auditoría.</div>';return}
+  const log=data||[];
+  box.innerHTML=`<h3 style="margin-top:0">Auditoría de Comparativa de precios — ${esc(currentBusiness)}</h3>`+(log.length?`<div class="table-wrap" style="max-height:60vh;overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:0"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0"><th style="padding:6px">Fecha y hora</th><th style="padding:6px">Quién</th><th style="padding:6px">Qué hizo</th><th style="padding:6px">Detalle</th></tr></thead><tbody>${log.map(h=>`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px">${esc(new Date(h.at).toLocaleString("es-MX"))}</td><td style="padding:6px">${esc(h.by)}</td><td style="padding:6px">${esc(h.action)}</td><td style="padding:6px;color:var(--muted)">${esc(h.details||"")}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Todavía no hay movimientos registrados.</div>')
+}
+
+/* ---------- Imprimir ---------- */
+function pcPrint(){
+  if(!pcState.loaded||!pcState.products.length){alert("No hay nada que imprimir todavía.");return}
+  const C=pcCompute(false);
+  const head=C.visSup.map(s=>`<th>${esc(s.name)}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
+  const rows=C.filtered.map(r=>{
+    const tds=C.visSup.map(s=>{
+      const c=r.cells[s.id];
+      if(!c.offers.length)return'<td style="color:#999">—</td>';
+      const best=r.best&&r.valid>=2&&r.best.sid===s.id;
+      const o=c.best||c.offers[0];
+      return`<td style="${best?"background:#e6f6ec;font-weight:700":""}">${c.pb!=null?money(c.pb)+"/"+pcUnitLbl(r.p.base_unit):"sin cantidad"}<br><span style="font-weight:400;color:#666;font-size:10px">${esc(o.presentation||"")}${o.iva_mode==="mas"?" +IVA":""}</span></td>`
+    }).join("");
+    const bt=r.best?`<td><b>${esc(C.idx.sup.get(r.best.sid).name)}</b><br>${money(r.best.pb)}/${pcUnitLbl(r.p.base_unit)}</td>`:"<td>—</td>";
+    return`<tr><td>${esc(r.p.name)}</td><td>${pcUnitLbl(r.p.base_unit)}</td>${tds}${bt}</tr>`
+  }).join("");
+  const foot=`<tr><td colspan="2"><b>Gana en</b></td>${C.visSup.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
+  openPrintWindow("Comparativa de precios — "+(currentBusiness||""),
+    `<h1>Comparativa de precios — ${esc(currentBusiness||"")}</h1>${printBusinessMetaHtml(currentBusiness)}
+    <p class="meta">${C.filtered.length} producto(s). Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
+    <table><tr><th>Producto</th><th>Unidad</th>${head}<th>Mejor precio</th></tr>${rows}${foot}</table>`)
+}
+
 /* init() ahora se ejecuta desde onLoginSuccess() tras iniciar sesión */
 </script>
+<div id="pcModal" class="pc-overlay" style="display:none"><div class="pc-modal-card"><div class="pc-modal-body"></div></div></div>
 <div id="printFooter" style="display:none">CYAroma® / Roma &amp; Associates — Marca registrada · Uso interno</div>
 </body>
 </html>
