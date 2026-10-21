@@ -461,6 +461,7 @@ textarea{min-height:76px;resize:vertical}
         <div class="login-link-row"><a href="#" onclick="toggleForgotPassword();return false">¿Olvidaste tu contraseña?</a></div>
         <div class="login-restricted">Acceso restringido al personal autorizado</div>
         <div class="login-copyright">© <span id="footerYearLogin"></span> CYA Roma &amp; Associates. Todos los derechos reservados.</div>
+        <div class="login-copyright" style="margin-top:4px">Versión de la app: <span class="appVersionText"></span></div>
         <div id="loginLoading" style="display:none;margin-top:14px;font-size:13px;color:#70809a;text-align:center">Cargando tus datos…</div>
       </div>
     </div>
@@ -531,7 +532,7 @@ textarea{min-height:76px;resize:vertical}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
       </button>
     </div>
-    <div style="text-align:center;font-size:11px;color:#5b6b8c;margin-top:12px;padding-top:12px;border-top:1px solid #23314c">© <span id="footerYear"></span> CYAroma / Roma & Associates<br>Todos los derechos reservados.</div>
+    <div style="text-align:center;font-size:11px;color:#5b6b8c;margin-top:12px;padding-top:12px;border-top:1px solid #23314c">© <span id="footerYear"></span> CYAroma / Roma & Associates<br>Todos los derechos reservados.<br><span style="color:#8fa0c4">Versión de la app: <span class="appVersionText"></span></span></div>
   </aside>
 
   <main class="main">
@@ -5465,6 +5466,11 @@ function renderReports(){
   }
   reportText.innerHTML=html
 }
+/* ==================== VERSIÓN DE LA APP ====================
+   Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
+const APP_VERSION="2026-10-21.1";
+document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
+console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
 /*PC-PURE-START*/
 const PC_IVA_RATE=0.16;
