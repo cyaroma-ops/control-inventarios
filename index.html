@@ -5490,7 +5490,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-22.4";
+const APP_VERSION="2026-10-22.5";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
@@ -5680,6 +5680,24 @@ async function pcMustRows(q,expected){
     ?"La base de datos no aplicó el cambio (0 registros afectados). Revisa que tu usuario sea administrador y que el SQL de seguridad de la comparativa esté aplicado."
     :"Solo se aplicó a "+n+" de "+expected+" registro(s).");
   return n
+}
+// Ventana de confirmación propia. Los cuadros nativos del navegador (confirm) pueden quedar bloqueados por Chrome
+// ("evitar que esta página cree diálogos adicionales") y entonces el botón parece no hacer nada.
+function pcConfirm(msg){
+  if(typeof window.__pcConfirmHook==="function")return Promise.resolve(!!window.__pcConfirmHook(msg));
+  return new Promise(resolve=>{
+    const prev=document.getElementById("pcConfirmOv");if(prev)prev.remove();
+    const danger=/deshacer|^¿(Eliminar|Quitar)|^¿UNIR/i.test(String(msg));
+    const ov=document.createElement("div");ov.id="pcConfirmOv";ov.className="pc-overlay";ov.style.cssText="display:flex;z-index:500";
+    ov.innerHTML=`<div class="pc-modal-card" style="max-width:480px"><div style="white-space:pre-line;font-size:14px;line-height:1.5">${esc(msg)}</div><div class="flex" style="margin-top:18px;justify-content:flex-end;gap:8px"><button type="button" class="btn" id="pcConfirmNo">Cancelar</button><button type="button" class="btn ${danger?"red":"primary"}" id="pcConfirmOk">Aceptar</button></div></div>`;
+    document.body.appendChild(ov);
+    const onKey=e=>{if(e.key==="Escape"){e.preventDefault();done(false)}};
+    const done=v=>{document.removeEventListener("keydown",onKey,true);ov.remove();resolve(v)};
+    document.addEventListener("keydown",onKey,true);
+    ov.querySelector("#pcConfirmNo").onclick=()=>done(false);
+    ov.querySelector("#pcConfirmOk").onclick=()=>done(true);
+    setTimeout(()=>{const b=ov.querySelector(danger?"#pcConfirmNo":"#pcConfirmOk");if(b)b.focus()},0)
+  })
 }
 async function pcMust(q){const{error}=await q;if(error)throw error}
 async function pcFetchAll(table,business){
@@ -5922,8 +5940,8 @@ async function pcSaveProduct(id){
   if(!name){alert("Escribe el nombre del producto.");return}
   const old=id?pcState.products.find(x=>x.id===id):null;
   const dup=pcState.products.find(x=>x.id!==id&&pcNorm(x.name)===pcNorm(name)&&x.base_unit===unit);
-  if(dup&&!confirm(`Ya existe un producto llamado "${dup.name}" con la misma unidad. ¿Guardar de todos modos?`))return;
-  if(old&&old.base_unit!==unit&&pcState.offers.some(o=>o.product_id===id)&&!confirm("Cambiar la unidad hace que los precios ya capturados con otra unidad dejen de compararse hasta que los corrijas. ¿Continuar?"))return;
+  if(dup&&!(await pcConfirm(`Ya existe un producto llamado "${dup.name}" con la misma unidad. ¿Guardar de todos modos?`)))return;
+  if(old&&old.base_unit!==unit&&pcState.offers.some(o=>o.product_id===id)&&!(await pcConfirm("Cambiar la unidad hace que los precios ya capturados con otra unidad dejen de compararse hasta que los corrijas. ¿Continuar?")))return;
   try{
     if(old){
       await pcMustRows(sb.from("pc_products").update({name,group_name:group||null,base_unit:unit,updated_at:new Date().toISOString()}).eq("id",id),1);
@@ -5939,7 +5957,7 @@ async function pcSaveProduct(id){
 async function pcDeleteProduct(id){
   const p=pcState.products.find(x=>x.id===id);if(!p)return;
   const n=pcState.offers.filter(o=>o.product_id===id).length;
-  if(!confirm(`¿Eliminar "${p.name}"${n?` y sus ${n} precio(s) de proveedores`:""}? No se puede deshacer.`))return;
+  if(!(await pcConfirm(`¿Eliminar "${p.name}"${n?` y sus ${n} precio(s) de proveedores`:""}? No se puede deshacer.`)))return;
   try{await pcMustRows(sb.from("pc_products").delete().eq("id",id),1);await pcAudit("Eliminó producto",`"${p.name}"${n?` con ${n} precio(s)`:""}`)}catch(e){pcFail(e);return}
   await pcReload()
 }
@@ -5962,7 +5980,7 @@ async function pcSaveGroup(remove){
   const n=pcState.products.filter(p=>p.group_name===old).length;
   const exists=!remove&&pcState.products.some(p=>p.group_name===nuevo);
   const msg=remove?`¿Quitar el grupo «${old}»? Sus ${n} producto(s) quedarán sin grupo.`:(exists?`Ya existe un grupo «${nuevo}». ¿Unir los ${n} producto(s) de «${old}» a ese grupo?`:`¿Cambiar el nombre del grupo «${old}» a «${nuevo}» en sus ${n} producto(s)?`);
-  if(!confirm(msg))return;
+  if(!(await pcConfirm(msg)))return;
   try{
     await pcMustRows(sb.from("pc_products").update({group_name:nuevo||null,updated_at:new Date().toISOString()}).eq("business",PC_SCOPE).eq("group_name",old),n);
     await pcAudit(remove?"Quitó grupo":(exists?"Unió grupos":"Renombró grupo"),remove?`«${old}» (${n} productos quedaron sin grupo)`:`«${old}» → «${nuevo}» (${n} productos)`)
@@ -5984,7 +6002,7 @@ async function pcSaveAssign(){
   const g=pcV("pcf-agroup").trim();if(!g){alert("Escribe el nombre del grupo.");return}
   const C=pcCompute(pcUi.showHidden),ids=C.filtered.map(r=>r.p.id),n=ids.length;if(!n)return;
   const conOtro=C.filtered.filter(r=>r.p.group_name&&r.p.group_name!==g).length;
-  if(!confirm(`¿Asignar el grupo «${g}» a ${n} producto(s)?`+(conOtro?`\n\n${conOtro} de ellos ya tienen otro grupo y lo perderán.`:""))){return}
+  if(!(await pcConfirm(`¿Asignar el grupo «${g}» a ${n} producto(s)?`+(conOtro?`\n\n${conOtro} de ellos ya tienen otro grupo y lo perderán.`:"")))){return}
   try{
     for(const part of pcChunk(ids,80))await pcMustRows(sb.from("pc_products").update({group_name:g,updated_at:new Date().toISOString()}).in("id",part),part.length);
     await pcAudit("Asignó grupo",`«${g}» a ${n} producto(s)${conOtro?" ("+conOtro+" cambiaron de grupo)":""}`)
@@ -6037,7 +6055,7 @@ async function pcMergeGo(){
   const dvs=new Set(pcState.viewItems.filter(i=>i.product_id===dest.id).map(i=>i.view_id));
   const vAdd=pcState.viewsOk?pcState.viewItems.filter(i=>i.product_id===src.id&&!dvs.has(i.view_id)).length:0;
   const msg=`¿UNIR ESTOS PRODUCTOS?\n\nSe CONSERVA: «${dest.name}»${dest.group_name?" (grupo "+dest.group_name+")":" (sin grupo)"}\nSe ELIMINA: «${src.name}»${src.group_name&&src.group_name!==dest.group_name?" (su grupo «"+src.group_name+"» no se conserva)":""}\n\n${moved.length} precio(s) de «${src.name}» pasarán a «${dest.name}».`+(conflict?`\nEn ${conflict} proveedor(es) quedarán dos presentaciones en la misma celda.`:"")+(vAdd?`\nLas ${vAdd} vista(s) que incluían «${src.name}» incluirán «${dest.name}».`:"")+`\n\nEsta acción no se puede deshacer.`;
-  if(!confirm(msg))return;
+  if(!(await pcConfirm(msg)))return;
   const btn=document.getElementById("pcMergeBtn");if(btn){btn.disabled=true;btn.textContent="Uniendo…"}
   try{
     if(moved.length)await pcMustRows(sb.from("pc_offers").update({product_id:dest.id,updated_at:new Date().toISOString()}).eq("product_id",src.id),moved.length);
@@ -6142,7 +6160,7 @@ async function pcSaveView(mode,vid){
 async function pcDeleteView(vid){
   const v=pcState.views.find(x=>x.id===vid);if(!v)return;
   const n=pcViewMembers(vid).size;
-  if(!confirm(`¿Eliminar la vista «${v.name}»?\n\nSolo se borra esta lista (${n} producto${n===1?"":"s"}). No se elimina ningún producto ni precio de la lista principal.`))return;
+  if(!(await pcConfirm(`¿Eliminar la vista «${v.name}»?\n\nSolo se borra esta lista (${n} producto${n===1?"":"s"}). No se elimina ningún producto ni precio de la lista principal.`)))return;
   try{await pcMustRows(sb.from("pc_views").delete().eq("id",vid),1);await pcAudit("Eliminó vista",`«${v.name}» (${n} producto(s))`)}catch(e){pcFail(e);return}
   if(pcUi.view===vid){pcUi.view="";pcSaveViewPref()}
   pcUi.editing=false;await pcReload()
@@ -6158,7 +6176,7 @@ async function pcViewSave(){
   const vid=pcUi.view,v=pcState.views.find(x=>x.id===vid);if(!v)return;
   const cur=pcViewMembers(vid),add=[...pcDraft].filter(x=>!cur.has(x)),rem=[...cur].filter(x=>!pcDraft.has(x));
   if(!add.length&&!rem.length){pcViewCancel();return}
-  if(rem.length&&!confirm(`Se quitarán ${rem.length} producto(s) de la vista «${v.name}». No se borran de la lista principal. ¿Guardar?`))return;
+  if(rem.length&&!(await pcConfirm(`Se quitarán ${rem.length} producto(s) de la vista «${v.name}». No se borran de la lista principal. ¿Guardar?`)))return;
   try{
     for(const part of pcChunk(add,500))await pcMust(sb.from("pc_view_items").insert(part.map(pid=>({id:pcUuid(),business:PC_SCOPE,view_id:vid,product_id:pid}))));
     for(const part of pcChunk(rem,80))await pcMustRows(sb.from("pc_view_items").delete().eq("view_id",vid).in("product_id",part),part.length);
@@ -6223,7 +6241,7 @@ async function pcToggleSupplierHidden(id){
 async function pcDeleteSupplier(id){
   const s=pcState.suppliers.find(x=>x.id===id);if(!s)return;
   const n=pcState.offers.filter(o=>o.supplier_id===id).length;
-  if(!confirm(`¿Eliminar al proveedor "${s.name}" y sus ${n} precio(s)? No se puede deshacer.\n\nSi solo quieres dejar de verlo, usa "Ocultar columna".`))return;
+  if(!(await pcConfirm(`¿Eliminar al proveedor "${s.name}" y sus ${n} precio(s)? No se puede deshacer.\n\nSi solo quieres dejar de verlo, usa "Ocultar columna".`)))return;
   try{await pcMustRows(sb.from("pc_suppliers").delete().eq("id",id),1);await pcAudit("Eliminó proveedor",`"${s.name}" con ${n} precio(s)`)}catch(e){pcFail(e);return}
   await pcReload()
 }
@@ -6327,14 +6345,14 @@ async function pcSetCellIva(productId,supplierId,mode){
 async function pcDeleteOffer(offerId){
   const o=pcState.offers.find(x=>x.id===offerId);if(!o)return;
   const p=pcState.products.find(x=>x.id===o.product_id),s=pcState.suppliers.find(x=>x.id===o.supplier_id);
-  if(!confirm(`¿Quitar el precio de ${s.name} para "${p.name}" (${o.presentation||"sin presentación"})?`))return;
+  if(!(await pcConfirm(`¿Quitar el precio de ${s.name} para "${p.name}" (${o.presentation||"sin presentación"})?`)))return;
   try{await pcMustRows(sb.from("pc_offers").delete().eq("id",offerId),1);await pcAudit("Quitó precio",`"${p.name}" (${s.name}) ${o.presentation||""}: ${money(o.price)}`)}catch(e){pcFail(e);return}
   await pcReload();if(pcState.offers.some(x=>x.product_id===o.product_id&&x.supplier_id===o.supplier_id))pcOpenOfferList(o.product_id,o.supplier_id);else pcCloseModal()
 }
 async function pcDeleteCell(productId,supplierId){
   const offs=pcState.offers.filter(o=>o.product_id===productId&&o.supplier_id===supplierId);if(!offs.length)return;
   const p=pcState.products.find(x=>x.id===productId),s=pcState.suppliers.find(x=>x.id===supplierId);
-  if(!confirm(`¿Quitar ${offs.length>1?"los "+offs.length+" precios":"el precio"} de ${s.name} para "${p.name}"?`))return;
+  if(!(await pcConfirm(`¿Quitar ${offs.length>1?"los "+offs.length+" precios":"el precio"} de ${s.name} para "${p.name}"?`)))return;
   try{await pcMustRows(sb.from("pc_offers").delete().in("id",offs.map(o=>o.id)),offs.length);await pcAudit("Quitó precio",`"${p.name}" (${s.name}): ${offs.length} presentación(es)`)}catch(e){pcFail(e);return}
   await pcReload()
 }
