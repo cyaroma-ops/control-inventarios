@@ -325,6 +325,12 @@ textarea{min-height:76px;resize:vertical}
 .pc-imp td,.pc-imp th{font-size:12.5px;padding:6px 7px;vertical-align:top}
 .pc-imp input[type=text],.pc-imp select{padding:5px 7px;font-size:12.5px}
 @media print{#pcModal,.pc-menu{display:none!important}}
+.pc-viewbox{display:flex;align-items:center;gap:6px}
+.pc-viewbox label{font-weight:700;font-size:12.5px;color:var(--muted)}
+.pc-viewbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#eef4ff;border:1px solid #cfe0ff;border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px}
+.pc-vbtns{display:flex;gap:6px;flex-wrap:wrap}
+.pc-chk{width:auto;margin:3px 6px 0 0;flex:none}
+.pc-vrow{display:flex;align-items:center;padding:8px 4px;border-bottom:1px solid #eef1f6;font-size:14px}
 .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
 @media(max-width:1200px){
@@ -824,6 +830,7 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div id="pcAuditBox" class="card form-card no-print" style="display:none;margin-bottom:10px"></div>
         <div class="pc-filters">
+          <span id="pcViewWrap" class="pc-viewbox"><label for="pcView">Vista</label><select id="pcView" onchange="pcOnViewChange()" style="max-width:210px"><option value="">Todos los productos</option></select><button type="button" class="pc-dots" id="pcViewDots" aria-label="Opciones de vistas" title="Crear, renombrar, duplicar o eliminar vistas" onclick="pcViewMenu(event)">⋯</button></span>
           <input type="text" id="pcSearch" placeholder="Buscar producto..." oninput="debouncedPcFilter()" style="max-width:210px">
           <select id="pcGroup" onchange="pcOnFilter()" style="max-width:200px"><option value="">Todos los grupos</option></select>
           <button type="button" class="btn pc-sm" id="pcBtnGroup" style="display:none" onclick="pcOpenGroup()">Editar grupo</button>
@@ -833,6 +840,7 @@ textarea{min-height:76px;resize:vertical}
           <label title="Oculta las columnas de proveedores que no tienen precio en lo que estás viendo"><input type="checkbox" id="pcHideEmpty" checked onchange="pcOnFilter()" style="width:auto;margin-right:5px">Ocultar sin precios</label>
           <span id="pcSummary" class="pc-summary"></span>
         </div>
+        <div id="pcViewBar" class="pc-viewbar" style="display:none"></div>
         <div id="pcContent"></div>
         <input type="file" id="pcFile" accept="application/pdf,.pdf,.xlsx,.xls,.csv" style="display:none" onchange="pcOnFileChosen(this)">
       </section>
@@ -5481,7 +5489,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-22.1";
+const APP_VERSION="2026-10-22.2";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
@@ -5654,8 +5662,8 @@ function pcParseSheetRows(data,sheetName){
 /* ---------- Estado y utilidades ---------- */
 const PC_SCOPE="GLOBAL";
 const pcCanManage=()=>!!(currentUser&&currentUser.isAdmin);
-let pcState={business:PC_SCOPE,suppliers:[],products:[],offers:[],loaded:false};
-let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,hideEmpty:true,limit:250};
+let pcState={business:PC_SCOPE,suppliers:[],products:[],offers:[],views:[],viewItems:[],viewsOk:true,loaded:false};
+let pcUi={q:"",group:"",onlyComparable:false,showHidden:false,hideEmpty:true,limit:250,editing:false,view:(function(){try{return localStorage.getItem("cyaroma_pcView")||""}catch(e){return""}})()};
 let pcImp=null,pcImpPendingSupplier="";
 const pcUuid=()=>(window.crypto&&crypto.randomUUID)?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
 const pcV=id=>{const el=document.getElementById(id);return el?el.value:""};
@@ -5695,7 +5703,10 @@ async function bootPriceCompare(){
     box.innerHTML='<div class="empty">Cargando comparativa…</div>';
     try{
       const[s,p,o]=await Promise.all([pcFetchAll("pc_suppliers",PC_SCOPE),pcFetchAll("pc_products",PC_SCOPE),pcFetchAll("pc_offers",PC_SCOPE)]);
-      pcState={business:PC_SCOPE,suppliers:s,products:p,offers:o,loaded:true}
+      let views=[],viewItems=[],viewsOk=true;
+      try{[views,viewItems]=await Promise.all([pcFetchAll("pc_views",PC_SCOPE),pcFetchAll("pc_view_items",PC_SCOPE)])}
+      catch(e2){console.warn("Vistas no disponibles (falta correr comparativa_vistas.sql):",e2);viewsOk=false}
+      pcState={business:PC_SCOPE,suppliers:s,products:p,offers:o,views,viewItems,viewsOk,loaded:true}
     }catch(e){
       console.error(e);
       box.innerHTML='<div class="empty redtxt">No se pudo cargar la comparativa ('+esc((e&&e.message)||"error")+'). Si es la primera vez, falta correr el SQL de comparativa_precios_global en Supabase.</div>';
@@ -5730,6 +5741,7 @@ function pcCompute(showHidden){
   const allSup=pcState.suppliers.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
   const visSup=allSup.filter(s=>showHidden||!s.hidden);
   let prods=pcState.products.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  if(pcUi.view&&!pcUi.editing){const mem=pcViewMembers(pcUi.view);prods=prods.filter(p=>mem.has(p.id))}
   const q=pcNorm(pcUi.q);
   if(q)prods=prods.filter(p=>pcNorm(p.name).includes(q)||pcNorm(p.group_name||"").includes(q));
   if(pcUi.group==="__none__")prods=prods.filter(p=>!p.group_name);else if(pcUi.group)prods=prods.filter(p=>(p.group_name||"")===pcUi.group);
@@ -5763,8 +5775,9 @@ function pcColumns(C,forPrint){
   const cols=C.visSup.filter(s=>C.filtered.some(r=>r.cells[s.id].offers.length));
   return cols.length?cols:C.visSup
 }
-function pcRender(){
+function pcRender(keepScroll){
   if(!pcState.loaded)return;
+  const prevScroll=keepScroll?(()=>{const e=document.querySelector("#pcContent .pc-scroll");return e?{t:e.scrollTop,l:e.scrollLeft}:null})():null;
   const canM=pcCanManage();
   const box=document.getElementById("pcContent");
   const hiddenCount=pcState.suppliers.filter(s=>s.hidden).length;
@@ -5780,13 +5793,16 @@ function pcRender(){
   const ab=document.getElementById("pcBtnAssign");
   if(ab){const narrowed=!!(pcUi.q||pcUi.group||pcUi.onlyComparable);ab.style.display=(canM&&narrowed&&C.filtered.length)?"":"none";ab.textContent="Asignar grupo ("+C.filtered.length+")…"}
   const cols=pcColumns(C,false);
+  const curView=pcUi.view?(pcState.views||[]).find(v=>v.id===pcUi.view)||null:null;
   const sum=document.getElementById("pcSummary");
   const sinPrecios=C.visSup.length-cols.length;
-  sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`+(sinPrecios?` · ${sinPrecios} proveedor(es) sin precios aquí (ocultos)`:"");
+  sum.textContent=`${pcState.products.length} producto(s) · ${pcState.suppliers.length} proveedor(es) · ${C.comparable} comparable(s) con los filtros actuales`+(curView?` · vista «${curView.name}»`:"")+(sinPrecios?` · ${sinPrecios} proveedor(es) sin precios aquí (ocultos)`:"");
+  pcRenderViewUi(canM,C);
   if(!pcState.suppliers.length){
     box.innerHTML='<div class="empty">Todavía no hay proveedores.'+(canM?' Usa "Cargar lista (PDF o Excel)" para traer precios de un proveedor, o "+ Proveedor" para empezar a mano.':"")+'</div>';return
   }
   if(!pcState.products.length){box.innerHTML='<div class="empty">Todavía no hay productos.'+(canM?' Carga una lista o agrega uno con "+ Producto".':"")+'</div>';return}
+  if(curView&&!pcUi.editing&&!pcViewMembers(curView.id).size){box.innerHTML=`<div class="empty">La vista «${esc(curView.name)}» todavía no tiene productos.${canM?' Usa el «⋯» junto a «Vista» → «Editar productos de esta vista» para armarla.':""}</div>`;return}
   const heads=cols.map(s=>{
     const full=[s.name,s.trade_name,s.vigencia].filter(Boolean).join(" · ");
     return`<th class="pc-sup" title="${esc(full)}"><div class="pc-cell"><div class="pc-sname">${esc(s.name)}${s.hidden?" (oculta)":""}</div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones de ${esc(s.name)}" onclick="pcMenu(event,'sup','${s.id}','')">⋯</button>`:""}</div>${s.trade_name?`<small class="pc-1l">${esc(s.trade_name)}</small>`:""}<small class="pc-1l">${esc(s.vigencia||"sin vigencia")}</small></th>`
@@ -5799,14 +5815,15 @@ function pcRender(){
     const bestTd=r.best
       ?`<td class="pc-sr pc-bestcol"><div class="pc-bn pc-1l" title="${esc(bn)}">${esc(bn)}</div><div class="pc-bp">${money(r.best.pb)}<small>/${pcUnitLbl(p.base_unit)}</small>${r.valid<2?' <small class="pc-solo">solo 1</small>':""}</div></td>`
       :'<td class="pc-sr pc-dash">—</td>';
-    return`<tr><td class="pc-sl"><div class="pc-cell"><div class="pc-pcell"><div class="pc-pname" title="${esc(p.name)}">${esc(p.name)}</div><div class="pc-sub pc-1l">${pcUnitLbl(p.base_unit)}${p.group_name?" · "+esc(p.group_name):""}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones del producto" onclick="pcMenu(event,'prod','${p.id}','')">⋯</button>`:""}</div></td>${tds}${bestTd}</tr>`
+    return`<tr><td class="pc-sl"><div class="pc-cell">${pcUi.editing?`<input type="checkbox" class="pc-chk" ${pcDraft.has(p.id)?"checked":""} onchange="pcViewToggle('${p.id}',this.checked)">`:""}<div class="pc-pcell"><div class="pc-pname" title="${esc(p.name)}">${esc(p.name)}</div><div class="pc-sub pc-1l">${pcUnitLbl(p.base_unit)}${p.group_name?" · "+esc(p.group_name):""}</div></div>${canM?`<button type="button" class="pc-dots" aria-label="Opciones del producto" onclick="pcMenu(event,'prod','${p.id}','')">⋯</button>`:""}</div></td>${tds}${bestTd}</tr>`
   }).join("");
   let lead="—",max=0;cols.forEach(s=>{if(C.wins[s.id]>max){max=C.wins[s.id];lead=s.name}});
   const foot=`<tr class="pc-foot"><td class="pc-sl">Gana en (2+ proveedores)</td>${cols.map(s=>`<td class="pc-c">${C.wins[s.id]}</td>`).join("")}<td class="pc-sr pc-1l">${max?esc(lead):"—"}</td></tr>`;
   const more=C.filtered.length>shown.length?`<div style="text-align:center;margin:10px 0"><button type="button" class="btn" onclick="pcMore()">Mostrar más (${shown.length} de ${C.filtered.length})</button></div>`:"";
   const W_PROD=230,W_SUP=132,W_BEST=160;
   const colgroup=`<colgroup><col style="width:${W_PROD}px">${cols.map(()=>`<col style="width:${W_SUP}px">`).join("")}<col style="width:${W_BEST}px"></colgroup>`;
-  box.innerHTML=`<div class="pc-scroll"><table class="pc-table" style="width:${W_PROD+cols.length*W_SUP+W_BEST}px">${colgroup}<thead><tr><th class="pc-sl">Producto</th>${heads}<th class="pc-sr">Mejor precio</th></tr></thead><tbody>${body||'<tr><td colspan="'+(cols.length+2)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`
+  box.innerHTML=`<div class="pc-scroll"><table class="pc-table" style="width:${W_PROD+cols.length*W_SUP+W_BEST}px">${colgroup}<thead><tr><th class="pc-sl">Producto</th>${heads}<th class="pc-sr">Mejor precio</th></tr></thead><tbody>${body||'<tr><td colspan="'+(cols.length+2)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`;
+  if(prevScroll){const sc=box.querySelector(".pc-scroll");if(sc){sc.scrollTop=prevScroll.t;sc.scrollLeft=prevScroll.l}}
 }
 function pcOnFilter(){
   pcUi.q=pcV("pcSearch");pcUi.group=pcV("pcGroup");
@@ -5849,6 +5866,7 @@ function pcMenu(ev,type,a,b){
       {label:"Editar producto",js:`pcOpenProduct('${a}')`},
       {label:"Agregar precio de un proveedor",js:`pcOpenOffer('${a}','','')`},
       {label:"Unir con otro producto…",js:`pcOpenMerge('${a}','')`},
+      {label:"Vistas de este producto…",js:`pcOpenProductViews('${a}')`},
       {sep:true},
       {label:"Eliminar producto",js:`pcDeleteProduct('${a}')`,danger:true}
     ])
@@ -6004,11 +6022,17 @@ async function pcMergeGo(){
   if(src.base_unit!==dest.base_unit){alert(`«${src.name}» se compara por ${pcUnitLbl(src.base_unit)} y «${dest.name}» por ${pcUnitLbl(dest.base_unit)}. No se pueden unir.`);return}
   const moved=pcOffersOf(src.id),supD=new Set(pcOffersOf(dest.id).map(o=>o.supplier_id));
   const conflict=new Set(moved.filter(o=>supD.has(o.supplier_id)).map(o=>o.supplier_id)).size;
-  const msg=`¿UNIR ESTOS PRODUCTOS?\n\nSe CONSERVA: «${dest.name}»${dest.group_name?" (grupo "+dest.group_name+")":" (sin grupo)"}\nSe ELIMINA: «${src.name}»${src.group_name&&src.group_name!==dest.group_name?" (su grupo «"+src.group_name+"» no se conserva)":""}\n\n${moved.length} precio(s) de «${src.name}» pasarán a «${dest.name}».`+(conflict?`\nEn ${conflict} proveedor(es) quedarán dos presentaciones en la misma celda.`:"")+`\n\nEsta acción no se puede deshacer.`;
+  const dvs=new Set(pcState.viewItems.filter(i=>i.product_id===dest.id).map(i=>i.view_id));
+  const vAdd=pcState.viewsOk?pcState.viewItems.filter(i=>i.product_id===src.id&&!dvs.has(i.view_id)).length:0;
+  const msg=`¿UNIR ESTOS PRODUCTOS?\n\nSe CONSERVA: «${dest.name}»${dest.group_name?" (grupo "+dest.group_name+")":" (sin grupo)"}\nSe ELIMINA: «${src.name}»${src.group_name&&src.group_name!==dest.group_name?" (su grupo «"+src.group_name+"» no se conserva)":""}\n\n${moved.length} precio(s) de «${src.name}» pasarán a «${dest.name}».`+(conflict?`\nEn ${conflict} proveedor(es) quedarán dos presentaciones en la misma celda.`:"")+(vAdd?`\nLas ${vAdd} vista(s) que incluían «${src.name}» incluirán «${dest.name}».`:"")+`\n\nEsta acción no se puede deshacer.`;
   if(!confirm(msg))return;
   const btn=document.getElementById("pcMergeBtn");if(btn){btn.disabled=true;btn.textContent="Uniendo…"}
   try{
     if(moved.length)await pcMust(sb.from("pc_offers").update({product_id:dest.id,updated_at:new Date().toISOString()}).eq("product_id",src.id));
+    if(pcState.viewsOk){
+      const add=pcState.viewItems.filter(i=>i.product_id===src.id&&!dvs.has(i.view_id)).map(i=>({id:pcUuid(),business:PC_SCOPE,view_id:i.view_id,product_id:dest.id}));
+      if(add.length)await pcMust(sb.from("pc_view_items").insert(add))
+    }
     await pcMust(sb.from("pc_products").delete().eq("id",src.id));
     await pcAudit("Unió productos",`«${src.name}» → «${dest.name}» (${moved.length} precio(s) movidos)`)
   }catch(e){pcFail(e);await pcReload();return}
@@ -6031,6 +6055,126 @@ function pcOpenDupes(){
       <div class="table-wrap" style="max-height:55vh;overflow:auto"><table class="pc-imp" style="min-width:0"><tbody>${shown.map(x=>`<tr><td style="width:36%">${cell(x.a)}</td><td style="width:36%">${cell(x.b)}</td><td class="pc-sub" style="white-space:nowrap">${Math.round(x.d*100)}%</td><td style="white-space:nowrap"><button type="button" class="btn pc-sm" onclick="pcOpenMerge('${x.b.id}','${x.a.id}')">Conservar el 1.º</button> <button type="button" class="btn pc-sm" onclick="pcOpenMerge('${x.a.id}','${x.b.id}')">Conservar el 2.º</button></td></tr>`).join("")}</tbody></table></div>
       <div class="flex" style="margin-top:14px;justify-content:flex-end"><button class="btn primary" onclick="pcCloseModal()">Cerrar</button></div>`,true)
   },30)
+}
+
+/* ---------- Vistas guardadas: listas personalizadas (por ejemplo, una por negocio) ----------
+   Una vista solo apunta a productos de la lista principal; nunca la modifica. */
+let pcDraft=new Set();
+let pcVMCache={ref:null,map:new Map()};
+function pcViewMembers(vid){
+  if(pcVMCache.ref!==pcState.viewItems){
+    const m=new Map();pcState.viewItems.forEach(i=>{if(!m.has(i.view_id))m.set(i.view_id,new Set());m.get(i.view_id).add(i.product_id)});
+    pcVMCache={ref:pcState.viewItems,map:m}
+  }
+  return pcVMCache.map.get(vid)||new Set()
+}
+function pcSaveViewPref(){try{localStorage.setItem("cyaroma_pcView",pcUi.view||"")}catch(e){}}
+function pcRenderViewUi(canM,C){
+  const sel=document.getElementById("pcView");if(!sel)return;
+  const views=(pcState.views||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  if(pcUi.view&&!views.some(v=>v.id===pcUi.view)){pcUi.view="";pcUi.editing=false}
+  sel.innerHTML='<option value="">Todos los productos</option>'+views.map(v=>`<option value="${v.id}">${esc(v.name)} (${pcViewMembers(v.id).size})</option>`).join("");
+  sel.value=pcUi.view;sel.disabled=!!pcUi.editing;
+  const dots=document.getElementById("pcViewDots");if(dots)dots.style.display=(canM&&!pcUi.editing)?"":"none";
+  const bar=document.getElementById("pcViewBar");if(!bar)return;
+  if(pcUi.editing&&C){
+    const v=pcState.views.find(x=>x.id===pcUi.view),n=C.filtered.length;
+    bar.style.display="";
+    bar.innerHTML=`<span>Editando la vista <b>${esc(v?v.name:"")}</b>: marca los productos que usa. <b id="pcDraftCount">${pcDraft.size}</b> marcados.</span><span class="pc-vbtns"><button type="button" class="btn pc-sm" onclick="pcViewBulk(true)">Agregar los ${n} visibles</button><button type="button" class="btn pc-sm" onclick="pcViewBulk(false)">Quitar los ${n} visibles</button><button type="button" class="btn primary pc-sm" onclick="pcViewSave()">Guardar vista</button><button type="button" class="btn pc-sm" onclick="pcViewCancel()">Cancelar</button></span>`
+  }else{bar.style.display="none";bar.innerHTML=""}
+}
+function pcOnViewChange(){pcUi.view=pcV("pcView");pcSaveViewPref();pcUi.limit=250;pcRender()}
+function pcViewMenu(ev){
+  if(!pcState.viewsOk){alert("Para usar vistas falta correr el SQL «comparativa_vistas.sql» en Supabase.");return}
+  const items=[{label:"Nueva vista…",js:"pcOpenViewForm('new','')"}];
+  if(pcUi.view)items.push({label:"Editar productos de esta vista",js:"pcViewStartEdit()"},{label:"Renombrar…",js:`pcOpenViewForm('rename','${pcUi.view}')`},{label:"Duplicar…",js:`pcOpenViewForm('dup','${pcUi.view}')`},{sep:true},{label:"Eliminar vista",js:`pcDeleteView('${pcUi.view}')`,danger:true});
+  pcShowMenu(ev,items)
+}
+function pcOpenViewForm(mode,vid){
+  const v=vid?pcState.views.find(x=>x.id===vid):null;
+  const n=pcCompute(pcUi.showHidden).filtered.length,narrowed=!!(pcUi.q||pcUi.group||pcUi.onlyComparable);
+  let names=[];try{names=(typeof visibleBusinessNames==="function"?visibleBusinessNames(true):[])||[]}catch(e){}
+  const title=mode==="new"?"Nueva vista":(mode==="rename"?"Renombrar vista":"Duplicar vista");
+  const val=mode==="rename"?v.name:(mode==="dup"?"Copia de "+v.name:"");
+  pcOpenModal(`<h3 style="margin-top:0">${title}</h3>
+    <label>Nombre de la vista</label><input type="text" id="pcf-vname" list="pcVNames" value="${esc(val)}" placeholder="Ej. Sipalitos, Arca, Cafetería"><datalist id="pcVNames">${names.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+    <div class="pc-sub" style="margin-top:4px">Escribe el nombre que quieras o elige uno de tus negocios. No se crea ni se modifica ningún negocio: es solo una lista de productos.</div>
+    ${mode==="new"?`<label style="font-weight:600;font-size:13px;display:block;margin-top:12px"><input type="checkbox" id="pcf-vfill" style="width:auto;margin-right:6px" ${narrowed&&n?"checked":""} ${n?"":"disabled"}>Empezar con los ${n} producto${n===1?"":"s"} que veo ahora</label>`:""}
+    ${mode==="dup"?`<div class="pc-sub" style="margin-top:8px">Se copian los ${pcViewMembers(vid).size} productos de la vista.</div>`:""}
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveView('${mode}','${vid||""}')">Guardar</button></div>`)
+}
+async function pcSaveView(mode,vid){
+  const name=pcV("pcf-vname").trim();if(!name){alert("Escribe el nombre de la vista.");return}
+  if(pcState.views.some(x=>x.id!==vid&&pcNorm(x.name)===pcNorm(name))){alert("Ya existe una vista con ese nombre.");return}
+  let newId="",count=0;
+  try{
+    if(mode==="rename"){
+      const old=pcState.views.find(x=>x.id===vid);
+      await pcMust(sb.from("pc_views").update({name,updated_at:new Date().toISOString()}).eq("id",vid));
+      await pcAudit("Renombró vista",`«${old.name}» → «${name}»`)
+    }else{
+      newId=pcUuid();
+      await pcMust(sb.from("pc_views").insert({id:newId,business:PC_SCOPE,name}));
+      let ids=[];
+      if(mode==="dup")ids=[...pcViewMembers(vid)];
+      else{const f=document.getElementById("pcf-vfill");if(f&&f.checked)ids=pcCompute(pcUi.showHidden).filtered.map(r=>r.p.id)}
+      for(const part of pcChunk(ids,500))await pcMust(sb.from("pc_view_items").insert(part.map(pid=>({id:pcUuid(),business:PC_SCOPE,view_id:newId,product_id:pid}))));
+      count=ids.length;
+      await pcAudit(mode==="dup"?"Duplicó vista":"Creó vista",`«${name}»${count?" con "+count+" producto(s)":""}`);
+      pcUi.view=newId;pcSaveViewPref()
+    }
+  }catch(e){pcFail(e);return}
+  pcCloseModal();await pcReload();
+  if(newId&&!count)pcViewStartEdit()
+}
+async function pcDeleteView(vid){
+  const v=pcState.views.find(x=>x.id===vid);if(!v)return;
+  const n=pcViewMembers(vid).size;
+  if(!confirm(`¿Eliminar la vista «${v.name}»?\n\nSolo se borra esta lista (${n} producto${n===1?"":"s"}). No se elimina ningún producto ni precio de la lista principal.`))return;
+  try{await pcMust(sb.from("pc_views").delete().eq("id",vid));await pcAudit("Eliminó vista",`«${v.name}» (${n} producto(s))`)}catch(e){pcFail(e);return}
+  if(pcUi.view===vid){pcUi.view="";pcSaveViewPref()}
+  pcUi.editing=false;await pcReload()
+}
+function pcViewStartEdit(){
+  if(!pcUi.view)return;
+  pcDraft=new Set(pcViewMembers(pcUi.view));pcUi.editing=true;pcUi.limit=250;pcRender()
+}
+function pcViewToggle(pid,on){if(on)pcDraft.add(pid);else pcDraft.delete(pid);const e=document.getElementById("pcDraftCount");if(e)e.textContent=pcDraft.size}
+function pcViewBulk(add){pcCompute(pcUi.showHidden).filtered.forEach(r=>{if(add)pcDraft.add(r.p.id);else pcDraft.delete(r.p.id)});pcRender(true)}
+function pcViewCancel(){pcUi.editing=false;pcDraft=new Set();pcRender()}
+async function pcViewSave(){
+  const vid=pcUi.view,v=pcState.views.find(x=>x.id===vid);if(!v)return;
+  const cur=pcViewMembers(vid),add=[...pcDraft].filter(x=>!cur.has(x)),rem=[...cur].filter(x=>!pcDraft.has(x));
+  if(!add.length&&!rem.length){pcViewCancel();return}
+  if(rem.length&&!confirm(`Se quitarán ${rem.length} producto(s) de la vista «${v.name}». No se borran de la lista principal. ¿Guardar?`))return;
+  try{
+    for(const part of pcChunk(add,500))await pcMust(sb.from("pc_view_items").insert(part.map(pid=>({id:pcUuid(),business:PC_SCOPE,view_id:vid,product_id:pid}))));
+    for(const part of pcChunk(rem,80))await pcMust(sb.from("pc_view_items").delete().eq("view_id",vid).in("product_id",part));
+    await pcAudit("Actualizó vista",`«${v.name}»: +${add.length} / −${rem.length} producto(s)`)
+  }catch(e){pcFail(e);return}
+  pcUi.editing=false;pcDraft=new Set();await pcReload()
+}
+function pcOpenProductViews(pid){
+  const p=pcState.products.find(x=>x.id===pid);if(!p)return;
+  if(!pcState.viewsOk){alert("Para usar vistas falta correr el SQL «comparativa_vistas.sql» en Supabase.");return}
+  const views=pcState.views.slice().sort((a,b)=>a.name.localeCompare(b.name,"es"));
+  if(!views.length){alert("Todavía no tienes vistas. Crea una con el «⋯» junto a «Vista».");return}
+  pcOpenModal(`<h3 style="margin-top:0">Vistas de «${esc(p.name)}»</h3>
+    <div>${views.map(v=>`<label class="pc-vrow"><input type="checkbox" class="pc-pv" data-v="${v.id}" ${pcViewMembers(v.id).has(pid)?"checked":""} style="width:auto;margin-right:8px">${esc(v.name)}</label>`).join("")}</div>
+    <div class="flex" style="margin-top:16px;justify-content:flex-end;gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveProductViews('${pid}')">Guardar</button></div>`)
+}
+async function pcSaveProductViews(pid){
+  const p=pcState.products.find(x=>x.id===pid);
+  const add=[],rem=[];
+  document.querySelectorAll("#pcModal .pc-pv").forEach(b=>{const vid=b.dataset.v,has=pcViewMembers(vid).has(pid);if(b.checked&&!has)add.push(vid);if(!b.checked&&has)rem.push(vid)});
+  if(!add.length&&!rem.length){pcCloseModal();return}
+  const nm=ids=>ids.map(i=>"«"+((pcState.views.find(v=>v.id===i)||{}).name||"?")+"»").join(", ");
+  try{
+    if(add.length)await pcMust(sb.from("pc_view_items").insert(add.map(vid=>({id:pcUuid(),business:PC_SCOPE,view_id:vid,product_id:pid}))));
+    for(const vid of rem)await pcMust(sb.from("pc_view_items").delete().eq("view_id",vid).eq("product_id",pid));
+    await pcAudit("Cambió vistas de un producto",`«${p.name}»`+(add.length?" · agregado a "+nm(add):"")+(rem.length?" · quitado de "+nm(rem):""))
+  }catch(e){pcFail(e);return}
+  pcCloseModal();await pcReload()
 }
 
 /* ---------- Proveedores ---------- */
@@ -6524,6 +6668,7 @@ function pcPrint(){
   if(!pcState.loaded||!pcState.products.length){alert("No hay nada que imprimir todavía.");return}
   const C=pcCompute(false);
   const cols=pcColumns(C,true);
+  const vname=((pcUi.view&&pcState.views.find(v=>v.id===pcUi.view))||{}).name||"";
   const head=cols.map(s=>`<th>${esc(s.name)}${s.trade_name?`<br><span style="font-weight:400;color:#444">${esc(s.trade_name)}</span>`:""}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
   const rows=C.filtered.map(r=>{
     const tds=cols.map(s=>{
@@ -6538,7 +6683,7 @@ function pcPrint(){
   }).join("");
   const foot=`<tr><td colspan="2"><b>Gana en</b></td>${cols.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
   openPrintWindow("Comparativa de precios",
-    `<h1>Comparativa de precios</h1><p class="meta">Todos los negocios · uso interno</p>
+    `<h1>Comparativa de precios${vname?" — "+esc(vname):""}</h1><p class="meta">${vname?"Vista: "+esc(vname)+" · ":""}Todos los negocios · uso interno</p>
     <p class="meta">${C.filtered.length} producto(s). Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
     <table><tr><th>Producto</th><th>Unidad</th>${head}<th>Mejor precio</th></tr>${rows}${foot}</table>`)
 }
