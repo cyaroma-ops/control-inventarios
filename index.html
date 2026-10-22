@@ -331,6 +331,7 @@ textarea{min-height:76px;resize:vertical}
 .pc-vbtns{display:flex;gap:6px;flex-wrap:wrap}
 .pc-chk{width:auto;margin:3px 6px 0 0;flex:none}
 .pc-vrow{display:flex;align-items:center;padding:8px 4px;border-bottom:1px solid #eef1f6;font-size:14px}
+.content.pc-wide{max-width:none;padding-left:18px;padding-right:18px}
 .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
 @media(max-width:1200px){
@@ -5489,7 +5490,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-22.2";
+const APP_VERSION="2026-10-22.3";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
@@ -5822,7 +5823,7 @@ function pcRender(keepScroll){
   const more=C.filtered.length>shown.length?`<div style="text-align:center;margin:10px 0"><button type="button" class="btn" onclick="pcMore()">Mostrar más (${shown.length} de ${C.filtered.length})</button></div>`:"";
   const W_PROD=230,W_SUP=132,W_BEST=160;
   const colgroup=`<colgroup><col style="width:${W_PROD}px">${cols.map(()=>`<col style="width:${W_SUP}px">`).join("")}<col style="width:${W_BEST}px"></colgroup>`;
-  box.innerHTML=`<div class="pc-scroll"><table class="pc-table" style="width:${W_PROD+cols.length*W_SUP+W_BEST}px">${colgroup}<thead><tr><th class="pc-sl">Producto</th>${heads}<th class="pc-sr">Mejor precio</th></tr></thead><tbody>${body||'<tr><td colspan="'+(cols.length+2)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`;
+  box.innerHTML=`<div class="pc-scroll"><table class="pc-table" style="width:100%;min-width:${W_PROD+cols.length*W_SUP+W_BEST}px">${colgroup}<thead><tr><th class="pc-sl">Producto</th>${heads}<th class="pc-sr">Mejor precio</th></tr></thead><tbody>${body||'<tr><td colspan="'+(cols.length+2)+'" class="empty">Ningún producto coincide con los filtros.</td></tr>'}</tbody><tfoot>${foot}</tfoot></table></div>${more}`;
   if(prevScroll){const sc=box.querySelector(".pc-scroll");if(sc){sc.scrollTop=prevScroll.t;sc.scrollLeft=prevScroll.l}}
 }
 function pcOnFilter(){
@@ -6650,7 +6651,10 @@ async function pcImpApply(){
 }
 
 /* ---------- Barra superior: el selector de meses no aplica en la comparativa ---------- */
-function pcSyncTopbar(id){const pc=document.querySelector(".period-control");if(pc)pc.style.display=(id==="pricecompare")?"none":""}
+function pcSyncTopbar(id){
+  const pc=document.querySelector(".period-control");if(pc)pc.style.display=(id==="pricecompare")?"none":"";
+  const ct=document.querySelector(".content");if(ct)ct.classList.toggle("pc-wide",id==="pricecompare")
+}
 
 /* ---------- Auditoría ---------- */
 async function pcToggleAudit(){
