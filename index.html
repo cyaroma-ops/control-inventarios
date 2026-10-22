@@ -834,7 +834,7 @@ textarea{min-height:76px;resize:vertical}
           <span id="pcViewWrap" class="pc-viewbox"><label for="pcView">Vista</label><select id="pcView" onchange="pcOnViewChange()" style="max-width:210px"><option value="">Todos los productos</option></select><button type="button" class="pc-dots" id="pcViewDots" aria-label="Opciones de vistas" title="Crear, renombrar, duplicar o eliminar vistas" onclick="pcViewMenu(event)">⋯</button></span>
           <input type="text" id="pcSearch" placeholder="Buscar producto..." oninput="debouncedPcFilter()" style="max-width:210px">
           <select id="pcGroup" onchange="pcOnFilter()" style="max-width:200px"><option value="">Todos los grupos</option></select>
-          <button type="button" class="btn pc-sm" id="pcBtnGroup" style="display:none" onclick="pcOpenGroup()">Editar grupo</button>
+          <button type="button" class="btn pc-sm" id="pcBtnGroup" style="display:none" title="Ver, renombrar o quitar grupos" onclick="pcOpenGroups()">Editar grupos</button>
           <button type="button" class="btn pc-sm" id="pcBtnAssign" style="display:none" onclick="pcOpenAssign()">Asignar grupo…</button>
           <label title="Solo productos con precio de 2 o más proveedores"><input type="checkbox" id="pcOnlyComp" onchange="pcOnFilter()" style="width:auto;margin-right:5px">Solo comparables</label>
           <label id="pcHiddenWrap" style="display:none"><input type="checkbox" id="pcShowHidden" onchange="pcOnFilter()" style="width:auto;margin-right:5px">Mostrar columnas ocultas</label>
@@ -5490,7 +5490,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-22.5";
+const APP_VERSION="2026-10-22.6";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
@@ -5722,7 +5722,7 @@ async function pcAuditMany(list){
   return true
 }
 const pcAudit=(action,details)=>pcAuditMany([{action,details}]);
-function pcFail(e){console.error(e);alert("No se pudo guardar: "+((e&&e.message)||"error de conexión")+".\nTu cambio no se aplicó.")}
+function pcFail(e){console.error(e);alert("No se pudo guardar: "+String((e&&e.message)||"error de conexión").replace(/\.\s*$/,"")+".\nTu cambio no se aplicó.")}
 
 /* ---------- Carga ---------- */
 async function bootPriceCompare(){
@@ -5818,7 +5818,7 @@ function pcRender(keepScroll){
   const gk=groups.join("|")+"#"+nNoGroup;
   if(gSel.dataset.k!==gk){gSel.innerHTML='<option value="">Todos los grupos</option>'+(nNoGroup?`<option value="__none__">(Sin grupo) — ${nNoGroup}</option>`:"")+groups.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");gSel.dataset.k=gk}
   gSel.value=pcUi.group;
-  const gb=document.getElementById("pcBtnGroup");if(gb)gb.style.display=(pcUi.group&&pcUi.group!=="__none__"&&canM)?"":"none";
+  const gb=document.getElementById("pcBtnGroup");if(gb)gb.style.display=canM?"":"none";
   const C=pcCompute(pcUi.showHidden);
   const ab=document.getElementById("pcBtnAssign");
   if(ab){const narrowed=!!(pcUi.q||pcUi.group||pcUi.onlyComparable);ab.style.display=(canM&&narrowed&&C.filtered.length)?"":"none";ab.textContent="Asignar grupo ("+C.filtered.length+")…"}
@@ -5963,8 +5963,10 @@ async function pcDeleteProduct(id){
 }
 
 /* ---------- Grupos ---------- */
-function pcOpenGroup(){
-  const g=pcUi.group;if(!g)return;
+let pcGroupEditing="",pcGroupList=[];
+function pcOpenGroup(gArg){
+  const g=(typeof gArg==="string"&&gArg)?gArg:pcUi.group;if(!g||g==="__none__")return;
+  pcGroupEditing=g;
   const n=pcState.products.filter(p=>p.group_name===g).length;
   pcOpenModal(`<h3 style="margin-top:0">Editar grupo</h3>
     <p style="color:var(--muted);margin-top:0">Grupo actual: <b>${esc(g)}</b> (${n} producto${n===1?"":"s"}).</p>
@@ -5973,7 +5975,7 @@ function pcOpenGroup(){
     <div class="flex" style="margin-top:16px;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" onclick="pcSaveGroup(true)">Quitar el grupo (los productos quedan sin grupo)</button><span class="flex" style="gap:8px"><button class="btn" onclick="pcCloseModal()">Cancelar</button><button class="btn primary" onclick="pcSaveGroup(false)">Guardar</button></span></div>`)
 }
 async function pcSaveGroup(remove){
-  const old=pcUi.group;if(!old)return;
+  const old=pcGroupEditing||pcUi.group;if(!old)return;
   const nuevo=remove?"":pcV("pcf-gname").trim();
   if(!remove&&!nuevo){alert("Escribe el nombre del grupo, o usa «Quitar el grupo».");return}
   if(!remove&&nuevo===old){pcCloseModal();return}
@@ -5985,8 +5987,24 @@ async function pcSaveGroup(remove){
     await pcMustRows(sb.from("pc_products").update({group_name:nuevo||null,updated_at:new Date().toISOString()}).eq("business",PC_SCOPE).eq("group_name",old),n);
     await pcAudit(remove?"Quitó grupo":(exists?"Unió grupos":"Renombró grupo"),remove?`«${old}» (${n} productos quedaron sin grupo)`:`«${old}» → «${nuevo}» (${n} productos)`)
   }catch(e){pcFail(e);return}
-  pcUi.group=nuevo;pcCloseModal();await pcReload()
+  if(pcUi.group===old)pcUi.group=nuevo;
+  pcCloseModal();await pcReload()
 }
+
+/* ---------- Gestor de grupos: ver todos, renombrar o quitar ---------- */
+function pcOpenGroups(){
+  const cnt=new Map();pcState.products.forEach(p=>{const g=p.group_name||"";cnt.set(g,(cnt.get(g)||0)+1)});
+  pcGroupList=[...cnt.keys()].filter(Boolean).sort((a,b)=>a.localeCompare(b,"es"));
+  const noG=cnt.get("")||0;
+  const rows=pcGroupList.map((g,i)=>`<tr><td><b>${esc(g)}</b></td><td>${cnt.get(g)}</td><td style="white-space:nowrap"><button type="button" class="btn pc-sm" onclick="pcViewGroupAt(${i})">Ver</button> <button type="button" class="btn pc-sm" onclick="pcOpenGroupAt(${i})">Renombrar o quitar</button></td></tr>`).join("");
+  pcOpenModal(`<h3 style="margin-top:0">Grupos</h3>
+    <p style="color:var(--muted);margin-top:0">Renombrar o quitar un grupo se aplica a todos sus productos. Para ponerle grupo a varios productos a la vez, filtra o busca y usa «Asignar grupo».</p>
+    <div class="table-wrap" style="max-height:52vh;overflow:auto"><table class="pc-imp" style="min-width:0"><thead><tr><th>Grupo</th><th>Productos</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="3" class="empty">Todavía no hay grupos.</td></tr>'}${noG?`<tr><td><i>(Sin grupo)</i></td><td>${noG}</td><td><button type="button" class="btn pc-sm" onclick="pcViewGroupNone()">Ver</button></td></tr>`:""}</tbody></table></div>
+    <div class="flex" style="margin-top:14px;justify-content:flex-end"><button class="btn primary" onclick="pcCloseModal()">Cerrar</button></div>`,true)
+}
+function pcOpenGroupAt(i){const g=pcGroupList[i];if(g)pcOpenGroup(g)}
+function pcViewGroupAt(i){const g=pcGroupList[i];if(!g)return;pcUi.group=g;pcUi.limit=250;pcCloseModal();pcRender()}
+function pcViewGroupNone(){pcUi.group="__none__";pcUi.limit=250;pcCloseModal();pcRender()}
 
 /* ---------- Asignar grupo en bloque ---------- */
 function pcOpenAssign(){
@@ -6703,7 +6721,11 @@ function pcPrint(){
   const cols=pcColumns(C,true);
   const vname=((pcUi.view&&pcState.views.find(v=>v.id===pcUi.view))||{}).name||"";
   const head=cols.map(s=>`<th>${esc(s.name)}${s.trade_name?`<br><span style="font-weight:400;color:#444">${esc(s.trade_name)}</span>`:""}<br><span style="font-weight:400;color:#666">${esc(s.vigencia||"")}</span></th>`).join("");
-  const rows=C.filtered.map(r=>{
+  const gkey=r=>r.p.group_name||"";
+  const sorted=C.filtered.slice().sort((a,b)=>{const ga=gkey(a),gb=gkey(b);if(ga!==gb){if(!ga)return 1;if(!gb)return -1;return ga.localeCompare(gb,"es")}return a.p.name.localeCompare(b.p.name,"es")});
+  let prevG=null;
+  const rows=sorted.map(r=>{
+    const gNow=gkey(r),sep=prevG!==null&&gNow!==prevG;prevG=gNow;
     const tds=cols.map(s=>{
       const c=r.cells[s.id];
       if(!c.offers.length)return'<td style="color:#999">—</td>';
@@ -6712,13 +6734,13 @@ function pcPrint(){
       return`<td style="${best?"background:#e6f6ec;font-weight:700":""}">${c.pb!=null?money(c.pb)+"/"+pcUnitLbl(r.p.base_unit):"sin cantidad"}<br><span style="font-weight:400;color:#666;font-size:10px">${esc(o.presentation||"")}${o.iva_mode==="mas"?" +IVA":""}</span></td>`
     }).join("");
     const bt=r.best?`<td><b>${esc(C.idx.sup.get(r.best.sid).name)}</b><br>${money(r.best.pb)}/${pcUnitLbl(r.p.base_unit)}</td>`:"<td>—</td>";
-    return`<tr><td>${esc(r.p.name)}</td><td>${pcUnitLbl(r.p.base_unit)}</td>${tds}${bt}</tr>`
+    return`<tr${sep?' class="gsep"':""}><td>${esc(r.p.name)}</td><td>${gNow?esc(gNow):"—"}</td><td>${pcUnitLbl(r.p.base_unit)}</td>${tds}${bt}</tr>`
   }).join("");
-  const foot=`<tr><td colspan="2"><b>Gana en</b></td>${cols.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
+  const foot=`<tr><td colspan="3"><b>Gana en</b></td>${cols.map(s=>`<td>${C.wins[s.id]}</td>`).join("")}<td></td></tr>`;
   openPrintWindow("Comparativa de precios",
     `<h1>Comparativa de precios${vname?" — "+esc(vname):""}</h1><p class="meta">${vname?"Vista: "+esc(vname)+" · ":""}Todos los negocios · uso interno</p>
-    <p class="meta">${C.filtered.length} producto(s). Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
-    <table><tr><th>Producto</th><th>Unidad</th>${head}<th>Mejor precio</th></tr>${rows}${foot}</table>`)
+    <p class="meta">${C.filtered.length} producto(s), ordenados por grupo. Precio por kilo, litro o pieza; si un precio está marcado «más IVA» ya se le sumó el 16%. En verde, el mejor precio.</p>
+    <style>tr.gsep td{border-top:2px solid #333!important}</style><table><tr><th>Producto</th><th>Grupo</th><th>Unidad</th>${head}<th>Mejor precio</th></tr>${rows}${foot}</table>`)
 }
 
 /* init() ahora se ejecuta desde onLoginSuccess() tras iniciar sesión */
