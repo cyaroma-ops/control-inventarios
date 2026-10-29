@@ -4444,11 +4444,14 @@ async function toggleTomaAuditPanel(){
   box.style.display="block"
 }
 function parsePhysicalCountCatalogPdf(text){
-  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA"]);
+  // DOMO y ORDENES(E) aparecen como unidad en los catálogos de SoftRestaurant (frutos rojos, hongos, flores).
+  const UNIT_SET=new Set(["KGS","LTS","PZA","PZAS","OZ","GRAMOS","GR","ML","COPAS","COPA","DOMO","ORDENES","ORDENE"]);
+  // Un renglón que EMPIEZA un producto nuevo: clave y, después, 2 o más espacios (un "1000 ML" partido de un nombre no cuenta).
+  const NEWROW=/^\d{4,7}\s{2,}\S/;
   const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
   const EXCLUDE=/CLAVE|DESCRIPCION|DESCRIPCIÓN|ALMACEN|ALMACÉN|EXISTENCIAS|REGISTROS|ENTREGO|ENTREGÓ|RECIBIO|RECIBIÓ|INVENTARIO|FORMATO|UNIDAD|INSUMOS|SoftRestaurant|COPYRIGHT|NATIONAL|^AV\s|^\d{1,2}\/\d{1,2}\/\d{4}|PAG\.|^\d{1,2}:\d{2}:\d{2}/i;
   const splitCols=line=>line.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);
-  const isLoneUnit=line=>{const p=splitCols(line);return p.length===1&&UNIT_SET.has(p[0])};
+  const isLoneUnit=line=>{if(typeof line!=="string")return false;const p=splitCols(line);return p.length===1&&UNIT_SET.has(p[0])};
   const validItem=(code,product)=>/^\d{4,7}$/.test(code)&&product&&product.trim().length>0;
   function tryDirectRow(parts){
     if(parts.length>=3&&/^\d/.test(parts[0])&&UNIT_SET.has(parts[parts.length-1])){
@@ -4461,7 +4464,7 @@ function parsePhysicalCountCatalogPdf(text){
     }
     return null
   }
-  const rawLines=text.split("\n").map(l=>l.trim()).filter(Boolean).filter(l=>!EXCLUDE.test(l));
+  const rawLines=text.split("\n").map(l=>l.trim()).filter(Boolean).filter(l=>NEWROW.test(l)||!EXCLUDE.test(l));   // un producto cuyo nombre trae "INVENTARIO", "INSUMOS", etc. no se descarta
   const items=[];let currentGroup="(Sin categoría)";let i=0;
   while(i<rawLines.length){
     const parts=splitCols(rawLines[i]);
@@ -4470,6 +4473,7 @@ function parsePhysicalCountCatalogPdf(text){
     if(/^\d/.test(parts[0])){
       let buf=[...parts],j=i+1;
       while(j<rawLines.length){
+        if(NEWROW.test(rawLines[j]))break;   // empieza otro producto: este termina aquí (aunque su unidad no sea conocida)
         if(isLoneUnit(rawLines[j])){
           buf.push(splitCols(rawLines[j])[0]);j++;
           if(isLoneUnit(rawLines[j]))continue;
@@ -4482,7 +4486,7 @@ function parsePhysicalCountCatalogPdf(text){
       if(validItem(code,product))items.push({group:currentGroup,code,product,unit});
       i=j;continue
     }
-    if(parts.length===1&&headerRe.test(parts[0])&&parts[0].length<40){currentGroup=parts[0];i++;continue}
+    if(parts.length===1&&headerRe.test(parts[0])&&parts[0].length<40&&!UNIT_SET.has(parts[0])){currentGroup=parts[0];i++;continue}
     i++
   }
   return items
@@ -4638,10 +4642,10 @@ function parsePhysicalCountCatalogPdfNoUnit(text){
   const headerRe=/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ \/]*$/;
   const EXCLUDE=/CLAVE|DESCRIPCION|DESCRIPCIÓN|ALMACEN|ALMACÉN|EXISTENCIAS|REGISTROS|ENTREGO|ENTREGÓ|RECIBIO|RECIBIÓ|INVENTARIO|FORMATO|UNIDAD|PRESENTACION|PRESENTACIÓN|^GRUPO|SoftRestaurant|COPYRIGHT|NATIONAL|^AV\s|^\d{1,2}\/\d{1,2}\/\d{4}|PAG\.|^\d{1,2}:\d{2}:\d{2}|^CALLE|Tel\.|RFC:/i;
   const validItem=(code,product)=>/^\d{4,7}$/.test(code)&&product&&product.trim().length>0;
-  const rawLines=text.split("\n").map(l=>l.trim()).filter(Boolean).filter(l=>!EXCLUDE.test(l));
+  const rawLines=text.split("\n").map(l=>l.trim()).filter(Boolean).filter(l=>/^\d{4,7}\s{2,}\S/.test(l)||!EXCLUDE.test(l));
   const items=[];let currentGroup="(Sin categoría)";let i=0;
   const isNewCode=l=>/^\d{4,7}(\s|$)/.test(l);
-  const isHeader=l=>{const p=l.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);return p.length===1&&headerRe.test(p[0])&&p[0].length<40};
+  const isHeader=l=>{const p=l.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean);return p.length===1&&headerRe.test(p[0])&&p[0].length<40&&!/^(KGS?|LTS?|PZAS?|PZ|GRAMOS|GR|ML|OZ|COPAS?|DOMO|ORDENES?|ORDENE)$/.test(p[0])};
   while(i<rawLines.length){
     const line=rawLines[i];
     if(isHeader(line)){currentGroup=line;i++;continue}
@@ -4669,9 +4673,12 @@ async function uploadTomaCatalog(){
     let items=[];
     if(name.endsWith(".pdf")){
       const text=await extractPdfText(file);
-      items=parsePhysicalCountCatalogPdf(text);
-      const altItems=parsePhysicalCountCatalogPdfNoUnit(text);
-      if(altItems.length>items.length)items=altItems
+      // Cada lector va aparte: si uno falla, el otro sigue. El lector con unidad es el más fiel; el otro solo gana si el primero
+      // lee mucho menos (formatos de PDF que no traen columna de unidad).
+      let altItems=[];
+      try{items=parsePhysicalCountCatalogPdf(text)}catch(e1){console.error("Lector de PDF con unidad falló:",e1);items=[]}
+      try{altItems=parsePhysicalCountCatalogPdfNoUnit(text)}catch(e2){console.error("Lector de PDF sin unidad falló:",e2);altItems=[]}
+      if(!items.length||altItems.length>items.length*1.2)items=altItems
     } else {
       const raw=await parseRawTableFile(file);
       items=raw.map(r=>{
@@ -5490,7 +5497,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-22.6";
+const APP_VERSION="2026-10-28.1";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
