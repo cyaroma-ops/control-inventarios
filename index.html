@@ -332,6 +332,84 @@ textarea{min-height:76px;resize:vertical}
 .pc-chk{width:auto;margin:3px 6px 0 0;flex:none}
 .pc-vrow{display:flex;align-items:center;padding:8px 4px;border-bottom:1px solid #eef1f6;font-size:14px}
 .content.pc-wide{max-width:none;padding-left:18px;padding-right:18px}
+/* ===== Inventarios: encabezados fijos, tarjetas compactas, buscador, pestañas por almacén y resumen ===== */
+.hist-scroll{overflow:auto;max-height:calc(100vh - 300px);min-height:260px}
+.hist-table{min-width:980px}
+.hist-table thead th{position:sticky;top:0;z-index:3;background:#fafbfd;box-shadow:0 1px 0 var(--line)}
+#history .page-title{margin-bottom:10px}
+#history .page-title h2{font-size:24px}
+#history .page-title p{margin:3px 0 0;font-size:12.5px}
+#history .card.form-card{padding:10px 14px;margin-bottom:10px}
+.cap-head{position:relative;background:var(--bg);margin:0 -26px 12px;padding:8px 26px 8px;border-bottom:1px solid var(--line)}
+@media(min-width:851px){.cap-head{position:sticky;top:70px;z-index:6}}
+@media(max-width:850px){.cap-head{margin:0 0 12px;padding:0;border:0;background:none}}
+#capture .cap-head .page-title{margin:0 0 6px;align-items:center;flex-wrap:wrap}
+#capture .cap-head .page-title h2{font-size:21px;display:inline}
+#capture .cap-head .page-title p{display:inline;margin:0 0 0 10px;font-size:12px}
+#capture .cap-head .actions .btn{padding:7px 12px}
+.cap-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:5px 12px;margin:0 0 6px;border-radius:9px;font-size:12px;background:#fff7e6;border:1px solid #f0c869;line-height:1.35}
+.cap-banner .eb-text{flex:1;min-width:0}
+.cap-banner .eb-tag{display:inline-block;padding:0 7px;border-radius:999px;background:#fde9b8;color:#7a4b00;font-weight:600}
+.cap-banner .btn{padding:4px 10px;font-size:12px}
+.cap-head .stagebar{margin:0 0 6px;gap:6px}
+.cap-head .stage{padding:5px 6px;font-size:10.5px;border-radius:7px}
+.cap-head .cap-kpis{grid-template-columns:repeat(4,1fr) auto;gap:8px;margin:0}
+.cap-head .kpi{padding:6px 12px}
+.cap-head .kpi small:first-child{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+.cap-head .kpi strong{font-size:17px;margin:1px 0 0}
+.cap-head .kpi small:last-child{display:none}
+.cap-sum-btn{white-space:nowrap}
+.cap-sum-panel{display:none;position:absolute;left:26px;right:26px;top:100%;margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(15,23,42,.18);padding:14px 16px;max-height:72vh;overflow:auto;z-index:7}
+.cap-sum-panel.open{display:block}
+@media(max-width:850px){.cap-sum-panel{left:0;right:0}.cap-head .cap-kpis{grid-template-columns:1fr 1fr}}
+.cs-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}
+.cs-grid+.cs-grid{margin-top:12px}
+@media(max-width:1100px){.cs-grid{grid-template-columns:1fr}}
+.cs-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-width:0}
+.cs-card h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cs-table{width:100%;min-width:0;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.cs-table th{background:none;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:4px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.cs-table td{padding:6px 8px;text-align:right;border-bottom:1px solid #eef1f6;font-size:12.5px;white-space:nowrap}
+.cs-table th:first-child,.cs-table td:first-child{text-align:left}
+.cs-table td:first-child{font-weight:600}
+.cs-table td.cs-total{font-weight:700;background:#f6f8fc}
+.cs-table .cs-na{color:#c3cad6}
+.cs-kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12.5px;border-bottom:1px solid #f1f4f8}
+.cs-kv:last-child{border-bottom:0}
+.cs-kv strong{font-variant-numeric:tabular-nums}
+.cs-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.cs-chip{border-radius:9px;padding:8px 10px;background:#f6f8fc;border:1px solid var(--line)}
+.cs-chip small{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cs-chip strong{font-size:16px;font-variant-numeric:tabular-nums}
+.cs-note{margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+.cap-search{flex:1;min-width:180px;max-width:360px;margin:0 12px}
+.cap-search input{width:100%;padding:7px 10px;font-size:13px}
+.inv-scroll{overflow:auto;max-height:calc(100vh - var(--cap-sticky,230px) - 70px);min-height:260px}
+.inv-scroll thead th{position:sticky;top:0;z-index:2;background:#fafbfd;box-shadow:0 1px 0 var(--line)}
+.tab-n{display:inline-block;min-width:18px;padding:0 6px;margin-left:5px;border-radius:999px;background:#e8eefb;color:#1d3b8f;font-size:11px;font-weight:600;text-align:center}
+.tab-n.zero{background:#f1f3f7;color:#9aa5b8}
+.tab.active .tab-n,.subtab.active .tab-n{background:rgba(255,255,255,.25);color:inherit}
+.inv-jump{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle;margin-left:6px}
+.fi-panel{margin-top:6px}
+.fi-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.fi-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.fi-tab{border:1px solid #d7dfeb;background:#fff;color:var(--text);padding:6px 11px;border-radius:999px;font-size:12px;cursor:pointer}
+.fi-tab.active{background:#0d1f66;color:#fff;border-color:#0d1f66}
+.fi-tab.dim{opacity:.5}
+.fi-n{display:inline-block;margin-left:4px;padding:0 6px;border-radius:999px;background:#eef2fb;color:#1d3b8f;font-size:11px;font-weight:600}
+.fi-tab.active .fi-n{background:rgba(255,255,255,.22);color:#fff}
+.fi-search{max-width:260px;padding:6px 10px;font-size:13px}
+.fi-body{max-height:48vh;overflow:auto}
+.fi-body thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
+@media print{
+  .cap-head{position:static!important;margin:0!important;padding:0!important;border:0!important;background:none!important}
+  .cap-sum-panel{display:block!important;position:static!important;box-shadow:none!important;border:0!important;padding:0!important;max-height:none!important;margin:6px 0 0!important}
+  #capSumBtn,.cap-search,.cap-banner{display:none!important}
+  .cap-head .cap-kpis{grid-template-columns:repeat(4,1fr)!important}
+  .cs-grid{gap:8px!important}.cs-card{padding:6px 8px!important}
+  .cs-table td,.cs-table th{padding:3px 5px!important;font-size:10px!important}.cs-kv{font-size:10.5px!important;padding:2px 0!important}
+  .hist-scroll{max-height:none!important;overflow:visible!important}
+}
 .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .right{margin-left:auto}
 @media(max-width:1200px){
@@ -583,24 +661,52 @@ textarea{min-height:76px;resize:vertical}
       </section>
 
       <section id="capture" class="view">
+        <div id="captureHead" class="cap-head">
         <div class="page-title">
           <div><h2>Inventario operativo</h2><p>Captura teórico, físico, diferencias, mermas y decisión de CxC</p></div>
           <div class="actions" id="captureTopActions"><button class="btn" id="btnInvHistory" style="display:none" onclick="toggleInventoryHistory()">Historial de cambios</button><button class="btn" onclick="resetCapture()">Limpiar</button><button class="btn dark" onclick="saveInventory('Borrador')">Guardar borrador</button><button class="btn green" onclick="saveInventory('Terminado')">Terminar inventario</button></div>
         </div>
-        <div id="editBanner" class="card form-card" style="display:none;margin-bottom:14px;background:#fff7e6;border-color:#f0c869"></div>
-        <div id="invHistoryBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
+        <div id="editBanner" class="cap-banner" style="display:none"></div>
 
         <div class="stagebar">
           <div class="stage done">1. Captura</div><div class="stage current">2. Revisión</div><div class="stage">3. Justificación</div>
           <div class="stage">4. Decisión CxC</div><div class="stage">5. Autorización</div><div class="stage">6. Cierre</div>
         </div>
 
-        <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpis cap-kpis">
           <div class="card kpi"><div><small>Inventario teórico</small><strong id="capTheo">$0</strong><small>Valor esperado</small></div></div>
           <div class="card kpi"><div><small>Inventario físico</small><strong id="capPhys">$0</strong><small>Valor contado</small></div></div>
           <div class="card kpi"><div><small>Faltantes</small><strong id="capShort" class="redtxt">$0</strong><small>Diferencias negativas</small></div></div>
           <div class="card kpi"><div><small>Sobrantes</small><strong id="capOver" class="greentxt">$0</strong><small>Diferencias positivas</small></div></div>
+          <button type="button" class="btn cap-sum-btn no-print" id="capSumBtn" onclick="toggleCapSummary()" title="Ver el resumen por área, diferencias y CxC">Resumen ▾</button>
         </div>
+        <div id="capSummaryPanel" class="cap-sum-panel">
+          <div class="cs-grid">
+            <div class="cs-card"><h4>Inventario por área</h4>
+              <table class="cs-table"><thead><tr><th>Área</th><th>Almacén gral.</th><th>Producción</th><th>Vinos</th><th>Inventario</th><th>Alim. personal</th><th>Mermas</th></tr></thead><tbody>
+                <tr><td>Cocina</td><td id="sKg">$0</td><td id="sKp">$0</td><td class="cs-na">—</td><td class="cs-total" id="sK">$0</td><td class="orangetxt" id="sKf">$0</td><td class="orangetxt" id="sKw">$0</td></tr>
+                <tr><td>Barra</td><td id="sBg">$0</td><td id="sBp">$0</td><td id="sBw">$0</td><td class="cs-total" id="sB">$0</td><td class="cs-na">—</td><td class="orangetxt" id="sBmw">$0</td></tr>
+                <tr><td>Almacén General</td><td id="sGg">$0</td><td class="cs-na">—</td><td class="cs-na">—</td><td class="cs-total" id="sG">$0</td><td class="cs-na">—</td><td class="orangetxt" id="sGm">$0</td></tr>
+              </tbody></table>
+              <p class="cs-note">Las mermas se muestran por separado y no se suman al inventario.</p>
+            </div>
+            <div class="cs-card"><h4>CxC por faltantes</h4>
+              <div class="cs-chips"><div class="cs-chip"><small>Aplicar a CxC</small><strong id="sCxc" class="redtxt">$0</strong></div><div class="cs-chip"><small>No aplicar</small><strong id="sNoCxc">$0</strong></div><div class="cs-chip"><small>Pendiente</small><strong id="sPending" class="orangetxt">$0</strong></div></div>
+              <div class="cs-kv"><span>Faltantes evaluados</span><strong id="sEvaluated">$0</strong></div>
+            </div>
+          </div>
+          <div class="cs-grid">
+            <div class="cs-card"><h4>Diferencias</h4>
+              <div class="cs-kv"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div>
+              <div class="cs-kv"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div>
+              <div class="cs-kv"><span>Diferencia neta</span><strong id="sNet">$0</strong></div>
+              <div class="cs-kv"><span><b>Pérdida + mermas</b></span><strong id="sLoss" class="redtxt">$0</strong></div>
+            </div>
+            <div class="cs-card"><h4>Faltantes / sobrantes por área</h4><div id="sByCategory"></div></div>
+          </div>
+        </div>
+        </div>
+        <div id="invHistoryBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
 
         <div class="card form-card">
           <h3>Datos generales</h3>
@@ -625,9 +731,10 @@ textarea{min-height:76px;resize:vertical}
         <div class="card table-card">
           <div class="table-head">
             <div><h3 id="sectionTitle" style="margin:0">Almacén general cocina</h3><small id="sectionHelp" style="color:var(--muted)">Captura de inventario</small></div>
+            <div class="cap-search no-print"><input type="search" id="invSearchInput" placeholder="Buscar producto o código…" oninput="debouncedInvSearch(this.value)" autocomplete="off"></div>
             <div class="actions" id="captureSectionActions"><button class="btn" onclick="addProduct()">+ Agregar producto</button><input type="file" id="pdfInvFile" accept=".pdf,.xls,.xlsx,.csv" style="display:none" onchange="importInventoryPdf()"><button class="btn" onclick="document.getElementById('pdfInvFile').click()">Importar reporte</button><button class="btn" onclick="exportCurrentBusinessCatalog()">Exportar catálogo</button></div>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap inv-scroll" id="invWrap">
             <table class="inventory-table">
               <thead id="invHead"></thead><tbody id="invBody"></tbody>
             </table>
@@ -635,20 +742,13 @@ textarea{min-height:76px;resize:vertical}
         </div>
         <div id="capturePrintView" style="display:none"></div>
 
-        <div class="summary-grid">
-          <div class="card summary"><h4>Cocina</h4><div class="line"><span>Almacén general</span><strong id="sKg">$0</strong></div><div class="line"><span>Producción</span><strong id="sKp">$0</strong></div><div class="line total"><span>Inventario cocina</span><strong id="sK">$0</strong></div><div class="line"><span>Alimento de personal</span><strong id="sKf" class="orangetxt">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sKw" class="orangetxt">$0</strong></div></div>
-          <div class="card summary"><h4>Barra</h4><div class="line"><span>Almacén general</span><strong id="sBg">$0</strong></div><div class="line"><span>Producción</span><strong id="sBp">$0</strong></div><div class="line"><span>Almacén de vinos</span><strong id="sBw">$0</strong></div><div class="line total"><span>Inventario barra</span><strong id="sB">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sBmw" class="orangetxt">$0</strong></div></div>
-          <div class="card summary"><h4>Almacén General</h4><div class="line"><span>Almacén general</span><strong id="sGg">$0</strong></div><div class="line total"><span>Inventario almacén general</span><strong id="sG">$0</strong></div><div class="line"><span>Mermas separadas</span><strong id="sGm" class="orangetxt">$0</strong></div></div>
-          <div class="card summary"><h4>Diferencias</h4><div class="line"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div><div class="line"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div><div class="line"><span>Diferencia neta</span><strong id="sNet">$0</strong></div><div class="line total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div><div id="sByCategory"></div></div>
-          <div class="card summary"><h4>CxC por faltantes</h4><div class="line"><span>Aplicar a CxC</span><strong id="sCxc" class="redtxt">$0</strong></div><div class="line"><span>No aplicar</span><strong id="sNoCxc">$0</strong></div><div class="line"><span>Pendiente</span><strong id="sPending" class="orangetxt">$0</strong></div><div class="line total"><span>Faltantes evaluados</span><strong id="sEvaluated">$0</strong></div></div>
-        </div>
       </section>
 
       <section id="history" class="view">
         <div class="page-title"><div><h2>Inventarios</h2><p>Consulta, edita o inicia un nuevo inventario por negocio y periodo</p></div><div class="actions"><button class="btn" onclick="toggleInventoryAuditPanel()" id="invAuditBtn">Auditoría</button><button class="btn" onclick="printHistory()">Imprimir</button><button class="btn primary" id="btnNewInventory2" onclick="startNewInventory()">+ Nuevo inventario</button></div></div>
         <div id="invAuditBox" class="card form-card no-print" style="display:none;margin-bottom:14px"></div>
         <div class="card form-card no-print"><div class="flex"><select id="hStatus" style="max-width:220px"><option value="">Todos los estatus</option><option>Borrador</option><option>Terminado</option></select><button class="btn primary" onclick="renderHistory()">Filtrar</button><button class="btn red" id="btnClearHistory" onclick="clearHistory()">Eliminar historial</button><span class="info-tip" tabindex="0" onclick="toggleInfoTip(this,event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleInfoTip(this,event)}">ⓘ<span class="info-tip-bubble">La columna "CxC aplicado" solo cuenta lo que ya se decidió cobrar. Para ver también lo "No aplicado" y lo "Pendiente", consulta CxC por inventarios o Reportes.</span></span></div></div>
-        <div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
+        <div class="card table-card"><div class="table-wrap hist-scroll" id="histWrap" data-fit="18"><table class="hist-table"><thead><tr><th>Fecha</th><th>Negocio</th><th>Inventario</th><th>Faltantes</th><th>Sobrantes</th><th>Mermas</th><th>CxC aplicado</th><th>Estatus</th><th>Acción</th></tr></thead><tbody id="historyBody"></tbody></table></div></div>
         <div id="historyPrintView" style="display:none"></div>
       </section>
 
@@ -1648,10 +1748,24 @@ async function manualRefresh(){
     btn.disabled=false;btn.textContent="Actualizar"
   }
 }
+// ---- Buscador de productos de la captura (por código o nombre, sin importar acentos ni mayúsculas) ----
+let invSearch="";
+function invTokens(){return normalizeKey(invSearch||"").split(/\s+/).filter(Boolean)}
+function invMatch(r,tok){if(!tok.length)return true;const t=normalizeKey(String(r.code||"")+" "+String(r.product||""));return tok.every(w=>t.includes(w))}
+function invCount(id,tok){const l=rows[id]||[];return tok.length?l.filter(r=>invMatch(r,tok)).length:l.length}
+const debouncedInvSearch=debounce(v=>{invSearch=v;renderTabs();renderInventory()},180);
+function jumpToSection(id){for(const[g,list]of Object.entries(sections)){if(list.some(s=>s.id===id)){activeGroup=g;activeSection=id;renderTabs();renderInventory();return}}}
+function invNoResultsRow(tok,cols){
+  const others=[];
+  Object.entries(sections).forEach(([g,list])=>list.forEach(s=>{if(s.id===activeSection)return;const n=invCount(s.id,tok);if(n)others.push(`<button type="button" class="btn pc-sm" onclick="jumpToSection('${s.id}')">${esc(g)} · ${esc(s.name)} (${n})</button>`)}));
+  return`<tr><td colspan="${cols}" class="empty">Sin coincidencias en este almacén.${others.length?` Hay resultados en: <span class="inv-jump">${others.join("")}</span>`:" Tampoco hay en los demás almacenes."}</td></tr>`
+}
 function renderTabs(){
   document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.group===activeGroup));
+  const tok=invTokens();
+  document.querySelectorAll(".tabs .tab[data-group]").forEach(b=>{const g=b.dataset.group;const n=(sections[g]||[]).reduce((a,s)=>a+invCount(s.id,tok),0);b.innerHTML=esc(g)+(tok.length?` <span class="tab-n${n?"":" zero"}">${n}</span>`:"")});
   const box=document.getElementById("subtabs");box.innerHTML="";
-  sections[activeGroup].forEach(s=>{const b=document.createElement("button");b.className="subtab"+(s.id===activeSection?" active":"");b.textContent=s.name;b.onclick=()=>{activeSection=s.id;renderTabs();renderInventory()};box.appendChild(b)})
+  sections[activeGroup].forEach(s=>{const b=document.createElement("button");b.className="subtab"+(s.id===activeSection?" active":"");const n=invCount(s.id,tok);b.innerHTML=esc(s.name)+` <span class="tab-n${tok.length&&!n?" zero":""}">${n}</span>`;b.onclick=()=>{activeSection=s.id;renderTabs();renderInventory()};box.appendChild(b)})
 }
 function renderInventory(){
   const meta=sectionMeta(activeSection),head=document.getElementById("invHead"),body=document.getElementById("invBody");
@@ -1660,14 +1774,21 @@ function renderInventory(){
   head.innerHTML=meta.waste?`<tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Cantidad merma</th><th>Costo</th><th>Importe</th><th>Motivo</th><th>Comentario</th><th></th></tr>`:
   `<tr><th>Código</th><th>Producto</th><th>Unidad</th><th>Teórico</th><th>Físico</th><th>Diferencia</th><th>Costo</th><th>Importe</th><th>Motivo</th><th>Comentario</th><th>Aplicar CxC</th><th>Justificación</th><th>Responsable</th><th></th></tr>`;
   body.innerHTML="";
+  const invQ=invTokens();let shown=0;
   rows[activeSection].forEach((r,i)=>{
+    if(invQ.length&&!invMatch(r,invQ))return;
     const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost);
     const tr=document.createElement("tr");
     if(meta.waste)tr.innerHTML=`<td><input value="${esc(r.code)}" onchange="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" onchange="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" onchange="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" onchange="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.cost}" onchange="edit('${activeSection}',${i},'cost',this.value)"></td><td id="amt-${activeSection}-${i}" class="orangetxt"><b>${money(num(r.theo)*num(r.cost))}</b></td><td><input value="${esc(r.reason)}" onchange="edit('${activeSection}',${i},'reason',this.value)" placeholder="Caducidad, daño..."></td><td><input class="wide" value="${esc(r.comment)}" onchange="edit('${activeSection}',${i},'comment',this.value)"></td><td>${invRowKebabHtml(i)}</td>`;
     else tr.innerHTML=`<td><input value="${esc(r.code)}" onchange="edit('${activeSection}',${i},'code',this.value)"></td><td><input class="wide" value="${esc(r.product)}" onchange="edit('${activeSection}',${i},'product',this.value)"></td><td><input value="${esc(r.unit)}" onchange="edit('${activeSection}',${i},'unit',this.value)"></td><td><input type="number" step=".01" value="${r.theo}" onchange="edit('${activeSection}',${i},'theo',this.value)"></td><td><input type="number" step=".01" value="${r.phys}" onchange="edit('${activeSection}',${i},'phys',this.value)"></td><td id="diff-${activeSection}-${i}" class="${diff<0?'redtxt':diff>0?'greentxt':''}"><b>${diff.toFixed(2)}</b></td><td><input type="number" step=".01" value="${r.cost}" onchange="edit('${activeSection}',${i},'cost',this.value)"></td><td id="amt-${activeSection}-${i}" class="${amount<0?'redtxt':amount>0?'greentxt':''}"><b>${money(amount)}</b></td><td><input value="${esc(r.reason)}" onchange="edit('${activeSection}',${i},'reason',this.value)" placeholder="Motivo"></td><td><input class="wide" value="${esc(r.comment)}" onchange="edit('${activeSection}',${i},'comment',this.value)"></td><td><select id="cxcsel-${activeSection}-${i}" ${diff>=0?'disabled':''} onchange="edit('${activeSection}',${i},'cxc',this.value)"><option value="">Pendiente</option><option ${r.cxc==="Sí"?"selected":""}>Sí</option><option ${r.cxc==="No"?"selected":""}>No</option></select></td><td><input id="just-${activeSection}-${i}" class="wide" ${diff>=0?'disabled':''} value="${esc(r.justification)}" onchange="edit('${activeSection}',${i},'justification',this.value)" placeholder="${diff<0?'Obligatoria':'No aplica'}"></td><td><input id="resp-${activeSection}-${i}" ${diff>=0?'disabled':''} value="${esc(r.responsible)}" onchange="edit('${activeSection}',${i},'responsible',this.value)" placeholder="Responsable"></td><td>${invRowKebabHtml(i)}</td>`;
-    body.appendChild(tr)
+    body.appendChild(tr);shown++
   });
+  if(invQ.length){
+    document.getElementById("sectionHelp").textContent+=` · ${shown} de ${rows[activeSection].length} productos`;
+    if(!shown)body.innerHTML=invNoResultsRow(invQ,meta.waste?9:14)
+  }
   updateCaptureSummary();
+  syncCapSticky();
   if(currentUser&&currentUser.viewOnly)applyCaptureReadOnly(true)
 }
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;")}
@@ -1871,6 +1992,24 @@ function categoryDiffLinesHtml(data=rows){
   });
   return html
 }
+function toggleCapSummary(force){
+  const p=document.getElementById("capSummaryPanel"),b=document.getElementById("capSumBtn");if(!p)return;
+  const open=force!==undefined?force:!p.classList.contains("open");
+  p.classList.toggle("open",open);if(b)b.textContent=open?"Resumen ▴":"Resumen ▾"
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")toggleCapSummary(false)});
+document.addEventListener("click",e=>{const p=document.getElementById("capSummaryPanel");if(p&&p.classList.contains("open")&&!e.target.closest("#capSummaryPanel,#capSumBtn"))toggleCapSummary(false)});
+function syncCapSticky(){const h=document.getElementById("captureHead");if(!h)return;document.documentElement.style.setProperty("--cap-sticky",(70+Math.round(h.getBoundingClientRect().height))+"px")}
+// Ajusta el alto de las listas con desplazamiento propio para que el encabezado quede siempre a la vista.
+function fitBoxes(){
+  document.querySelectorAll("[data-fit]").forEach(el=>{
+    const v=el.closest(".view");if(v&&!v.classList.contains("active"))return;
+    const top=el.getBoundingClientRect().top+window.scrollY,pad=parseInt(el.dataset.fit,10)||16;
+    el.style.maxHeight=Math.max(260,window.innerHeight-top-pad)+"px"
+  })
+}
+window.addEventListener("resize",debounce(()=>{fitBoxes();syncCapSticky()},120));
+if(window.ResizeObserver){const _h=document.getElementById("captureHead");if(_h)new ResizeObserver(syncCapSticky).observe(_h)}
 function updateCaptureSummary(){
   const t=totalsFor();
   ["capTheo","capPhys","capShort","capOver"].forEach((id,i)=>document.getElementById(id).textContent=money([t.theo,t.phys,t.short,t.over][i]));
@@ -2003,10 +2142,11 @@ async function editRecord(id){
   rows=JSON.parse(JSON.stringify(r.data));
   activeGroup="Cocina";activeSection=sections["Cocina"][0].id;
   const banner=document.getElementById("editBanner");
-  banner.style.display="block";
+  banner.style.display="flex";
   banner.innerHTML=viewOnly
-    ? `Estás viendo el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Solo lectura. <button class="btn" onclick="closeViewing()" style="margin-left:10px">Volver a Inventarios</button>`
-    : `Estás editando el inventario de <b>${esc(r.business)}</b> del <b>${esc(r.countDate)}</b> (guardado como "${esc(r.status)}"). Al guardar, se actualiza este mismo registro en vez de crear uno nuevo, y queda registrado qué producto cambió para efectos de CxC. <button class="btn" onclick="cancelEdit()" style="margin-left:10px">Cancelar edición</button>`;
+    ? `<span class="eb-text">Viendo <b>${esc(r.business)}</b> · ${esc(r.countDate)} · <span class="eb-tag">${esc(r.status)}</span> · solo lectura</span><button class="btn" onclick="closeViewing()">Volver a Inventarios</button>`
+    : `<span class="eb-text">Editando <b>${esc(r.business)}</b> · ${esc(r.countDate)} · <span class="eb-tag">${esc(r.status)}</span></span>${infoTip("Al guardar, se actualiza este mismo registro en vez de crear uno nuevo, y queda registrado qué producto cambió para efectos de CxC.")}<button class="btn" onclick="cancelEdit()">Cancelar edición</button>`;
+  invSearch="";{const si=document.getElementById("invSearchInput");if(si)si.value=""}
   document.getElementById("btnInvHistory").style.display="";
   document.getElementById("invHistoryBox").style.display="none";
   renderTabs();renderInventory();
@@ -2045,7 +2185,8 @@ function resetCapture(){
     const b=fBusiness.value;
     if(b&&catalogs[b]&&Object.values(catalogs[b]).some(l=>l.length))loadCatalogIntoRows(b);
     else seedRows();
-    renderInventory()
+    invSearch="";{const si=document.getElementById("invSearchInput");if(si)si.value=""}
+    renderTabs();renderInventory()
   }
 }
 function calcRecord(r){return totalsFor(r.data)}
@@ -2193,8 +2334,9 @@ async function bootHistory(){
   document.getElementById("invAuditBox").style.display="none";
   renderHistory()
 }
+const histStore={};
 function renderHistory(){
-  const b=currentBusiness,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";
+  const b=currentBusiness,s=hStatus.value,body=document.getElementById("historyBody");body.innerHTML="";let out="";
   const list=getRecords().filter(r=>(!b||r.business===b)&&(!s||r.status===s)&&(!globalMonth||monthOf(r)===globalMonth)&&userCanSee(r.business)).reverse();
   list.forEach(r=>{const t=calcRecord(r);
     const menuItems=[
@@ -2203,16 +2345,59 @@ function renderHistory(){
       currentUser.isAdmin?`<button type="button" class="danger" onclick="toggleKebabMenu('histMenu-${r.id}',event);deleteRecord(${r.id})">Eliminar</button>`:""
     ].filter(Boolean).join("");
     const actions=`<div class="flex" style="gap:6px;align-items:center"><button class="btn" onclick="toggleDiffRow(${r.id})">Ver diferencias</button><div class="toma-kebab-wrap"><button type="button" class="toma-kebab-btn" onclick="toggleKebabMenu('histMenu-${r.id}',event)" title="Más opciones">⋮</button><div class="toma-kebab-dropdown" id="histMenu-${r.id}">${menuItems}</div></div></div>`;
-    body.innerHTML+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`;
-    body.innerHTML+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${categoryDiffTableHtml(r.data)}${productDiffTableHtml(r.data,r.id)}</td></tr>`;
-    body.innerHTML+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc">${fullInventoryTableHtml(r.data)}</td></tr>`
+    out+=`<tr><td>${esc(r.countDate)}</td><td>${esc(r.business)}</td><td>${money(t.phys)}</td><td class="redtxt">${money(t.short)}</td><td class="greentxt">${money(t.over)}</td><td class="orangetxt">${money(t.mermas)}</td><td>${money(t.cxc)}</td><td><span class="badge ${r.status==="Terminado"?"green":"yellow"}">${esc(r.status)}</span></td><td>${actions}</td></tr>`;
+    histStore[r.id]=r.data;
+    out+=`<tr id="diffrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc"><div id="diffbox-${r.id}"></div></td></tr>`;
+    out+=`<tr id="fullrow-${r.id}" style="display:none"><td colspan="9" style="background:#f8fafc"><div id="fullbox-${r.id}"></div></td></tr>`
   });
+  body.innerHTML=out;
   if(!list.length)body.innerHTML='<tr><td colspan="9" class="empty">No hay inventarios guardados para este filtro.</td></tr>'
+  ;fitBoxes()
 }
 function toggleFullRow(id){
   const row=document.getElementById(`fullrow-${id}`);
-  if(row)row.style.display=row.style.display==="none"?"table-row":"none"
+  if(!row)return;
+  const show=row.style.display==="none";
+  row.style.display=show?"table-row":"none";
+  const box=document.getElementById(`fullbox-${id}`);
+  if(show&&box&&!box.dataset.built){box.dataset.built="1";box.innerHTML=fullInventoryPanelHtml(id);fullInvRender(id)}
 }
+// ---- Inventario completo: una pestaña por almacén y buscador (se arma solo al abrirlo) ----
+const fullInvState={};
+function fullInvSections(data){const out=[];Object.entries(sections).forEach(([group,list])=>list.forEach(s=>{const items=(data||{})[s.id]||[];if(items.length)out.push({group,s,items})}));return out}
+function fullInvMatch(r,tok){if(!tok.length)return true;const t=normalizeKey(String(r.code||"")+" "+String(r.product||""));return tok.every(w=>t.includes(w))}
+function fullInventoryPanelHtml(id){
+  const secs=fullInvSections(histStore[id]);
+  if(!secs.length)return'<div class="empty" style="margin-top:8px">Este inventario no tiene productos capturados.</div>';
+  fullInvState[id]={sec:secs[0].s.id,q:""};
+  return`<div class="fi-panel" id="fi-${id}"><div class="fi-bar"><div class="fi-tabs" id="fi-tabs-${id}"></div><input type="search" class="fi-search" placeholder="Buscar producto o código…" oninput="fullInvSearch(${id},this.value)" autocomplete="off"></div><div class="fi-body" id="fi-body-${id}"></div></div>`
+}
+function fullInvSectionTable(s,items){
+  const th='<th style="padding:4px 2px">';
+  let html='<table style="width:100%;min-width:0;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;border-bottom:1px solid #e2e8f0">'+(s.waste
+    ?[th+'Código</th>',th+'Producto</th>',th+'Unidad</th>',th+'Costo</th>',th+'Cantidad</th>',th+'Importe</th>',th+'Motivo</th>'].join("")
+    :[th+'Código</th>',th+'Producto</th>',th+'Unidad</th>',th+'Costo</th>',th+'Teórico</th>',th+'Físico</th>',th+'Diferencia</th>',th+'Importe</th>'].join(""))+'</tr></thead><tbody>';
+  items.forEach(r=>{
+    if(s.waste){html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${money(r.cost)}</td><td style="padding:4px 2px">${num(r.theo)}</td><td style="padding:4px 2px" class="orangetxt">${money(num(r.theo)*num(r.cost))}</td><td style="padding:4px 2px">${esc(r.reason||"-")}</td></tr>`}
+    else{const diff=num(r.phys)-num(r.theo),amount=diff*num(r.cost),cls=amount<0?"redtxt":amount>0?"greentxt":"";html+=`<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:4px 2px">${esc(r.code)}</td><td style="padding:4px 2px">${esc(r.product)}</td><td style="padding:4px 2px">${esc(r.unit)}</td><td style="padding:4px 2px">${money(r.cost)}</td><td style="padding:4px 2px">${num(r.theo)}</td><td style="padding:4px 2px">${num(r.phys)}</td><td style="padding:4px 2px" class="${cls}">${diff.toFixed(2)}</td><td style="padding:4px 2px" class="${cls}">${money(amount)}</td></tr>`}
+  });
+  return html+"</tbody></table>"
+}
+function fullInvRender(id){
+  const st=fullInvState[id];if(!st)return;
+  const secs=fullInvSections(histStore[id]),tok=normalizeKey(st.q||"").split(/\s+/).filter(Boolean);
+  document.getElementById("fi-tabs-"+id).innerHTML=secs.map(x=>{const n=tok.length?x.items.filter(r=>fullInvMatch(r,tok)).length:x.items.length;return`<button type="button" class="fi-tab${x.s.id===st.sec?" active":""}${tok.length&&!n?" dim":""}" onclick="fullInvTab(${id},'${x.s.id}')">${esc(x.group)} · ${esc(x.s.name)} <span class="fi-n">${n}</span></button>`}).join("");
+  const cur=secs.find(x=>x.s.id===st.sec)||secs[0],items=cur.items.filter(r=>fullInvMatch(r,tok));
+  let html="";
+  if(items.length)html=fullInvSectionTable(cur.s,items);
+  else{
+    const others=secs.filter(x=>x.s.id!==cur.s.id).map(x=>({x,n:x.items.filter(r=>fullInvMatch(r,tok)).length})).filter(o=>o.n);
+    html=`<div class="empty" style="padding:14px">Sin coincidencias en este almacén.${others.length?" Hay resultados en: "+others.map(o=>`<button type="button" class="btn pc-sm" onclick="fullInvTab(${id},'${o.x.s.id}')">${esc(o.x.group)} · ${esc(o.x.s.name)} (${o.n})</button>`).join(" "):" Tampoco hay en los demás almacenes."}</div>`
+  }
+  document.getElementById("fi-body-"+id).innerHTML=html
+}
+function fullInvTab(id,sec){const st=fullInvState[id];if(!st)return;st.sec=sec;fullInvRender(id)}
+function fullInvSearch(id,q){const st=fullInvState[id];if(!st)return;st.q=q;fullInvRender(id)}
 function fullInventoryTableHtml(data=rows){
   let html="";
   Object.entries(sections).forEach(([group,list])=>{
@@ -2239,7 +2424,11 @@ function fullInventoryTableHtml(data=rows){
 }
 function toggleDiffRow(id){
   const row=document.getElementById(`diffrow-${id}`);
-  if(row)row.style.display=row.style.display==="none"?"table-row":"none"
+  if(!row)return;
+  const show=row.style.display==="none";
+  row.style.display=show?"table-row":"none";
+  const box=document.getElementById(`diffbox-${id}`);
+  if(show&&box&&!box.dataset.built){box.dataset.built="1";box.innerHTML=categoryDiffTableHtml(histStore[id])+productDiffTableHtml(histStore[id],id)}
 }
 async function deleteRecord(id){
   if(!currentUser.isAdmin){alert("Solo un administrador puede eliminar inventarios.");return}
@@ -5497,7 +5686,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-10-28.1";
+const APP_VERSION="2026-11-09.1";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
