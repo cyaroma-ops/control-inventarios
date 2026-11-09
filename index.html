@@ -2059,7 +2059,25 @@ function diffInventoryRecords(oldData,newData){
   });
   return changes
 }
+// Mientras se guarda (la nube tarda 1-3 s) los botones se bloquean: antes, varios clics seguidos en
+// "Terminar inventario" creaban una copia del inventario por cada clic.
+let savingInventory=false;
+function setInvSaving(on){
+  document.querySelectorAll("#captureTopActions button").forEach(b=>{
+    if(on)b.dataset.t=b.textContent;
+    b.disabled=on;
+    if(on&&/Guardar|Terminar/.test(b.dataset.t||""))b.textContent="Guardando…";
+    else if(!on&&b.dataset.t)b.textContent=b.dataset.t
+  })
+}
+function nextRecordId(business){let id=Date.now();const used=new Set((recordsByBusiness[business]||[]).map(r=>r.id));while(used.has(id))id++;return id}
 async function saveInventory(status){
+  if(savingInventory)return;
+  savingInventory=true;setInvSaving(true);
+  try{await saveInventoryCore(status)}
+  finally{savingInventory=false;setInvSaving(false)}
+}
+async function saveInventoryCore(status){
   if(currentUser.viewOnly){alert("Tu cuenta es de solo lectura y no puede guardar cambios.");return}
   if(status==="Terminado"){
     const issues=validateInventory();if(issues.length){alert("No se puede terminar el inventario. Todo faltante debe indicar Sí o No en CxC y tener justificación:\n\n"+issues.join("\n"));return}
@@ -2067,8 +2085,13 @@ async function saveInventory(status){
   const business=fBusiness.value;
   if(!business){alert("Selecciona un negocio antes de guardar.");return}
   await ensureBusinessRecordsLoaded(business);
-  const oldRecord=editingRecordId?(recordsByBusiness[business]||[]).find(r=>r.id===editingRecordId):null;
+  const editId=editingRecordId;   // se fija una sola vez: el estado puede cambiar mientras se espera a la nube
+  const oldRecord=editId?(recordsByBusiness[business]||[]).find(r=>r.id===editId):null;
   const newData=JSON.parse(JSON.stringify(rows));
+  if(!editId){
+    const dup=(recordsByBusiness[business]||[]).find(r=>r.countDate===fCount.value&&r.status===status&&JSON.stringify(r.data)===JSON.stringify(newData));
+    if(dup){alert(`Este inventario ya se guardó antes (${business}, ${fCount.value}, ${status}) con exactamente los mismos datos, así que no se creó otra copia.`);return}
+  }
   const history=(oldRecord&&oldRecord.history)?[...oldRecord.history]:[];
   const who=currentUser.name||currentUser.email||"Desconocido";
   let auditDetail;
@@ -2081,17 +2104,18 @@ async function saveInventory(status){
     history.push({at:new Date().toISOString(),by:who,action:`Creó el inventario (${status})`});
     auditDetail=`Inventario nuevo del ${fCount.value}`
   }
-  const record={id:editingRecordId||Date.now(),business,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:newData,history};
+  const record={id:editId||nextRecordId(business),business,frequency:fFrequency.value,countDate:fCount.value,startDate:fStart.value,endDate:fEnd.value,supervisor:fSupervisor.value,workflow:fStatus.value,notes:fNotes.value,status,data:newData,history};
   let list=recordsByBusiness[business]||[];
-  if(editingRecordId){list=list.map(r=>r.id===editingRecordId?record:r)} else {list=[...list,record]}
+  if(editId){list=list.map(r=>r.id===editId?record:r)} else {list=[...list,record]}
   recordsByBusiness[business]=list;
   await pushBusinessRecords(business);
-  await logInventoryAudit(business,editingRecordId?"Editó el inventario":"Creó el inventario",`Inventario del ${fCount.value} (${status}) — ${auditDetail}`);
-  const wasEditing=!!editingRecordId;
+  await logInventoryAudit(business,editId?"Editó el inventario":"Creó el inventario",`Inventario del ${fCount.value} (${status}) — ${auditDetail}`);
+  const wasEditing=!!editId;
   editingRecordId=null;
   document.getElementById("editBanner").style.display="none";
   document.getElementById("invHistoryBox").style.display="none";
-  alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status);await ensureRecordsFor(currentBusiness||"");renderDashboard();openView("dashboard")
+  const sameDate=(recordsByBusiness[business]||[]).filter(r=>r.id!==record.id&&r.countDate===record.countDate).length;
+  alert((wasEditing?"Inventario actualizado como ":"Inventario guardado como ")+status+(sameDate?`\n\nOjo: ya había ${sameDate} inventario(s) de ${business} con esta misma fecha (${record.countDate}). En el Dashboard y los reportes se suman; si alguno fue un error, elimínalo desde Inventarios.`:""));await ensureRecordsFor(currentBusiness||"");renderDashboard();openView("dashboard")
 }
 function toggleInventoryHistory(){
   const box=document.getElementById("invHistoryBox");
@@ -5686,7 +5710,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-11-09.1";
+const APP_VERSION="2026-11-09.2";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
