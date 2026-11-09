@@ -340,8 +340,8 @@ textarea{min-height:76px;resize:vertical}
 #history .page-title h2{font-size:24px}
 #history .page-title p{margin:3px 0 0;font-size:12.5px}
 #history .card.form-card{padding:10px 14px;margin-bottom:10px}
-.cap-head{position:relative;background:var(--bg);margin:0 -26px 12px;padding:8px 26px 8px;border-bottom:1px solid var(--line)}
-@media(min-width:851px){.cap-head{position:sticky;top:70px;z-index:6}}
+.cap-head{position:relative;background:var(--bg);margin:0 -26px 12px;padding:12px 26px 8px;border-bottom:1px solid var(--line)}
+@media(min-width:851px){.cap-head{position:sticky;top:var(--topbar-h,71px);z-index:6}.content.cap-view{padding-top:0}}
 @media(max-width:850px){.cap-head{margin:0 0 12px;padding:0;border:0;background:none}}
 #capture .cap-head .page-title{margin:0 0 6px;align-items:center;flex-wrap:wrap}
 #capture .cap-head .page-title h2{font-size:21px;display:inline}
@@ -382,6 +382,13 @@ textarea{min-height:76px;resize:vertical}
 .cs-chip small{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .cs-chip strong{font-size:16px;font-variant-numeric:tabular-nums}
 .cs-note{margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+.cs-diff tr.cs-grp td{background:#f6f8fc;font-weight:700;border-top:1px solid #dfe5ef}
+.cs-diff tr.cs-grp:first-child td{border-top:0}
+.cs-diff tr.cs-sub td{font-size:12px}
+.cs-diff tr.cs-sub td:first-child{padding-left:22px;font-weight:400;color:#41506b}
+.cs-diff .cs-zero{color:#c3cad6;font-weight:400}
+.cs-diff tfoot td{font-weight:700;border-top:2px solid #cfd8e8;border-bottom:0;background:#fff;font-size:13px}
+.cs-kv-total{margin-top:4px;padding-top:8px;border-top:2px solid #cfd8e8;border-bottom:0;font-size:13.5px;font-weight:700}
 .cap-search{flex:1;min-width:180px;max-width:360px;margin:0 12px}
 .cap-search input{width:100%;padding:7px 10px;font-size:13px}
 .inv-scroll{overflow:auto;max-height:calc(100vh - var(--cap-sticky,230px) - 70px);min-height:260px}
@@ -696,13 +703,13 @@ textarea{min-height:76px;resize:vertical}
             </div>
           </div>
           <div class="cs-grid">
-            <div class="cs-card"><h4>Diferencias</h4>
+            <div class="cs-card"><h4>Faltantes y sobrantes por almacén</h4><div id="sByCategory"></div></div>
+            <div class="cs-card"><h4>Diferencias totales</h4>
               <div class="cs-kv"><span>Faltantes</span><strong id="sShort" class="redtxt">$0</strong></div>
               <div class="cs-kv"><span>Sobrantes</span><strong id="sOver" class="greentxt">$0</strong></div>
               <div class="cs-kv"><span>Diferencia neta</span><strong id="sNet">$0</strong></div>
-              <div class="cs-kv"><span><b>Pérdida + mermas</b></span><strong id="sLoss" class="redtxt">$0</strong></div>
+              <div class="cs-kv cs-kv-total"><span>Pérdida + mermas</span><strong id="sLoss" class="redtxt">$0</strong></div>
             </div>
-            <div class="cs-card"><h4>Faltantes / sobrantes por área</h4><div id="sByCategory"></div></div>
           </div>
         </div>
         </div>
@@ -1973,6 +1980,27 @@ function showDiffTab(recordId,which){
   else{fbox.style.display="none";sbox.style.display="";ts.classList.add("primary");tf.classList.remove("primary")}
   reapplyDiffSearch(recordId)
 }
+// Faltantes / sobrantes por almacén para el panel de resumen: tabla con subtotal por área y total general.
+function categoryDiffSummaryHtml(data=rows){
+  const cell=(v,cls)=>v>0.004?`<td class="${cls}">${money(v)}</td>`:'<td class="cs-zero">—</td>';
+  const net=v=>Math.abs(v)<0.005?'<td class="cs-zero">—</td>':`<td class="${v<0?"redtxt":"greentxt"}">${v>0?"+":""}${money(v)}</td>`;
+  let body="",tS=0,tO=0;
+  Object.entries(sections).forEach(([group,list])=>{
+    const nonWaste=list.filter(s=>!s.waste);if(!nonWaste.length)return;
+    let gS=0,gO=0;const subs=[];
+    nonWaste.forEach(s=>{
+      let short=0,over=0;
+      (data[s.id]||[]).forEach(r=>{const d=(num(r.phys)-num(r.theo))*num(r.cost);if(d<0)short+=Math.abs(d);else over+=d});
+      gS+=short;gO+=over;
+      const label=(s.name.replace(new RegExp("\\s*"+group,"i"),"").trim())||s.name;
+      subs.push(`<tr class="cs-sub"><td>${esc(label)}</td>${cell(short,"redtxt")}${cell(over,"greentxt")}${net(over-short)}</tr>`)
+    });
+    tS+=gS;tO+=gO;
+    body+=`<tr class="cs-grp"><td>${esc(group)}</td>${cell(gS,"redtxt")}${cell(gO,"greentxt")}${net(gO-gS)}</tr>`+subs.join("")
+  });
+  if(!body)return"";
+  return`<table class="cs-table cs-diff"><thead><tr><th>Almacén</th><th>Faltantes</th><th>Sobrantes</th><th>Neto</th></tr></thead><tbody>${body}</tbody><tfoot><tr class="cs-tot"><td>Total</td>${cell(tS,"redtxt")}${cell(tO,"greentxt")}${net(tO-tS)}</tr></tfoot></table>`
+}
 function categoryDiffLinesHtml(data=rows){
   let html="";
   Object.entries(sections).forEach(([group,list])=>{
@@ -1999,7 +2027,12 @@ function toggleCapSummary(force){
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape")toggleCapSummary(false)});
 document.addEventListener("click",e=>{const p=document.getElementById("capSummaryPanel");if(p&&p.classList.contains("open")&&!e.target.closest("#capSummaryPanel,#capSumBtn"))toggleCapSummary(false)});
-function syncCapSticky(){const h=document.getElementById("captureHead");if(!h)return;document.documentElement.style.setProperty("--cap-sticky",(70+Math.round(h.getBoundingClientRect().height))+"px")}
+function syncCapSticky(){
+  const h=document.getElementById("captureHead");if(!h)return;
+  const tb=document.querySelector(".topbar"),th=tb?Math.round(tb.getBoundingClientRect().height):0;   // la barra superior mide 71 px reales (70 + borde)
+  if(th>0)document.documentElement.style.setProperty("--topbar-h",th+"px");
+  document.documentElement.style.setProperty("--cap-sticky",((th||71)+Math.round(h.getBoundingClientRect().height))+"px")
+}
 // Ajusta el alto de las listas con desplazamiento propio para que el encabezado quede siempre a la vista.
 function fitBoxes(){
   document.querySelectorAll("[data-fit]").forEach(el=>{
@@ -2017,7 +2050,7 @@ function updateCaptureSummary(){
   document.getElementById("sBg").textContent=money(sectionInventory("bg"));document.getElementById("sBp").textContent=money(sectionInventory("bp"));document.getElementById("sBw").textContent=money(sectionInventory("bw"));document.getElementById("sB").textContent=money(sectionInventory("bg")+sectionInventory("bp")+sectionInventory("bw"));document.getElementById("sBmw").textContent=money(sectionInventory("bm"));
   document.getElementById("sGg").textContent=money(sectionInventory("gg"));document.getElementById("sG").textContent=money(sectionInventory("gg"));document.getElementById("sGm").textContent=money(sectionInventory("gm"));
   document.getElementById("sShort").textContent=money(t.short);document.getElementById("sOver").textContent=money(t.over);document.getElementById("sNet").textContent=money(t.over-t.short);document.getElementById("sLoss").textContent=money(t.loss);
-  document.getElementById("sByCategory").innerHTML=categoryDiffLinesHtml();
+  document.getElementById("sByCategory").innerHTML=categoryDiffSummaryHtml();
   document.getElementById("sCxc").textContent=money(t.cxc);document.getElementById("sNoCxc").textContent=money(t.noCxc);document.getElementById("sPending").textContent=money(t.pending);document.getElementById("sEvaluated").textContent=money(t.cxc+t.noCxc)
 }
 function validateInventory(){
@@ -5710,7 +5743,7 @@ function renderReports(){
 }
 /* ==================== VERSIÓN DE LA APP ====================
    Formato AAAA-MM-DD.N = fecha de la entrega + consecutivo de ese día. Se actualiza en cada entrega. */
-const APP_VERSION="2026-11-09.2";
+const APP_VERSION="2026-11-09.3";
 document.querySelectorAll(".appVersionText").forEach(el=>{el.textContent=APP_VERSION});
 console.info("Control de Inventarios — versión de la app:",APP_VERSION);
 /* ==================== COMPARATIVA DE PRECIOS DE PROVEEDORES (global, solo administradores) ==================== */
@@ -6920,7 +6953,7 @@ async function pcImpApply(){
 /* ---------- Barra superior: el selector de meses no aplica en la comparativa ---------- */
 function pcSyncTopbar(id){
   const pc=document.querySelector(".period-control");if(pc)pc.style.display=(id==="pricecompare")?"none":"";
-  const ct=document.querySelector(".content");if(ct)ct.classList.toggle("pc-wide",id==="pricecompare")
+  const ct=document.querySelector(".content");if(ct){ct.classList.toggle("pc-wide",id==="pricecompare");ct.classList.toggle("cap-view",id==="capture")}
 }
 
 /* ---------- Auditoría ---------- */
